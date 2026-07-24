@@ -2181,6 +2181,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            seedingComments: [seedText],
             comment: {
               id: `cmt_test_${Date.now()}`,
               authorName: 'Khách hàng Test',
@@ -2191,9 +2192,9 @@
         });
         const data = await res.json();
         if (data.success) {
-          logTestOutput(`✅ [TEST 2 OK] Đã lưu dữ liệu & phát lệnh Seeding qua Direct GraphQL API (useCometUFICreateCommentMutation — doc_id: 27829190080054105)!`);
+          logTestOutput(`✅ [TEST 2 OK] Đã nạp bình luận seeding "${seedText}" vào bài viết ID=${targetPostId}!`);
           showToast('✅ Đã nạp thành công comment seeding test!', 'success');
-          loadPosts();
+          await loadPosts();
         } else {
           logTestOutput(`❌ [TEST 2 ERROR] ${data.error}`, true);
         }

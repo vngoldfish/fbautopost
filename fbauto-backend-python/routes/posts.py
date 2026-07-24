@@ -148,8 +148,17 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
             # Add single comment
             new_cmt = payload["comment"]
             existing_comments.append(new_cmt)
-            database.update_item("posts", post_id, {"comments": existing_comments})
-            return 200, {"success": True, "comments": existing_comments}
+            
+            seeding_list = found.get("seedingComments", [])
+            cmt_text = new_cmt.get("text") if isinstance(new_cmt, dict) else str(new_cmt)
+            if cmt_text and cmt_text not in seeding_list:
+                seeding_list.append(cmt_text)
+
+            database.update_item("posts", post_id, {
+                "comments": existing_comments,
+                "seedingComments": seeding_list
+            })
+            return 200, {"success": True, "comments": existing_comments, "seedingComments": seeding_list}
         
         return 400, {"error": "Invalid payload"}
 
