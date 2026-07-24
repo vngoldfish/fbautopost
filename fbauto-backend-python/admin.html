@@ -2172,7 +2172,8 @@
         return;
       }
 
-      logTestOutput(`💬 [TEST 2] Đang nạp Seeding Comment vào đúng bài viết ID=${targetPostId}...`);
+      const seedText = `Sản phẩm này đẹp quá shop ơi! (${new Date().toLocaleTimeString('vi-VN')})`;
+      logTestOutput(`💬 [TEST 2] Đang nạp & phát lệnh Seeding Comment ngầm vào Bài viết ID=${targetPostId}...`);
       showToast(`💬 Seeding comment vào bài ID=${targetPostId}...`, 'info');
       
       try {
@@ -2183,15 +2184,16 @@
             comment: {
               id: `cmt_test_${Date.now()}`,
               authorName: 'Khách hàng Test',
-              text: `Sản phẩm này đẹp quá shop ơi! (${new Date().toLocaleTimeString('vi-VN')})`,
+              text: seedText,
               time: Date.now()
             }
           })
         });
         const data = await res.json();
         if (data.success) {
-          logTestOutput(`✅ [TEST 2 OK] Đã nạp thành công Seeding Comment vào đúng Bài viết ID=${targetPostId}!`);
+          logTestOutput(`✅ [TEST 2 OK] Đã lưu dữ liệu & phát lệnh Seeding qua Direct GraphQL API (useCometUFICreateCommentMutation — doc_id: 27829190080054105)!`);
           showToast('✅ Đã nạp thành công comment seeding test!', 'success');
+          loadPosts();
         } else {
           logTestOutput(`❌ [TEST 2 ERROR] ${data.error}`, true);
         }
