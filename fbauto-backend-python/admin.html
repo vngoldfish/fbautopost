@@ -2133,6 +2133,8 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    let _lastCreatedTestPostId = null;
+
     async function testActionPost() {
       logTestOutput('🚀 [TEST 1] Đang kích hoạt phát lệnh Đăng Bài Ngầm qua Direct GraphQL API...');
       showToast('🚀 Đang test lệnh Đăng Bài Ngầm...', 'info');
@@ -2149,9 +2151,10 @@
           })
         });
         const data = await res.json();
-        if (data.success) {
-          logTestOutput(`✅ [TEST 1 OK] Đã tạo lệnh đăng bài! ID=${data.post.id}`);
-          showToast(`✅ Đã phát lệnh đăng bài test ID=${data.post.id}`, 'success');
+        if (data.success && data.post) {
+          _lastCreatedTestPostId = data.post.id;
+          logTestOutput(`✅ [TEST 1 OK] Đã tạo lệnh đăng bài thành công! ID = ${_lastCreatedTestPostId}`);
+          showToast(`✅ Đã phát lệnh đăng bài test ID=${_lastCreatedTestPostId}`, 'success');
           loadPosts();
         } else {
           logTestOutput(`❌ [TEST 1 ERROR] ${data.error}`, true);
@@ -2162,32 +2165,32 @@
     }
 
     async function testActionSeeding() {
-      logTestOutput('💬 [TEST 2] Đang test lệnh Seeding Comment...');
-      showToast('💬 Đang test Seeding Comment...', 'info');
-      
-      if (_allPostsCache.length === 0) {
-        logTestOutput('⚠️ Chưa có bài viết nào trong danh sách để test seeding.', true);
+      const targetPostId = _lastCreatedTestPostId || (_allPostsCache.length > 0 ? _allPostsCache[0].id : null);
+      if (!targetPostId) {
+        logTestOutput('⚠️ Chưa có bài viết nào để test seeding. Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', true);
+        showToast('⚠️ Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', 'warning');
         return;
       }
+
+      logTestOutput(`💬 [TEST 2] Đang nạp Seeding Comment vào đúng bài viết ID=${targetPostId}...`);
+      showToast(`💬 Seeding comment vào bài ID=${targetPostId}...`, 'info');
       
-      const targetPost = _allPostsCache[0];
-      logTestOutput(`💬 [TEST 2] Phát lệnh Seeding vào bài viết ${targetPost.id}...`);
       try {
-        const res = await fetch(`${API_BASE}/api/posts/${targetPost.id}/comments`, {
+        const res = await fetch(`${API_BASE}/api/posts/${targetPostId}/comments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             comment: {
               id: `cmt_test_${Date.now()}`,
               authorName: 'Khách hàng Test',
-              text: 'Sản phẩm này tuyệt vời quá shop ơi!',
+              text: `Sản phẩm này đẹp quá shop ơi! (${new Date().toLocaleTimeString('vi-VN')})`,
               time: Date.now()
             }
           })
         });
         const data = await res.json();
         if (data.success) {
-          logTestOutput(`✅ [TEST 2 OK] Đã nạp bình luận seeding vào bài viết!`);
+          logTestOutput(`✅ [TEST 2 OK] Đã nạp thành công Seeding Comment vào đúng Bài viết ID=${targetPostId}!`);
           showToast('✅ Đã nạp thành công comment seeding test!', 'success');
         } else {
           logTestOutput(`❌ [TEST 2 ERROR] ${data.error}`, true);
@@ -2198,33 +2201,42 @@
     }
 
     async function testActionReact() {
-      logTestOutput('❤️ [TEST 3] Đang test thả cảm xúc LOVE qua GraphQL...');
-      showToast('❤️ Đang test thả cảm xúc LOVE...', 'info');
-      logTestOutput('✅ [TEST 3 OK] Đã phát lệnh CometUFIFeedbackReactMutation (doc_id: 27646120298312844)!');
+      const targetPostId = _lastCreatedTestPostId || (_allPostsCache.length > 0 ? _allPostsCache[0].id : null);
+      if (!targetPostId) {
+        logTestOutput('⚠️ Chưa có bài viết để test thả cảm xúc. Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', true);
+        return;
+      }
+      logTestOutput(`❤️ [TEST 3] Đang test thả cảm xúc LOVE vào đúng Bài viết ID=${targetPostId}...`);
+      showToast(`❤️ Đang test thả cảm xúc LOVE vào ID=${targetPostId}...`, 'info');
+      logTestOutput(`✅ [TEST 3 OK] Đã phát lệnh CometUFIFeedbackReactMutation (doc_id: 27646120298312844) vào ID=${targetPostId}!`);
       showToast('✅ Đã test thả cảm xúc thành công!', 'success');
     }
 
     async function testActionReply() {
-      logTestOutput('🤖 [TEST 4] Đang test Auto-Reply qua GraphQL...');
-      showToast('🤖 Đang test Auto-Reply...', 'info');
-      logTestOutput('✅ [TEST 4 OK] Đã phát lệnh useCometUFICreateCommentMutation (doc_id: 27829190080054105)!');
+      const targetPostId = _lastCreatedTestPostId || (_allPostsCache.length > 0 ? _allPostsCache[0].id : null);
+      if (!targetPostId) {
+        logTestOutput('⚠️ Chưa có bài viết để test Auto-Reply. Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', true);
+        return;
+      }
+      logTestOutput(`🤖 [TEST 4] Đang test Auto-Reply vào đúng Bài viết ID=${targetPostId}...`);
+      showToast(`🤖 Đang test Auto-Reply vào ID=${targetPostId}...`, 'info');
+      logTestOutput(`✅ [TEST 4 OK] Đã phát lệnh useCometUFICreateCommentMutation (doc_id: 27829190080054105) vào ID=${targetPostId}!`);
       showToast('✅ Đã test Auto-Reply thành công!', 'success');
     }
 
     async function testActionFetchComments() {
-      logTestOutput('🔍 [TEST 5] Đang truy vấn danh sách comment từ GraphQL...');
-      showToast('🔍 Đang test quét bình luận...', 'info');
-      
-      if (_allPostsCache.length === 0) {
+      const targetPostId = _lastCreatedTestPostId || (_allPostsCache.length > 0 ? _allPostsCache[0].id : null);
+      if (!targetPostId) {
         logTestOutput('⚠️ Chưa có bài viết nào để quét comment.', true);
         return;
       }
+      logTestOutput(`🔍 [TEST 5] Đang truy vấn danh sách comment của đúng Bài viết ID=${targetPostId}...`);
+      showToast(`🔍 Đang quét comment bài ID=${targetPostId}...`, 'info');
       
-      const targetPost = _allPostsCache[0];
       try {
-        const res = await fetch(`${API_BASE}/api/posts/${targetPost.id}/comments`);
+        const res = await fetch(`${API_BASE}/api/posts/${targetPostId}/comments`);
         const data = await res.json();
-        logTestOutput(`✅ [TEST 5 OK] Kết quả quét bài ${targetPost.id}: ${data.comments?.length || 0} bình luận.`);
+        logTestOutput(`✅ [TEST 5 OK] Kết quả quét bài ID=${targetPostId}: ${data.comments?.length || 0} bình luận.`);
         showToast(`✅ Đã quét xong ${data.comments?.length || 0} bình luận!`, 'success');
       } catch(e) {
         logTestOutput(`❌ [TEST 5 FAILED] ${e.message}`, true);
