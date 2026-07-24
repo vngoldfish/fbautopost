@@ -2040,13 +2040,10 @@ async function _executePostItem(post) {
                                 return { success: false, error: "Missing dtsg or actorId", tier: "graphql" };
                             }
 
-                            const isTimelinePage = window.location.href.includes("/profile.php") ||
-                                                   window.location.href.includes("/me") ||
-                                                   document.querySelector("div[data-pagelet*='Profile']") !== null;
-
-                            let surface = isTimelinePage ? "timeline" : "newsfeed";
-                            let feedLoc = isTimelinePage ? "TIMELINE" : "NEWSFEED";
-                            let renderLoc = isTimelinePage ? "timeline" : "homepage_stream";
+                            // Force NEWSFEED default surface for profile posts so it appears on main Newsfeed (Bảng tin)
+                            let surface = "newsfeed";
+                            let feedLoc = "NEWSFEED";
+                            let renderLoc = "homepage_stream";
 
                             if (targetType === "group" && targetId) {
                                 surface = "group";
@@ -2093,17 +2090,17 @@ async function _executePostItem(post) {
                                     client_mutation_id: String(Math.floor(Math.random() * 10) + 1)
                                 },
                                 feedLocation: feedLoc,
-                                feedbackSource: isTimelinePage ? 0 : 1,
+                                feedbackSource: 1,
                                 scale: 2,
                                 privacySelectorRenderLocation: "COMET_STREAM",
                                 renderLocation: renderLoc,
                                 useDefaultActor: false,
-                                isFeed: !isTimelinePage,
+                                isFeed: true,
                                 isFundraiser: false,
                                 isFunFactPost: false,
                                 isGroup: targetType === "group",
                                 isEvent: false,
-                                isTimeline: isTimelinePage,
+                                isTimeline: false,
                                 isSocialLearning: false,
                                 isPageNewsFeed: targetType === "page",
                                 isProfileReviews: false
@@ -2113,8 +2110,11 @@ async function _executePostItem(post) {
                                 variables.input.group_id = String(targetId);
                             }
 
+                            console.log(`📡 [GraphQL Post] Actor=${actorId}, DTSG=${fb_dtsg.substring(0,10)}..., Target=${targetType}, Surface=${surface}, FeedLoc=${feedLoc}`);
+
                             let lastErr = "";
                             for (const targetDocId of fallbackDocIds) {
+                                console.log(`🚀 [GraphQL Request] Trying ComposerStoryCreateMutation doc_id=${targetDocId}...`);
                                 const params = new URLSearchParams();
                                 params.append("av", actorId);
                                 params.append("__user", actorId);
@@ -2502,8 +2502,8 @@ async function _executePostItem(post) {
                             if (seedResult && seedResult.success) {
                                 await updateStep(`✅ 💬 Đã gửi thành công ${seedResult.successCount}/${seedResult.total} bình luận seeding!`);
                             } else {
-                                const seedErrMsg = seedResult?.error || (seedResult?.errors && seedResult.errors[0]) || "Không tìm thấy token/post ID";
-                                await updateStep(`⚠️ 💬 Gửi bình luận seeding không thành công: ${seedErrMsg}`);
+                                const seedErrMsg = seedResult?.error || (seedResult?.errors && seedResult.errors.join("; ")) || "Không tìm thấy token/post ID";
+                                await updateStep(`⚠️ 💬 Kết quả Seeding: ${seedErrMsg}`);
                             }
                         } catch(e) {
                         }

@@ -2173,7 +2173,8 @@
       }
 
       const seedText = `Sản phẩm này đẹp quá shop ơi! (${new Date().toLocaleTimeString('vi-VN')})`;
-      logTestOutput(`💬 [TEST 2] Đang nạp & phát lệnh Seeding Comment ngầm vào Bài viết ID=${targetPostId}...`);
+      logTestOutput(`💬 [TEST 2 - LOG] Đang nạp Seeding Comment: "${seedText}"`);
+      logTestOutput(`💬 [TEST 2 - LOG] Target ID Bài Viết: ${targetPostId}`);
       showToast(`💬 Seeding comment vào bài ID=${targetPostId}...`, 'info');
       
       try {
@@ -2192,8 +2193,11 @@
         });
         const data = await res.json();
         if (data.success) {
-          logTestOutput(`✅ [TEST 2 OK] Đã nạp bình luận seeding "${seedText}" vào bài viết ID=${targetPostId}!`);
-          showToast('✅ Đã nạp thành công comment seeding test!', 'success');
+          logTestOutput(`✅ [TEST 2 OK] Đã lưu Seeding Comment vào Cơ Sở Dữ Liệu!`);
+          logTestOutput(`⚡ [TEST 2 - LOG] Kích hoạt Lệnh POST /api/posts/${targetPostId}/run-now đẩy ngầm trực tiếp lên Facebook...`);
+          await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+          logTestOutput(`✅ [TEST 2 OK] Đã phát lệnh cho Extension nạp ngầm trực tiếp lên Facebook qua Direct GraphQL API!`);
+          showToast('✅ Đã nạp & phát lệnh Seeding trực tiếp!', 'success');
           await loadPosts();
         } else {
           logTestOutput(`❌ [TEST 2 ERROR] ${data.error}`, true);
