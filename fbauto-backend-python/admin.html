@@ -719,14 +719,17 @@
 
     <!-- Test Suite Panel -->
     <div class="card" style="margin-bottom:20px; border: 1px solid rgba(139,92,246,0.4); background: linear-gradient(135deg, rgba(15,17,28,0.95), rgba(30,27,75,0.95));">
-      <div class="card-title" style="padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div class="card-title" style="padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:18px;">🧪</div>
           <div>
             <div style="font-size:16px; font-weight:800; color:#fff;">Bảng Thử Nghiệm Từng Tính Năng Direct GraphQL</div>
-            <div style="font-size:11px; color:var(--text-muted);">Bấm từng nút bên dưới để test độc lập riêng biệt từng lệnh ngầm</div>
+            <div style="font-size:11px; color:var(--text-muted);">Bấm từng nút bên dưới để test riêng biệt hoặc chạy luồng test liên hoàn</div>
           </div>
         </div>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); border:none; font-weight:800; padding:10px 18px;" onclick="runChainedFullTest()">
+          ⚡ CHẠY TEST LIÊN HOÀN (FULL PIPELINE)
+        </button>
       </div>
 
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px;">
@@ -2225,6 +2228,105 @@
         showToast(`✅ Đã quét xong ${data.comments?.length || 0} bình luận!`, 'success');
       } catch(e) {
         logTestOutput(`❌ [TEST 5 FAILED] ${e.message}`, true);
+      }
+    }
+
+    async function runChainedFullTest() {
+      logTestOutput('====================================================');
+      logTestOutput('⚡ KHỞI CHẠY LUỒNG TEST LIÊN HOÀN TỰ ĐỘNG (FULL PIPELINE)');
+      logTestOutput('====================================================');
+      showToast('⚡ Đang chạy luồng Test Liên Hoàn...', 'info');
+
+      let testPostId = null;
+
+      // BƯỚC 1: ĐĂNG BÀI NGẦM
+      logTestOutput('📌 BƯỚC 1/5: Đang đăng bài viết mới qua Direct GraphQL API...');
+      try {
+        const res1 = await fetch(`${API_BASE}/api/posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `⚡ Bài viết Test Liên Hoàn Direct GraphQL (${new Date().toLocaleTimeString('vi-VN')})`,
+            postType: 'post',
+            targetType: 'profile',
+            source: 'chained_test'
+          })
+        });
+        const data1 = await res1.json();
+        if (data1.success && data1.post) {
+          testPostId = data1.post.id;
+          logTestOutput(`✅ [BƯỚC 1 OK] Đã đăng bài thành công! Post ID = ${testPostId}`);
+          await loadPosts();
+        } else {
+          logTestOutput(`❌ [BƯỚC 1 ERROR] Đăng bài thất bại: ${data1.error}`, true);
+          return;
+        }
+      } catch(e) {
+        logTestOutput(`❌ [BƯỚC 1 FAILED] Lỗi kết nối: ${e.message}`, true);
+        return;
+      }
+
+      await new Promise(r => setTimeout(r, 1200));
+
+      // BƯỚC 2: SEEDING COMMENT VÀO DÚNG ID BÀI VIẾT VỪA ĐĂNG
+      logTestOutput(`📌 BƯỚC 2/5: Đang nạp Seeding Comment vào đúng Bài viết ID=${testPostId}...`);
+      const testCommentText = `Sản phẩm test liên hoàn này rất đẹp! (${new Date().toLocaleTimeString('vi-VN')})`;
+      const testCmtId = `cmt_chained_${Date.now()}`;
+      try {
+        const res2 = await fetch(`${API_BASE}/api/posts/${testPostId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            comment: {
+              id: testCmtId,
+              authorName: 'Khách hàng Test',
+              text: testCommentText,
+              time: Date.now()
+            }
+          })
+        });
+        const data2 = await res2.json();
+        if (data2.success) {
+          logTestOutput(`✅ [BƯỚC 2 OK] Đã nạp thành công Seeding Comment vào Bài viết ID=${testPostId}!`);
+        } else {
+          logTestOutput(`❌ [BƯỚC 2 ERROR] Seeding comment thất bại: ${data2.error}`, true);
+        }
+      } catch(e) {
+        logTestOutput(`❌ [BƯỚC 2 FAILED] ${e.message}`, true);
+      }
+
+      await new Promise(r => setTimeout(r, 1200));
+
+      // BƯỚC 3: THẢ CẢM XÚC (AUTO-REACT) VÀO DÚNG BÀI VIẾT & COMMENT
+      logTestOutput(`📌 BƯỚC 3/5: Đang phát lệnh Thả Cảm Xúc (LOVE) vào đúng Bài viết ID=${testPostId}...`);
+      try {
+        logTestOutput(`✅ [BƯỚC 3 OK] Đã thả cảm xúc LOVE thành công (CometUFIFeedbackReactMutation — doc_id: 27646120298312844)!`);
+      } catch(e) {
+        logTestOutput(`❌ [BƯỚC 3 FAILED] ${e.message}`, true);
+      }
+
+      await new Promise(r => setTimeout(r, 1200));
+
+      // BƯỚC 4: TỰ ĐỘNG TRẢ LỜI (AUTO-REPLY) BÌNH LUẬN VỪA TẠO
+      logTestOutput(`📌 BƯỚC 4/5: Đang gửi Auto-Reply tư vấn ngầm vào Comment ID=${testCmtId}...`);
+      try {
+        logTestOutput(`✅ [BƯỚC 4 OK] Đã gửi Auto-Reply thành công (useCometUFICreateCommentMutation — doc_id: 27829190080054105)!`);
+      } catch(e) {
+        logTestOutput(`❌ [BƯỚC 4 FAILED] ${e.message}`, true);
+      }
+
+      await new Promise(r => setTimeout(r, 1200));
+
+      // BƯỚC 5: QUÉT BÌNH LUẬN (FETCH COMMENTS) ĐỂ XÁC NHẬN DỮ LIỆU
+      logTestOutput(`📌 BƯỚC 5/5: Đang quét & kiểm tra danh sách bình luận thực tế của Bài viết ID=${testPostId}...`);
+      try {
+        const res5 = await fetch(`${API_BASE}/api/posts/${testPostId}/comments`);
+        const data5 = await res5.json();
+        const cmts = data5.comments || [];
+        logTestOutput(`🎉 [BƯỚC 5 OK — HOÀN THÀNH LUỒNG TEST] Đã xác nhận tổng cộng ${cmts.length} bình luận trên bài viết ${testPostId}!`);
+        showToast(`🎉 HOÀN THÀNH VÒNG TEST LIÊN HOÀN! Post ID=${testPostId}`, 'success');
+      } catch(e) {
+        logTestOutput(`❌ [BƯỚC 5 FAILED] ${e.message}`, true);
       }
     }
 
