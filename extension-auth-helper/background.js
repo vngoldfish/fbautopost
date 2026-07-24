@@ -2280,17 +2280,8 @@ async function _executePostItem(post) {
                     
                     // Exec Auto-Seeding Comments if configured
                     if (payload.seedingComments && Array.isArray(payload.seedingComments) && payload.seedingComments.length > 0) {
-                        await updateStep(`💬 Đang mở bài viết và tự động gửi ${payload.seedingComments.length} bình luận seeding...`);
+                        await updateStep(`💬 Đang gửi ${payload.seedingComments.length} bình luận seeding trực tiếp qua Direct GraphQL API...`);
                         
-                        // Navigate Facebook tab to post URL so DOM/Tokens match the published story
-                        if (purl && purl.includes("facebook.com")) {
-                            try {
-                                await chrome.tabs.update(targetTab.id, { url: purl, active: false });
-                                await new Promise(r => setTimeout(r, 2500));
-                                await ensureTabLoaded(targetTab.id);
-                            } catch(e) {}
-                        }
-
                         try {
                             const knownFeedbackId = graphqlResult?.fbFeedbackId || null;
                             const seedingResults = await chrome.scripting.executeScript({
@@ -2299,36 +2290,42 @@ async function _executePostItem(post) {
                                 func: async (postId, knownFeedbackId, comments, fallbackActorId) => {
                                     let fb_dtsg = "";
                                     let lsd = "";
-                                    const html = document.documentElement.innerHTML;
 
-                                    const dtsgPatterns = [
-                                        /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
-                                        /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
-                                        /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
-                                        /"dtsg":\{"token":"([^"]+)"/,
-                                        /name="fb_dtsg"[^>]*value="([^"]+)"/,
-                                        /"token":"([^"]{20,})","async_get_token"/,
-                                    ];
-                                    for (const p of dtsgPatterns) {
-                                        const m = html.match(p);
-                                        if (m && m[1]) { fb_dtsg = m[1]; break; }
-                                    }
+                                    for (let attempt = 0; attempt < 6; attempt++) {
+                                        const html = document.documentElement.innerHTML;
 
-                                    if (!fb_dtsg && typeof require !== "undefined") {
-                                        try {
-                                            const mod = require("DTSGInitData") || require("DTSGInitialData");
-                                            if (mod && mod.token) fb_dtsg = mod.token;
-                                        } catch(e) {}
-                                    }
+                                        const dtsgPatterns = [
+                                            /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
+                                            /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
+                                            /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
+                                            /"dtsg":\{"token":"([^"]+)"/,
+                                            /name="fb_dtsg"[^>]*value="([^"]+)"/,
+                                            /"token":"([^"]{20,})","async_get_token"/,
+                                        ];
+                                        for (const p of dtsgPatterns) {
+                                            const m = html.match(p);
+                                            if (m && m[1]) { fb_dtsg = m[1]; break; }
+                                        }
 
-                                    const lsdPatterns = [
-                                        /\["LSD",\[\],\{"token":"([^"]+)"/,
-                                        /name="lsd"[^>]*value="([^"]+)"/,
-                                        /"lsd":"([^"]+)"/,
-                                    ];
-                                    for (const p of lsdPatterns) {
-                                        const m = html.match(p);
-                                        if (m && m[1]) { lsd = m[1]; break; }
+                                        if (!fb_dtsg && typeof require !== "undefined") {
+                                            try {
+                                                const mod = require("DTSGInitData") || require("DTSGInitialData");
+                                                if (mod && mod.token) fb_dtsg = mod.token;
+                                            } catch(e) {}
+                                        }
+
+                                        const lsdPatterns = [
+                                            /\["LSD",\[\],\{"token":"([^"]+)"/,
+                                            /name="lsd"[^>]*value="([^"]+)"/,
+                                            /"lsd":"([^"]+)"/,
+                                        ];
+                                        for (const p of lsdPatterns) {
+                                            const m = html.match(p);
+                                            if (m && m[1]) { lsd = m[1]; break; }
+                                        }
+
+                                        if (fb_dtsg) break;
+                                        await new Promise(r => setTimeout(r, 500));
                                     }
 
                                     const cUserMatch = document.cookie.match(/c_user=(\d+)/);
