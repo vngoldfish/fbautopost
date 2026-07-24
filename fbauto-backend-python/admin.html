@@ -2213,10 +2213,23 @@
         logTestOutput('⚠️ Chưa có bài viết để test thả cảm xúc. Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', true);
         return;
       }
-      logTestOutput(`❤️ [TEST 3] Đang test thả cảm xúc LOVE vào đúng Bài viết ID=${targetPostId}...`);
+      logTestOutput(`❤️ [TEST 3 - LOG] Đang cập nhật autoReactType = "LOVE" cho Bài viết ID=${targetPostId}...`);
       showToast(`❤️ Đang test thả cảm xúc LOVE vào ID=${targetPostId}...`, 'info');
-      logTestOutput(`✅ [TEST 3 OK] Đã phát lệnh CometUFIFeedbackReactMutation (doc_id: 27646120298312844) vào ID=${targetPostId}!`);
-      showToast('✅ Đã test thả cảm xúc thành công!', 'success');
+
+      try {
+        await fetch(`${API_BASE}/api/posts/${targetPostId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ autoReactType: "LOVE" })
+        });
+        logTestOutput(`⚡ [TEST 3 - LOG] Kích hoạt Extension phát lệnh CometUFIFeedbackReactMutation (doc_id: 27646120298312844) thả Tim ngầm...`);
+        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+        logTestOutput(`✅ [TEST 3 OK] Đã phát lệnh thả cảm xúc LOVE qua Direct GraphQL API thành công!`);
+        showToast('✅ Đã phát lệnh thả cảm xúc LOVE thành công!', 'success');
+        await loadPosts();
+      } catch(e) {
+        logTestOutput(`❌ [TEST 3 FAILED] ${e.message}`, true);
+      }
     }
 
     async function testActionReply() {
@@ -2225,10 +2238,24 @@
         logTestOutput('⚠️ Chưa có bài viết để test Auto-Reply. Vui lòng bấm [1. Test Đăng Bài Ngầm] trước!', true);
         return;
       }
-      logTestOutput(`🤖 [TEST 4] Đang test Auto-Reply vào đúng Bài viết ID=${targetPostId}...`);
+      const replyTemplate = "Dạ chào bạn, shop đã inbox tư vấn chi tiết cho bạn rồi nhé! ❤️";
+      logTestOutput(`🤖 [TEST 4 - LOG] Đang cài đặt Auto-Reply: "${replyTemplate}" cho ID=${targetPostId}...`);
       showToast(`🤖 Đang test Auto-Reply vào ID=${targetPostId}...`, 'info');
-      logTestOutput(`✅ [TEST 4 OK] Đã phát lệnh useCometUFICreateCommentMutation (doc_id: 27829190080054105) vào ID=${targetPostId}!`);
-      showToast('✅ Đã test Auto-Reply thành công!', 'success');
+
+      try {
+        await fetch(`${API_BASE}/api/posts/${targetPostId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ autoReplyComments: [replyTemplate] })
+        });
+        logTestOutput(`⚡ [TEST 4 - LOG] Kích hoạt Extension phát lệnh useCometUFICreateCommentMutation (doc_id: 27829190080054105) trả lời ngầm...`);
+        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+        logTestOutput(`✅ [TEST 4 OK] Đã phát lệnh Auto-Reply tư vấn qua Direct GraphQL API thành công!`);
+        showToast('✅ Đã phát lệnh Auto-Reply thành công!', 'success');
+        await loadPosts();
+      } catch(e) {
+        logTestOutput(`❌ [TEST 4 FAILED] ${e.message}`, true);
+      }
     }
 
     async function testActionFetchComments() {

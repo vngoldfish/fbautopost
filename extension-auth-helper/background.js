@@ -2592,7 +2592,12 @@ async function _executePostItem(post) {
 
                                         const res = await fetch("https://www.facebook.com/api/graphql/", {
                                             method: "POST",
-                                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                            headers: {
+                                                "Content-Type": "application/x-www-form-urlencoded",
+                                                "X-FB-Friendly-Name": "CometUFIFeedbackReactMutation",
+                                                "X-FB-LSD": lsd,
+                                                "X-ASBD-ID": "129477"
+                                            },
                                             body: params.toString(),
                                             credentials: "include"
                                         });
