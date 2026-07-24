@@ -1957,7 +1957,15 @@ async function _executePostItem(post) {
         // ===================================================================
         // TIER 1: Direct GraphQL API — LUÔN CHẠY (DOM đã tắt hoàn toàn)
         // ===================================================================
-        {
+        let graphqlResult = null;
+        if (post.fbPostId) {
+            console.log(`ℹ️ [Background] Post ${post.id} already has FB ID=${post.fbPostId}. Skipping creation and running Seeding/React...`);
+            graphqlResult = {
+                success: true,
+                fbPostId: post.fbPostId,
+                fbPostUrl: post.fbPostUrl || (actorId ? `https://www.facebook.com/permalink.php?story_fbid=${post.fbPostId}&id=${actorId}` : `https://www.facebook.com/permalink.php?story_fbid=${post.fbPostId}`)
+            };
+        } else {
             const tier1Mode = (hasMedia && !uploadedMediaId) 
                 ? "text-only (media upload thất bại)" 
                 : (uploadedMediaId ? `with media ID=${uploadedMediaId}` : "text-only");
@@ -2242,10 +2250,14 @@ async function _executePostItem(post) {
                     args: [payload.content, postType, effectiveMediaId, isVideo, fallbackActorId, payload.targetType || "profile", payload.targetId || "", payload.actorId || ""]
                 });
 
-                const graphqlResult = graphqlResults && graphqlResults[0] && graphqlResults[0].result;
+                graphqlResult = graphqlResults && graphqlResults[0] && graphqlResults[0].result;
                 console.log(`[Background] HAR GraphQL result:`, graphqlResult);
+            } catch (graphqlErr) {
+                console.warn(`❌ [Background] Direct GraphQL API ERROR:`, graphqlErr.message);
+            }
+        }
 
-                if (graphqlResult && graphqlResult.success) {
+        if (graphqlResult && graphqlResult.success) {
                     const pid = graphqlResult.fbPostId || uploadedMediaId;
                     let purl = graphqlResult.fbPostUrl;
                     if (purl && postType !== "reel" && purl.includes("/reel/")) {
@@ -2613,20 +2625,6 @@ async function _executePostItem(post) {
                 console.warn(`❌ [Background] Direct GraphQL API FAILED:`, graphqlErrMsg);
                 await updateStep(`❌ 4/4: ${graphqlErrMsg}`);
                 return { success: false, error: graphqlErrMsg, method: "pure_graphql" };
-
-            } catch (graphqlErr) {
-                console.warn(`❌ [Background] Direct GraphQL API ERROR:`, graphqlErr.message);
-                await updateStep(`❌ 4/4: ${graphqlErr.message}`);
-                return { success: false, error: graphqlErr.message, method: "pure_graphql" };
-            }
-        }
-
-        const errMsg = hasMedia && !uploadedMediaId 
-            ? "Upload media thất bại và GraphQL API không thành công."
-            : "GraphQL API thất bại. Vui lòng kiểm tra kết nối Facebook và thử lại.";
-        await updateStep(`❌ 4/4: ${errMsg}`);
-        return { success: false, error: errMsg, method: "pure_graphql" };
-
     } catch (e) {
         return { success: false, error: e.message };
     }
