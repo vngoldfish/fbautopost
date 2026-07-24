@@ -2563,54 +2563,81 @@ async function _executePostItem(post) {
                                     };
                                     const reactionId = reactionMap[reactType] || "1635855486666999";
 
-                                    const targetFeedbackId = knownFeedbackId || (postId ? btoa("feedback:" + postId) : null);
-                                    if (!targetFeedbackId) return { success: false, error: "Missing feedbackId" };
+                                     const reactCandidates = [];
+                                     if (knownFeedbackId) {
+                                         reactCandidates.push(knownFeedbackId.startsWith("ZmVl") ? knownFeedbackId : btoa("feedback:" + knownFeedbackId));
+                                     }
+                                     if (postId && /^\d+$/.test(String(postId))) {
+                                         reactCandidates.push(btoa("feedback:" + postId));
+                                         reactCandidates.push(btoa("Feedback:" + postId));
+                                     }
 
-                                    try {
-                                        const vars = {
-                                            input: {
-                                                attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
-                                                feedback_id: targetFeedbackId,
-                                                feedback_reaction_id: reactionId,
-                                                feedback_source: "OBJECT",
-                                                is_tracking_encrypted: true,
-                                                session_id: String(Date.now())
-                                            }
-                                        };
-                                        const params = new URLSearchParams();
-                                        params.append("av", actorId);
-                                        params.append("__user", actorId);
-                                        params.append("__a", "1");
-                                        params.append("fb_dtsg", fb_dtsg);
-                                        params.append("jazoest", jazoest);
-                                        params.append("lsd", lsd);
-                                        params.append("fb_api_caller_class", "RelayModern");
-                                        params.append("fb_api_req_friendly_name", "CometUFIFeedbackReactMutation");
-                                        params.append("server_timestamps", "true");
-                                        params.append("variables", JSON.stringify(vars));
-                                        params.append("doc_id", "27646120298312844");
+                                     const numMatches = html.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
+                                     for (const m of numMatches) {
+                                         if (m[1] && m[1].length >= 8) {
+                                             const b1 = btoa("feedback:" + m[1]);
+                                             if (!reactCandidates.includes(b1)) reactCandidates.push(b1);
+                                         }
+                                     }
 
-                                        const res = await fetch("https://www.facebook.com/api/graphql/", {
-                                            method: "POST",
-                                            headers: {
-                                                "Content-Type": "application/x-www-form-urlencoded",
-                                                "X-FB-Friendly-Name": "CometUFIFeedbackReactMutation",
-                                                "X-FB-LSD": lsd,
-                                                "X-ASBD-ID": "129477"
-                                            },
-                                            body: params.toString(),
-                                            credentials: "include"
-                                        });
-                                        const text = await res.text();
-                                        let json = null;
-                                        try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
-                                        if (json && json.data && !json.errors) {
-                                            return { success: true, reactType };
-                                        }
-                                        return { success: false, error: json?.errors?.[0]?.message || "React failed" };
-                                    } catch(e) {
-                                        return { success: false, error: e.message };
-                                    }
+                                     if (reactCandidates.length === 0) return { success: false, error: "Missing feedbackId candidate" };
+
+                                     let lastReactErr = "";
+                                     for (const targetFeedbackId of reactCandidates) {
+                                         try {
+                                             const vars = {
+                                                 input: {
+                                                     attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
+                                                     feedback_id: targetFeedbackId,
+                                                     feedback_reaction_id: reactionId,
+                                                     feedback_source: "OBJECT",
+                                                     is_tracking_encrypted: true,
+                                                     session_id: String(Date.now()),
+                                                     actor_id: actorId,
+                                                     client_mutation_id: String(Math.floor(Math.random() * 10) + 1)
+                                                 },
+                                                 scale: 2,
+                                                 canUseNicknameOnComet: false,
+                                                 useDefaultActor: false,
+                                                 __relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider: false
+                                             };
+                                             const params = new URLSearchParams();
+                                             params.append("av", actorId);
+                                             params.append("__user", actorId);
+                                             params.append("__a", "1");
+                                             params.append("fb_dtsg", fb_dtsg);
+                                             params.append("jazoest", jazoest);
+                                             params.append("lsd", lsd);
+                                             params.append("fb_api_caller_class", "RelayModern");
+                                             params.append("fb_api_req_friendly_name", "CometUFIFeedbackReactMutation");
+                                             params.append("server_timestamps", "true");
+                                             params.append("variables", JSON.stringify(vars));
+                                             params.append("doc_id", "27646120298312844");
+
+                                             const res = await fetch("https://www.facebook.com/api/graphql/", {
+                                                 method: "POST",
+                                                 headers: {
+                                                     "Content-Type": "application/x-www-form-urlencoded",
+                                                     "X-FB-Friendly-Name": "CometUFIFeedbackReactMutation",
+                                                     "X-FB-LSD": lsd,
+                                                     "X-ASBD-ID": "129477"
+                                                 },
+                                                 body: params.toString(),
+                                                 credentials: "include"
+                                             });
+                                             const text = await res.text();
+                                             let json = null;
+                                             try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
+                                             if (json && json.data && !json.errors) {
+                                                 return { success: true, reactType, feedbackId: targetFeedbackId };
+                                             } else if (json && json.errors && json.errors.length) {
+                                                 lastReactErr = json.errors[0].message;
+                                             }
+                                         } catch(e) {
+                                             lastReactErr = e.message;
+                                         }
+                                     }
+                                     return { success: false, error: lastReactErr || "React failed" };
                                 },
                                 args: [pid, knownFeedbackId, payload.autoReactType, fallbackActorId]
                             });
