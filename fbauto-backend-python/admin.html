@@ -162,8 +162,27 @@
     .tab-content.active {
       display: block !important;
     }
-    .tab-content.active.posts-grid {
+    .tab-content.active.posts-grid,
+    .tab-content.active.accounts-grid {
       display: grid !important;
+    }
+
+    /* Base Modal Overlay Fallback */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active {
+      display: flex !important;
     }
 
     .posts-grid {
@@ -5642,8 +5661,8 @@
   </div>
 
   <!-- Add Seeding Comments Modal -->
-  <div class="modal-overlay" id="addSeedingModal">
-    <div class="modal-content" style="max-width:580px;">
+  <div class="modal-overlay" id="addSeedingModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#0f172a; border:1px solid #10b981; border-radius:20px; width:90%; max-width:580px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
       <div class="modal-header" style="background:rgba(16,185,129,0.15); border-bottom:1px solid rgba(16,185,129,0.3);">
         <h3 id="addSeedingModalTitle" style="color:#34d399; font-size:18px;">💬 Tạo Seeding Mới Cho Bài Viết</h3>
         <button class="btn btn-xs btn-secondary" onclick="closeAddSeedingModal()">✕ Đóng</button>
