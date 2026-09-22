@@ -1,7 +1,50 @@
 
 
-let _syncPort = 18923;
+let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
+
+// ===================================================================
+// 📡 AUTOMATIC GRAPHQL DOC_ID SNIFFER & DYNAMIC AUTO-CAPTURE
+// ===================================================================
+const _capturedDocIds = {
+    ComposerStoryCreateMutation: "28329575890036120",
+    useCometUFICreateCommentMutation: "27829190080054105",
+    CometSinglePostDialogContentQuery: "25494545246909173",
+    CometUFIFeedbackReactMutation: "27646120298312844"
+};
+
+try {
+    chrome.storage.local.get(["capturedDocIds"], (res) => {
+        if (res && res.capturedDocIds) {
+            Object.assign(_capturedDocIds, res.capturedDocIds);
+            console.log("📌 [Auto-Sniffer] Loaded cached live doc_ids:", _capturedDocIds);
+        }
+    });
+} catch(e) {}
+
+if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
+    chrome.webRequest.onBeforeRequest.addListener(
+        (details) => {
+            if (details.method === "POST" && details.requestBody && details.requestBody.formData) {
+                try {
+                    const formData = details.requestBody.formData;
+                    const fname = formData.fb_api_req_friendly_name ? formData.fb_api_req_friendly_name[0] : null;
+                    const docId = formData.doc_id ? formData.doc_id[0] : null;
+                    if (fname && docId) {
+                        if (_capturedDocIds[fname] !== docId) {
+                            _capturedDocIds[fname] = docId;
+                            console.log(`✨ [Auto-Sniffer] Captured LIVE Facebook doc_id for '${fname}': ${docId}`);
+                            chrome.storage.local.set({ capturedDocIds: _capturedDocIds });
+                        }
+                    }
+                } catch(e) {}
+            }
+        },
+        { urls: ["https://*.facebook.com/api/graphql/*", "https://*.facebook.com/graphql/*"] },
+        ["requestBody"]
+    );
+}
+
 
 function _updateSyncPort(port) {
     if (port && typeof port === "number" && port >= 1 && port <= 65535) {
@@ -97,6 +140,7 @@ chrome.alarms.create("autoPostCheck", { periodInMinutes: 0.05 });
 chrome.alarms.create("autoReplyCheck", { periodInMinutes: 1.0 });
 setInterval(() => {
     _processScheduledPosts().catch(() => {});
+    _processAutoReplyMonitor().catch(() => {});
 }, 15000);
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -1842,6 +1886,8 @@ async function _executePostItem(post) {
             seedingComments: post.seedingComments || [],
             autoReplyComments: post.autoReplyComments || [],
             autoReactType: post.autoReactType || "NONE",
+            onlyAction: post.onlyAction || null,
+            targetCommentId: post.targetCommentId || null,
             timestamp: Date.now()
         };
 
@@ -1882,7 +1928,7 @@ async function _executePostItem(post) {
         }
 
         const tabs = await chrome.tabs.query({});
-        targetTab = tabs.find(t => t.url && t.url.includes("facebook.com"));
+        targetTab = tabs.find(t => t.active && t.url && t.url.includes("facebook.com")) || tabs.find(t => t.url && t.url.includes("facebook.com"));
         if (!targetTab) {
             targetTab = await chrome.tabs.create({ url: targetFbUrl, active: false });
         }
@@ -1958,12 +2004,12 @@ async function _executePostItem(post) {
         // TIER 1: Direct GraphQL API — LUÔN CHẠY (DOM đã tắt hoàn toàn)
         // ===================================================================
         let graphqlResult = null;
-        if (post.fbPostId) {
-            console.log(`ℹ️ [Background] Post ${post.id} already has FB ID=${post.fbPostId}. Skipping creation and running Seeding/React...`);
+        if (post.fbPostId || (payload.onlyAction && payload.onlyAction !== "post")) {
+            console.log(`ℹ️ [Background] Post ${post.id} running targeted action '${payload.onlyAction || 'post_exists'}'. Skipping main post creation...`);
             graphqlResult = {
                 success: true,
-                fbPostId: post.fbPostId,
-                fbPostUrl: post.fbPostUrl || (actorId ? `https://www.facebook.com/permalink.php?story_fbid=${post.fbPostId}&id=${actorId}` : `https://www.facebook.com/permalink.php?story_fbid=${post.fbPostId}`)
+                fbPostId: post.fbPostId || null,
+                fbPostUrl: post.fbPostUrl || null
             };
         } else {
             const tier1Mode = (hasMedia && !uploadedMediaId) 
@@ -1976,7 +2022,6 @@ async function _executePostItem(post) {
             try {
                 const graphqlResults = await chrome.scripting.executeScript({
                     target: { tabId: targetTab.id },
-                    world: "MAIN",
                     func: async (postContent, postType, mediaId, isVideo, fallbackActorId, targetType, targetId, customActorId) => {
                         try {
                             let fb_dtsg = "";
@@ -1987,57 +2032,167 @@ async function _executePostItem(post) {
                             let spinB = "";
                             let spinT = "";
 
-                            const html = document.documentElement.innerHTML;
+                            for (let attempt = 0; attempt < 10; attempt++) {
+                                const html = document.documentElement.innerHTML || "";
 
-                            const dtsgPatterns = [
-                                /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
-                                /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
-                                /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
-                                /"dtsg":\{"token":"([^"]+)"/,
-                                /name="fb_dtsg"[^>]*value="([^"]+)"/,
-                                /"token":"([^"]{20,})","async_get_token"/,
-                            ];
-                            for (const p of dtsgPatterns) {
-                                const m = html.match(p);
-                                if (m && m[1]) { fb_dtsg = m[1]; break; }
-                            }
-
-                            if (!fb_dtsg && typeof require !== "undefined") {
                                 try {
-                                    const mod = require("DTSGInitData") || require("DTSGInitialData");
-                                    if (mod && mod.token) fb_dtsg = mod.token;
-                                } catch(e) {}
+                                    if (window.DTSGInitialData && window.DTSGInitialData.token) fb_dtsg = window.DTSGInitialData.token;
+                                    else if (window.DTSGInitData && window.DTSGInitData.token) fb_dtsg = window.DTSGInitData.token;
+                                    else if (window.__DTSGInitialData && window.__DTSGInitialData.token) fb_dtsg = window.__DTSGInitialData.token;
+                                } catch (e) {}
+
+                                if (!fb_dtsg && typeof require !== "undefined") {
+                                    try {
+                                        const mod = require("DTSGInitData") || require("DTSGInitialData");
+                                        if (mod && mod.token) fb_dtsg = mod.token;
+                                        else if (mod && typeof mod.getAsyncParams === "function") {
+                                            const params = mod.getAsyncParams();
+                                            if (params && params.fb_dtsg) fb_dtsg = params.fb_dtsg;
+                                        }
+                                    } catch (e) {}
+                                }
+
+                                if (!fb_dtsg) {
+                                    try {
+                                        const inputEl = document.querySelector('input[name="fb_dtsg"]') || document.querySelector('[name="fb_dtsg"]');
+                                        if (inputEl && inputEl.value) fb_dtsg = inputEl.value;
+                                    } catch (e) {}
+                                }
+
+                                if (!fb_dtsg) {
+                                    const dtsgPatterns = [
+                                        /\["DTSGInitialData",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                        /\["DTSGInitData",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                        /\["DTSGInitialData",\s*\{[^}]*\}\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                        /\["DTSGInitData",\s*\{[^}]*\}\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                        /"DTSGInitialData"[^}]*"token"\s*:\s*"([^"]+)"/,
+                                        /"DTSGInitData"[^}]*"token"\s*:\s*"([^"]+)"/,
+                                        /"dtsg"\s*:\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                        /"dtsg_token"\s*:\s*"([^"]+)"/,
+                                        /"dtsg"\s*:\s*"([^"]+)"/,
+                                        /name="fb_dtsg"[^>]*value="([^"]+)"/,
+                                        /"token"\s*:\s*"([^"]{20,})"\s*,\s*"async_get_token"/,
+                                        /DTSGInitialData.*?token["']\s*:\s*["']([^"']+)["']/,
+                                        /DTSGInitData.*?token["']\s*:\s*["']([^"']+)["']/
+                                    ];
+                                    for (const p of dtsgPatterns) {
+                                        const m = html.match(p);
+                                        if (m && m[1]) { fb_dtsg = m[1]; break; }
+                                    }
+                                }
+
+                                if (!lsd) {
+                                    try {
+                                        if (window.LSD && window.LSD.token) lsd = window.LSD.token;
+                                    } catch(e) {}
+                                    if (!lsd && typeof require !== "undefined") {
+                                        try {
+                                            const mod = require("LSD");
+                                            if (mod && mod.token) lsd = mod.token;
+                                        } catch(e) {}
+                                    }
+                                    if (!lsd) {
+                                        const lsdPatterns = [
+                                            /\["LSD",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                            /name="lsd"[^>]*value="([^"]+)"/,
+                                            /"lsd"\s*:\s*"([^"]+)"/
+                                        ];
+                                        for (const p of lsdPatterns) {
+                                            const m = html.match(p);
+                                            if (m && m[1]) { lsd = m[1]; break; }
+                                        }
+                                    }
+                                }
+
+                                if (fb_dtsg) break;
+                                await new Promise(r => setTimeout(r, 500));
                             }
 
-                            const lsdPatterns = [
-                                /\["LSD",\[\],\{"token":"([^"]+)"/,
-                                /name="lsd"[^>]*value="([^"]+)"/,
-                                /"lsd":"([^"]+)"/,
-                            ];
-                            for (const p of lsdPatterns) {
-                                const m = html.match(p);
-                                if (m && m[1]) { lsd = m[1]; break; }
-                            }
-
-                            const jazoM = html.match(/jazoest=(\d+)/);
+                            const finalHtml = document.documentElement.innerHTML || "";
+                            const jazoM = finalHtml.match(/jazoest=(\d+)/);
                             if (jazoM) jazoest = jazoM[1];
 
-                            const spinM = html.match(/"__spin_t":(\d+),"__spin_r":(\d+),"__spin_b":"([^"]+)","__hsi":"([^"]+)"/);
+                            const spinM = finalHtml.match(/"__spin_t":(\d+),"__spin_r":(\d+),"__spin_b":"([^"]+)","__hsi":"([^"]+)"/);
                             if (spinM) {
                                 spinT = spinM[1]; spinR = spinM[2]; spinB = spinM[3]; hsi = spinM[4];
                             }
 
-                            let actorId = customActorId || fallbackActorId || "";
-                            if (!actorId) {
-                                const cUserMatch = document.cookie.match(/c_user=(\d+)/) ||
-                                                  html.match(/"USER_ID":"(\d+)"/) ||
-                                                  html.match(/"ACCOUNT_ID":"(\d+)"/) ||
-                                                  html.match(/\["CurrentUserInitialData",\[\],\{"ACCOUNT_ID":"(\d+)"/);
-                                if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                            let activeTabActorId = "";
+                            try {
+                                if (typeof require !== "undefined") {
+                                    const ca = require("CometCurrentActor");
+                                    if (ca) activeTabActorId = ca.actorId || ca.id || (typeof ca.get === "function" ? ca.get() : null) || "";
+                                }
+                            } catch(e) {}
+                            if (!activeTabActorId) {
+                                try {
+                                    if (window.CurrentUserInitialData) activeTabActorId = window.CurrentUserInitialData.ACCOUNT_ID || window.CurrentUserInitialData.USER_ID || "";
+                                } catch(e) {}
+                            }
+                            if (!activeTabActorId) {
+                                const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                if (cUserMatch && cUserMatch[1]) activeTabActorId = cUserMatch[1];
+                            }
+                            let actorId = activeTabActorId || ((customActorId && customActorId !== "0" && customActorId !== "null") ? customActorId : "") || fallbackActorId || "";
+
+                            // 1. Try CometCurrentActor (Facebook Comet active profile/page module)
+                            if (!actorId && typeof require !== "undefined") {
+                                try {
+                                    const ca = require("CometCurrentActor");
+                                    if (ca) {
+                                        actorId = ca.actorId || ca.id || (typeof ca.get === "function" ? ca.get() : null) || "";
+                                    }
+                                } catch(e) {}
                             }
 
+                            // 2. Try CurrentUserInitialData (Window or Require)
+                            if (!actorId) {
+                                try {
+                                    if (window.CurrentUserInitialData) {
+                                        actorId = window.CurrentUserInitialData.ACCOUNT_ID || 
+                                                  window.CurrentUserInitialData.USER_ID || 
+                                                  window.CurrentUserInitialData.actor_id || "";
+                                    }
+                                } catch(e) {}
+                            }
+                            if (!actorId && typeof require !== "undefined") {
+                                try {
+                                    const mod = require("CurrentUserInitialData");
+                                    if (mod) actorId = mod.ACCOUNT_ID || mod.USER_ID || mod.actor_id || "";
+                                } catch(e) {}
+                            }
+
+                            // 3. Try Env / __user globals
+                            if (!actorId) {
+                                try {
+                                    if (window.Env && (window.Env.user || window.Env.ACCOUNT_ID)) {
+                                        actorId = String(window.Env.user || window.Env.ACCOUNT_ID);
+                                    } else if (window.__user) {
+                                        actorId = String(window.__user);
+                                    }
+                                } catch(e) {}
+                            }
+
+                            // 4. Try HTML Regex Patterns
+                            if (!actorId) {
+                                const m = finalHtml.match(/"actorID"\s*:\s*"(\d+)"/) ||
+                                          finalHtml.match(/"actor_id"\s*:\s*"(\d+)"/) ||
+                                          finalHtml.match(/"USER_ID"\s*:\s*"(\d+)"/) ||
+                                          finalHtml.match(/"ACCOUNT_ID"\s*:\s*"(\d+)"/) ||
+                                          finalHtml.match(/\["CurrentUserInitialData"\s*,\s*\[\]\s*,\s*\{\s*"ACCOUNT_ID"\s*:\s*"(\d+)"/) ||
+                                          finalHtml.match(/\["CurrentUserInitialData"\s*,\s*\[\]\s*,\s*\{\s*"USER_ID"\s*:\s*"(\d+)"/);
+                                if (m && m[1]) actorId = m[1];
+                            }
+
+                            // 5. Fallback to Cookie c_user or passed fallbackActorId
+                            if (!actorId) {
+                                const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                            }
+                            if (!actorId) actorId = fallbackActorId || "";
+
                             if (!fb_dtsg || !actorId) {
-                                return { success: false, error: "Missing dtsg or actorId", tier: "graphql" };
+                                return { success: false, error: "Missing dtsg or actorId (dtsg:" + !!fb_dtsg + ", actorId:" + !!actorId + ")", tier: "graphql" };
                             }
 
                             // Force NEWSFEED default surface for profile posts so it appears on main Newsfeed (Bảng tin)
@@ -2055,23 +2210,89 @@ async function _executePostItem(post) {
                                 renderLoc = "page_timeline";
                             }
 
-                            const fallbackDocIds = ["27508435028820023", "27248647231502311", "6362241860538186", "6815340158580277", "6143924765664426"];
+                            // Dynamically scan for active ComposerStoryCreateMutation doc_id from Facebook page scripts
+                            let liveDocIds = [];
+                            try {
+                                if (typeof _capturedDocIds !== "undefined" && _capturedDocIds.ComposerStoryCreateMutation) {
+                                    liveDocIds.push(String(_capturedDocIds.ComposerStoryCreateMutation));
+                                }
+                            } catch(e) {}
+                            try {
+                                if (typeof require !== "undefined") {
+                                    const mod = require("ComposerStoryCreateMutation.graphql") || require("ComposerStoryCreateMutation");
+                                    if (mod) {
+                                        const id = mod.params?.id || mod.id || mod.default?.params?.id;
+                                        if (id && !liveDocIds.includes(String(id))) liveDocIds.push(String(id));
+                                    }
+                                }
+                            } catch(e) {}
 
+                            try {
+                                const scripts = Array.from(document.scripts || []);
+                                for (const s of scripts) {
+                                    const content = s.textContent || s.innerHTML || "";
+                                    if (content.includes("ComposerStoryCreateMutation")) {
+                                        const matches = content.matchAll(/"doc_id"\s*:\s*"(\d{14,})"/g);
+                                        for (const m of matches) {
+                                            if (m && m[1] && !liveDocIds.includes(m[1])) liveDocIds.push(m[1]);
+                                        }
+                                        const matches2 = content.matchAll(/ComposerStoryCreateMutation.*?["'](\d{14,})["']/g);
+                                        for (const m of matches2) {
+                                            if (m && m[1] && !liveDocIds.includes(m[1])) liveDocIds.push(m[1]);
+                                        }
+                                    }
+                                }
+                            } catch(e) {}
+
+                            const defaultFallbackDocIds = ["28329575890036120", "27508435028820023", "27248647231502311", "6362241860538186", "6815340158580277", "6143924765664426"];
+                            const fallbackDocIds = [...liveDocIds];
+                            for (const id of defaultFallbackDocIds) {
+                                if (!fallbackDocIds.includes(id)) fallbackDocIds.push(id);
+                            }
+
+                            const composerSessionId = actorId + "_" + Date.now();
                             const variables = {
                                 input: {
                                     composer_entry_point: "inline_composer",
                                     composer_source_surface: surface,
                                     composer_type: targetType === "group" ? "group" : "feed",
-                                    idempotence_token: actorId + "_FEED_" + Date.now(),
+                                    idempotence_token: composerSessionId + "_FEED",
                                     source: "WWW",
-                                    message: { text: postContent || "", ranges: [] },
-                                    audience: {
-                                        privacy: {
-                                            allow: [],
-                                            base_state: "EVERYONE",
-                                            deny: [],
-                                            tag_expansion_state: "UNSPECIFIED"
+                                    ai_generated_self_disclosure_metadata: {
+                                        was_self_disclosed_as_ai_generated: false
+                                    },
+                                    ...(targetType === "profile" ? {
+                                        audience: {
+                                            privacy: {
+                                                allow: [],
+                                                base_state: "EVERYONE",
+                                                deny: [],
+                                                tag_expansion_state: "UNSPECIFIED"
+                                            }
                                         }
+                                    } : {}),
+                                    message: { text: postContent || "", ranges: [] },
+                                    inline_activities: [],
+                                    text_format_preset_id: "0",
+                                    publishing_flow: {
+                                        supported_flows: ["ASYNC_SILENT", "ASYNC_NOTIF", "FALLBACK"]
+                                    },
+                                    reels_remix: {
+                                        is_original_audio_reusable: true,
+                                        remix_status: "ENABLED"
+                                    },
+                                    post_publish_story_data: {
+                                        reshare_post_as_sticker: "DISABLED"
+                                    },
+                                    logging: {
+                                        composer_session_id: composerSessionId
+                                    },
+                                    navigation_data: {
+                                        attribution_id_v2: "CometHomeRoot.react,comet.home,via_cold_start," + Date.now() + ",166542,4748854339,,"
+                                    },
+                                    tracking: [null],
+                                    event_share_metadata: {
+                                        surface: surface
                                     },
                                     ...(mediaId ? {
                                         attachments: [
@@ -2091,23 +2312,33 @@ async function _executePostItem(post) {
                                 },
                                 feedLocation: feedLoc,
                                 feedbackSource: 1,
-                                scale: 2,
+                                focusCommentID: null,
+                                gridMediaWidth: null,
+                                groupID: targetType === "group" ? String(targetId) : null,
+                                scale: 1,
                                 privacySelectorRenderLocation: "COMET_STREAM",
+                                checkPhotosToReelsUpsellEligibility: true,
+                                referringStoryRenderLocation: null,
                                 renderLocation: renderLoc,
                                 useDefaultActor: false,
+                                inviteShortLinkKey: null,
                                 isFeed: true,
                                 isFundraiser: false,
                                 isFunFactPost: false,
                                 isGroup: targetType === "group",
                                 isEvent: false,
-                                isTimeline: false,
+                                isTimeline: targetType === "profile",
                                 isSocialLearning: false,
                                 isPageNewsFeed: targetType === "page",
-                                isProfileReviews: false
+                                isProfileReviews: false,
+                                isWorkSharedDraft: false
                             };
 
                             if (targetType === "group" && targetId) {
                                 variables.input.group_id = String(targetId);
+                                delete variables.input.audience;
+                            } else if (targetType === "page") {
+                                delete variables.input.audience;
                             }
 
                             console.log(`📡 [GraphQL Post] Actor=${actorId}, DTSG=${fb_dtsg.substring(0,10)}..., Target=${targetType}, Surface=${surface}, FeedLoc=${feedLoc}`);
@@ -2195,7 +2426,7 @@ async function _executePostItem(post) {
                                     }
 
                                     let pfbidM = clean ? clean.match(/"(pfbid[a-zA-Z0-9]+)"/) : null;
-                                    const effectiveId = pfbidM ? pfbidM[1] : (pid || uploadedMediaId || mediaId);
+                                    const effectiveId = pfbidM ? pfbidM[1] : (pid || mediaId);
 
                                     let purl = realFbUrl;
                                     if (purl && postType === "post" && purl.includes("/reel/")) {
@@ -2211,7 +2442,7 @@ async function _executePostItem(post) {
                                             purl = `https://www.facebook.com/watch/?v=${effectiveId}`;
                                         } else if (pid) {
                                             purl = actorId ? `https://www.facebook.com/permalink.php?story_fbid=${pid}&id=${actorId}` : `https://www.facebook.com/permalink.php?story_fbid=${pid}`;
-                                        } else if (uploadedMediaId) {
+                                        } else if (mediaId) {
                                             purl = `https://www.facebook.com/photo/?fbid=${effectiveId}`;
                                         } else {
                                             purl = actorId ? `https://www.facebook.com/permalink.php?story_fbid=${effectiveId}&id=${actorId}` : `https://www.facebook.com/permalink.php?story_fbid=${effectiveId}`;
@@ -2227,20 +2458,82 @@ async function _executePostItem(post) {
                                         }
                                     }
 
-                                    if (effectiveId || realFbUrl || (!clean.includes('"errors"') && (clean.includes('"story"') || clean.includes('"id"')))) {
-                                        return {
-                                            success: true,
-                                            tier: "graphql",
-                                            fbPostId: effectiveId ? String(effectiveId) : null,
-                                            fbPostUrl: purl || realFbUrl,
-                                            fbFeedbackId: extractedFeedbackId,
-                                            response: "Story created via HAR doc_id " + targetDocId
-                                        };
-                                    }
-                                } else {
-                                    lastErr = "HTTP " + resp.status;
-                                }
-                            }
+                                    // Robust Error & Success parsing for Facebook GraphQL responses
+                                     let hasGqlError = false;
+                                     let gqlErrorMessage = "";
+                                     
+                                     if (clean) {
+                                         const rawPreview = clean.slice(0, 250).replace(/[\r\n\t]+/g, ' ');
+                                         const lines = clean.split("\n");
+                                         for (const line of lines) {
+                                             const trimmed = line.trim();
+                                             if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                                                 try {
+                                                     const p = JSON.parse(trimmed);
+                                                     if (p.errors && Array.isArray(p.errors) && p.errors.length > 0) {
+                                                         const errObj = p.errors[0];
+                                                         const msg = errObj.message || errObj.summary || errObj.description || JSON.stringify(errObj);
+                                                         if (!msg.toLowerCase().includes("warning")) {
+                                                             hasGqlError = true;
+                                                             gqlErrorMessage = `[FB GQL Err ${errObj.code || ''}] ${msg}`;
+                                                         }
+                                                     } else if (p.error) {
+                                                         const errObj = p.error;
+                                                         const msg = errObj.message || errObj.error_user_msg || errObj.error_user_title || JSON.stringify(errObj);
+                                                         hasGqlError = true;
+                                                         gqlErrorMessage = `[FB Err ${errObj.code || ''}] ${msg}`;
+                                                     }
+                                                 } catch(e) {}
+                                             }
+                                         }
+                                         if (!hasGqlError && (clean.includes('"errors"') || clean.includes('"error"'))) {
+                                             const errM = clean.match(/"errors"\s*:\s*\[\s*\{\s*"message"\s*:\s*"([^"]+)"/) || 
+                                                          clean.match(/"error"\s*:\s*\{\s*"message"\s*:\s*"([^"]+)"/);
+                                             if (errM && errM[1] && !errM[1].toLowerCase().includes("warning")) {
+                                                 hasGqlError = true;
+                                                 gqlErrorMessage = `[FB Msg] ${errM[1]}`;
+                                             }
+                                         }
+                                         if (!hasGqlError && !gqlErrorMessage) {
+                                             gqlErrorMessage = `[FB Raw] ${rawPreview}`;
+                                         }
+                                     }
+
+                                     const isJsonResponse = clean && (clean.trim().startsWith("{") || clean.trim().startsWith("[") || clean.includes('"data"') || clean.includes('"composer_story_create"'));
+                                     const postCreatedId = pfbidM ? pfbidM[1] : pid;
+                                     const effectivePostId = postCreatedId || (realFbUrl ? null : mediaId);
+
+                                     // Check if Facebook returned valid story creation payload or post IDs
+                                     const hasStoryData = clean && (
+                                         clean.includes('"composer_story_create"') || 
+                                         clean.includes('"story_create"') || 
+                                         clean.includes('"legacy_story_id"') || 
+                                         clean.includes('"story_fbid"') || 
+                                         clean.includes('"pfbid') ||
+                                         !!postCreatedId || 
+                                         !!realFbUrl
+                                     );
+
+                                     // If Facebook returned story creation data OR HTTP 200 with data and no fatal blocking error, return SUCCESS immediately
+                                     const isSuccess = resp.ok && (hasStoryData || (isJsonResponse && !hasGqlError));
+
+                                     if (isSuccess) {
+                                         console.log(`✅ [GraphQL Post Success] Post created via doc_id=${targetDocId}, ID=${effectivePostId}, URL=${purl || realFbUrl}`);
+                                         return {
+                                             success: true,
+                                             tier: "graphql",
+                                             fbPostId: effectivePostId ? String(effectivePostId) : null,
+                                             fbPostUrl: purl || realFbUrl,
+                                             fbFeedbackId: extractedFeedbackId,
+                                             response: "Story created via doc_id " + targetDocId
+                                         };
+                                     } else {
+                                         lastErr = gqlErrorMessage || "Facebook returned an invalid or error response (not a post creation response)";
+                                     }
+                                 } else {
+                                     lastErr = `HTTP ${resp.status}: Facebook tab blocked or unreachable`;
+                                 }
+                                 }
 
                             return { success: false, error: lastErr || "GraphQL failed", tier: "graphql" };
                         } catch (e) {
@@ -2278,58 +2571,173 @@ async function _executePostItem(post) {
                     }
                     console.log(`✅ [Background] TIER 1 HAR SUCCESS — Post ${post.id} created via GraphQL API (FB ID: ${pid})`);
                     
+                    // Navigate tab to the post URL if seeding or reactions are configured
+                    const hasSeeding = payload.seedingComments && Array.isArray(payload.seedingComments) && payload.seedingComments.length > 0;
+                    const hasReact = payload.autoReactType && payload.autoReactType !== "NONE";
+                    if ((hasSeeding || hasReact) && purl) {
+                        try {
+                            const currentTab = await chrome.tabs.get(targetTab.id);
+                            const currentUrl = currentTab.url || "";
+                            const isAlreadyOnPostPage = pid && currentUrl.includes(pid);
+                            if (!isAlreadyOnPostPage && currentUrl !== purl) {
+                                await updateStep(`🔄 Đang chuyển hướng tab Facebook sang link bài viết...`);
+                                await chrome.tabs.update(targetTab.id, { url: purl });
+                                await ensureTabLoaded(targetTab.id);
+                                await new Promise(r => setTimeout(r, 2000));
+                            }
+                        } catch (navErr) {
+                            console.warn("⚠️ [Background] Navigating to post URL failed:", navErr.message);
+                        }
+                    }
+
+                    const onlyAction = payload.onlyAction || null;
+
                     // Exec Auto-Seeding Comments if configured
-                    if (payload.seedingComments && Array.isArray(payload.seedingComments) && payload.seedingComments.length > 0) {
+                    if ((!onlyAction || onlyAction === "seeding") && payload.seedingComments && Array.isArray(payload.seedingComments) && payload.seedingComments.length > 0) {
                         await updateStep(`💬 Đang gửi ${payload.seedingComments.length} bình luận seeding trực tiếp qua Direct GraphQL API...`);
                         
                         try {
                             const knownFeedbackId = graphqlResult?.fbFeedbackId || null;
                             const seedingResults = await chrome.scripting.executeScript({
                                 target: { tabId: targetTab.id },
-                                world: "MAIN",
                                 func: async (postId, knownFeedbackId, comments, fallbackActorId) => {
                                     let fb_dtsg = "";
                                     let lsd = "";
 
-                                    for (let attempt = 0; attempt < 6; attempt++) {
-                                        const html = document.documentElement.innerHTML;
+                                    for (let attempt = 0; attempt < 10; attempt++) {
+                                        const html = document.documentElement.innerHTML || "";
 
-                                        const dtsgPatterns = [
-                                            /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
-                                            /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
-                                            /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
-                                            /"dtsg":\{"token":"([^"]+)"/,
-                                            /name="fb_dtsg"[^>]*value="([^"]+)"/,
-                                            /"token":"([^"]{20,})","async_get_token"/,
-                                        ];
-                                        for (const p of dtsgPatterns) {
-                                            const m = html.match(p);
-                                            if (m && m[1]) { fb_dtsg = m[1]; break; }
-                                        }
+                                        try {
+                                            if (window.DTSGInitialData && window.DTSGInitialData.token) fb_dtsg = window.DTSGInitialData.token;
+                                            else if (window.DTSGInitData && window.DTSGInitData.token) fb_dtsg = window.DTSGInitData.token;
+                                            else if (window.__DTSGInitialData && window.__DTSGInitialData.token) fb_dtsg = window.__DTSGInitialData.token;
+                                        } catch (e) {}
 
                                         if (!fb_dtsg && typeof require !== "undefined") {
                                             try {
                                                 const mod = require("DTSGInitData") || require("DTSGInitialData");
                                                 if (mod && mod.token) fb_dtsg = mod.token;
+                                                else if (mod && typeof mod.getAsyncParams === "function") {
+                                                    const params = mod.getAsyncParams();
+                                                    if (params && params.fb_dtsg) fb_dtsg = params.fb_dtsg;
+                                                }
                                             } catch(e) {}
                                         }
 
-                                        const lsdPatterns = [
-                                            /\["LSD",\[\],\{"token":"([^"]+)"/,
-                                            /name="lsd"[^>]*value="([^"]+)"/,
-                                            /"lsd":"([^"]+)"/,
-                                        ];
-                                        for (const p of lsdPatterns) {
-                                            const m = html.match(p);
-                                            if (m && m[1]) { lsd = m[1]; break; }
+                                        if (!fb_dtsg) {
+                                            try {
+                                                const inputEl = document.querySelector('input[name="fb_dtsg"]') || document.querySelector('[name="fb_dtsg"]');
+                                                if (inputEl && inputEl.value) fb_dtsg = inputEl.value;
+                                            } catch(e) {}
+                                        }
+
+                                        if (!fb_dtsg) {
+                                            const dtsgPatterns = [
+                                                /\["DTSGInitialData",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                /\["DTSGInitData",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                /\["DTSGInitialData",\s*\{[^}]*\}\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                /\["DTSGInitData",\s*\{[^}]*\}\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                /"DTSGInitialData"[^}]*"token"\s*:\s*"([^"]+)"/,
+                                                /"DTSGInitData"[^}]*"token"\s*:\s*"([^"]+)"/,
+                                                /"dtsg"\s*:\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                /"dtsg_token"\s*:\s*"([^"]+)"/,
+                                                /"dtsg"\s*:\s*"([^"]+)"/,
+                                                /name="fb_dtsg"[^>]*value="([^"]+)"/,
+                                                /"token"\s*:\s*"([^"]{20,})"\s*,\s*"async_get_token"/,
+                                                /DTSGInitialData.*?token["']\s*:\s*["']([^"']+)["']/,
+                                                /DTSGInitData.*?token["']\s*:\s*["']([^"']+)["']/
+                                            ];
+                                            for (const p of dtsgPatterns) {
+                                                const m = html.match(p);
+                                                if (m && m[1]) { fb_dtsg = m[1]; break; }
+                                            }
+                                        }
+
+                                        if (!lsd) {
+                                            try {
+                                                if (window.LSD && window.LSD.token) lsd = window.LSD.token;
+                                            } catch(e) {}
+                                            if (!lsd && typeof require !== "undefined") {
+                                                try {
+                                                    const mod = require("LSD");
+                                                    if (mod && mod.token) lsd = mod.token;
+                                                } catch(e) {}
+                                            }
+                                            if (!lsd) {
+                                                const lsdPatterns = [
+                                                    /\["LSD",\s*\[\]\s*,\s*\{\s*"token"\s*:\s*"([^"]+)"/,
+                                                    /name="lsd"[^>]*value="([^"]+)"/,
+                                                    /"lsd"\s*:\s*"([^"]+)"/
+                                                ];
+                                                for (const p of lsdPatterns) {
+                                                    const m = html.match(p);
+                                                    if (m && m[1]) { lsd = m[1]; break; }
+                                                }
+                                            }
                                         }
 
                                         if (fb_dtsg) break;
                                         await new Promise(r => setTimeout(r, 500));
                                     }
 
-                                    const cUserMatch = document.cookie.match(/c_user=(\d+)/);
-                                    const actorId = cUserMatch ? cUserMatch[1] : fallbackActorId;
+                                    const finalHtml = document.documentElement.innerHTML || "";
+                                    let actorId = "";
+
+                                    // 1. Try CometCurrentActor (Facebook Comet active profile/page module)
+                                    if (!actorId && typeof require !== "undefined") {
+                                        try {
+                                            const ca = require("CometCurrentActor");
+                                            if (ca) {
+                                                actorId = ca.actorId || ca.id || (typeof ca.get === "function" ? ca.get() : null) || "";
+                                            }
+                                        } catch(e) {}
+                                    }
+
+                                    // 2. Try CurrentUserInitialData (Window or Require)
+                                    if (!actorId) {
+                                        try {
+                                            if (window.CurrentUserInitialData) {
+                                                actorId = window.CurrentUserInitialData.ACCOUNT_ID || 
+                                                          window.CurrentUserInitialData.USER_ID || 
+                                                          window.CurrentUserInitialData.actor_id || "";
+                                            }
+                                        } catch(e) {}
+                                    }
+                                    if (!actorId && typeof require !== "undefined") {
+                                        try {
+                                            const mod = require("CurrentUserInitialData");
+                                            if (mod) actorId = mod.ACCOUNT_ID || mod.USER_ID || mod.actor_id || "";
+                                        } catch(e) {}
+                                    }
+
+                                    // 3. Try Env / __user globals
+                                    if (!actorId) {
+                                        try {
+                                            if (window.Env && (window.Env.user || window.Env.ACCOUNT_ID)) {
+                                                actorId = String(window.Env.user || window.Env.ACCOUNT_ID);
+                                            } else if (window.__user) {
+                                                actorId = String(window.__user);
+                                            }
+                                        } catch(e) {}
+                                    }
+
+                                    // 4. Try HTML Regex Patterns
+                                    if (!actorId) {
+                                        const m = finalHtml.match(/"actorID"\s*:\s*"(\d+)"/) ||
+                                                  finalHtml.match(/"actor_id"\s*:\s*"(\d+)"/) ||
+                                                  finalHtml.match(/"USER_ID"\s*:\s*"(\d+)"/) ||
+                                                  finalHtml.match(/"ACCOUNT_ID"\s*:\s*"(\d+)"/) ||
+                                                  finalHtml.match(/\["CurrentUserInitialData"\s*,\s*\[\]\s*,\s*\{\s*"ACCOUNT_ID"\s*:\s*"(\d+)"/) ||
+                                                  finalHtml.match(/\["CurrentUserInitialData"\s*,\s*\[\]\s*,\s*\{\s*"USER_ID"\s*:\s*"(\d+)"/);
+                                        if (m && m[1]) actorId = m[1];
+                                    }
+
+                                    // 5. Fallback to Cookie c_user or passed fallbackActorId
+                                    if (!actorId) {
+                                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                        if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                                    }
+                                    if (!actorId) actorId = fallbackActorId || "";
 
                                     if (!fb_dtsg || !actorId || !postId) {
                                         return { success: false, error: "Missing tokens (dtsg:" + !!fb_dtsg + ", actorId:" + !!actorId + ", postId:" + !!postId + ")" };
@@ -2354,10 +2762,13 @@ async function _executePostItem(post) {
                                     if (postId && /^\d+$/.test(String(postId))) {
                                         feedbackCandidates.push(btoa("feedback:" + postId));
                                         feedbackCandidates.push(btoa("Feedback:" + postId));
+                                    } else if (postId && String(postId).startsWith("pfbid")) {
+                                        feedbackCandidates.push(btoa("feedback:" + postId));
+                                        feedbackCandidates.push(btoa("Feedback:" + postId));
                                     }
 
                                     // Extract all numeric story/feedback target IDs from HTML DOM
-                                    const numMatches = html.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
+                                    const numMatches = finalHtml.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
                                     for (const m of numMatches) {
                                         if (m[1] && m[1].length >= 8) {
                                             const b1 = btoa("feedback:" + m[1]);
@@ -2367,7 +2778,36 @@ async function _executePostItem(post) {
                                         }
                                     }
 
-                                    const docIds = ["27829190080054105", "5384620808298758", "5765399230165702", "5515286528574762", "7181675201948512"];
+                                    let liveCommentDocIds = [];
+                                    try {
+                                        if (typeof require !== "undefined") {
+                                            const mod = require("useCometUFICreateCommentMutation.graphql") || require("useCometUFICreateCommentMutation") || require("CometCommentCreateMutation.graphql");
+                                            if (mod) {
+                                                const id = mod.params?.id || mod.id || mod.default?.params?.id;
+                                                if (id && !liveCommentDocIds.includes(String(id))) liveCommentDocIds.push(String(id));
+                                            }
+                                        }
+                                    } catch(e) {}
+
+                                    try {
+                                        const scripts = Array.from(document.scripts || []);
+                                        for (const s of scripts) {
+                                            const content = s.textContent || s.innerHTML || "";
+                                            if (content.includes("CometUFICreateCommentMutation") || content.includes("CometCommentCreateMutation")) {
+                                                const matches = content.matchAll(/"doc_id"\s*:\s*"(\d{14,})"/g);
+                                                for (const m of matches) {
+                                                    if (m && m[1] && !liveCommentDocIds.includes(m[1])) liveCommentDocIds.push(m[1]);
+                                                }
+                                            }
+                                        }
+                                    } catch(e) {}
+
+                                    const defaultCommentDocIds = ["27829190080054105", "5384620808298758", "5765399230165702", "5515286528574762", "7181675201948512"];
+                                    const docIds = [...liveCommentDocIds];
+                                    for (const id of defaultCommentDocIds) {
+                                        if (!docIds.includes(id)) docIds.push(id);
+                                    }
+
                                     let successCount = 0;
                                     const errors = [];
 
@@ -2445,7 +2885,17 @@ async function _executePostItem(post) {
                                                     let json = null;
                                                     try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
 
-                                                    if (json && json.data && !json.errors) {
+                                                    const hasCommentData = json && json.data && (
+                                                        json.data.comment_create || 
+                                                        json.data.useCometUFICreateCommentMutation || 
+                                                        json.data.comment || 
+                                                        json.data.feedback || 
+                                                        json.data.id ||
+                                                        text.includes('"comment"') ||
+                                                        text.includes('"feedback"')
+                                                    );
+
+                                                    if (res.ok && (hasCommentData || (json && json.data && !json.errors))) {
                                                         commentSuccess = true;
                                                         break;
                                                     } else if (json && json.errors && json.errors.length) {
@@ -2507,148 +2957,619 @@ async function _executePostItem(post) {
                     }
 
                     // Exec Auto-React to Post & Comments if configured
-                    if (payload.autoReactType && payload.autoReactType !== "NONE") {
+                    if ((!onlyAction || onlyAction === "react") && payload.autoReactType && payload.autoReactType !== "NONE") {
                         await updateStep(`❤️ Đang tự động thả cảm xúc ${payload.autoReactType} cho bài viết...`);
                         try {
                             const knownFeedbackId = graphqlResult?.fbFeedbackId || null;
                             const reactResults = await chrome.scripting.executeScript({
                                 target: { tabId: targetTab.id },
-                                world: "MAIN",
                                 func: async (postId, knownFeedbackId, reactType, fallbackActorId) => {
                                     let fb_dtsg = "";
                                     let lsd = "";
-                                    const html = document.documentElement.innerHTML;
 
-                                    const dtsgPatterns = [
-                                        /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
-                                        /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
-                                        /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
-                                        /"dtsg":\{"token":"([^"]+)"/,
-                                        /name="fb_dtsg"[^>]*value="([^"]+)"/,
-                                        /"token":"([^"]{20,})","async_get_token"/,
-                                    ];
-                                    for (const p of dtsgPatterns) {
-                                        const m = html.match(p);
-                                        if (m && m[1]) { fb_dtsg = m[1]; break; }
+                                    for (let attempt = 0; attempt < 10; attempt++) {
+                                        const html = document.documentElement.innerHTML || "";
+
+                                        try {
+                                            if (window.DTSGInitialData && window.DTSGInitialData.token) fb_dtsg = window.DTSGInitialData.token;
+                                            else if (window.DTSGInitData && window.DTSGInitData.token) fb_dtsg = window.DTSGInitData.token;
+                                        } catch (e) {}
+
+                                        if (!lsd) {
+                                            const m = html.match(/"lsd"\s*:\s*"([^"]+)"/);
+                                            if (m && m[1]) lsd = m[1];
+                                        }
+
+                                        if (fb_dtsg) break;
+                                        await new Promise(r => setTimeout(r, 400));
                                     }
 
-                                    const lsdPatterns = [
-                                        /\["LSD",\[\],\{"token":"([^"]+)"/,
-                                        /name="lsd"[^>]*value="([^"]+)"/,
-                                        /"lsd":"([^"]+)"/,
-                                    ];
-                                    for (const p of lsdPatterns) {
-                                        const m = html.match(p);
-                                        if (m && m[1]) { lsd = m[1]; break; }
+                                    const finalHtml = document.documentElement.innerHTML || "";
+                                    let actorId = "";
+                                    try {
+                                        const ca = typeof require !== "undefined" ? require("CometCurrentActor") : null;
+                                        if (ca) actorId = ca.actorId || ca.id || "";
+                                    } catch(e) {}
+                                    if (!actorId) {
+                                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                        if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
                                     }
+                                    if (!actorId) actorId = fallbackActorId || "";
 
-                                    const cUserMatch = document.cookie.match(/c_user=(\d+)/);
-                                    const actorId = cUserMatch ? cUserMatch[1] : fallbackActorId;
-
-                                    if (!fb_dtsg || !actorId) return { success: false, error: "Missing tokens" };
+                                    if (!fb_dtsg || !actorId) return { success: false, error: "Missing tokens for react" };
 
                                     let jazoest = "2";
-                                    for (let i = 0; i < fb_dtsg.length; i++) {
-                                        jazoest += fb_dtsg.charCodeAt(i);
-                                    }
+                                    for (let i = 0; i < fb_dtsg.length; i++) jazoest += fb_dtsg.charCodeAt(i);
 
                                     const reactionMap = {
                                         "LIKE": "1635855486666999",
                                         "LOVE": "1635855606666987",
                                         "HAHA": "1635855726666975",
-                                        "WOW": "1635855846666963"
+                                        "WOW": "1635855846666963",
+                                        "SAD": "1635855966666951",
+                                        "ANGRY": "1635856086666939"
                                     };
                                     const reactionId = reactionMap[reactType] || "1635855486666999";
 
-                                     const reactCandidates = [];
-                                     if (knownFeedbackId) {
-                                         reactCandidates.push(knownFeedbackId.startsWith("ZmVl") ? knownFeedbackId : btoa("feedback:" + knownFeedbackId));
-                                     }
-                                     if (postId && /^\d+$/.test(String(postId))) {
-                                         reactCandidates.push(btoa("feedback:" + postId));
-                                         reactCandidates.push(btoa("Feedback:" + postId));
-                                     }
+                                    const reactCandidates = [];
+                                    if (knownFeedbackId) {
+                                        reactCandidates.push(knownFeedbackId.startsWith("ZmVl") ? knownFeedbackId : btoa("feedback:" + knownFeedbackId));
+                                    }
+                                    if (postId && /^\d+$/.test(String(postId))) {
+                                        reactCandidates.push(btoa("feedback:" + postId));
+                                        reactCandidates.push(btoa("Feedback:" + postId));
+                                    }
 
-                                     const numMatches = html.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
-                                     for (const m of numMatches) {
-                                         if (m[1] && m[1].length >= 8) {
-                                             const b1 = btoa("feedback:" + m[1]);
-                                             if (!reactCandidates.includes(b1)) reactCandidates.push(b1);
-                                         }
-                                     }
+                                    const numMatches = finalHtml.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
+                                    for (const m of numMatches) {
+                                        if (m[1] && m[1].length >= 8) {
+                                            const b1 = btoa("feedback:" + m[1]);
+                                            if (!reactCandidates.includes(b1)) reactCandidates.push(b1);
+                                        }
+                                    }
 
-                                     if (reactCandidates.length === 0) return { success: false, error: "Missing feedbackId candidate" };
+                                    if (reactCandidates.length === 0) return { success: false, error: "Missing feedbackId candidate for react" };
 
-                                     let lastReactErr = "";
-                                     for (const targetFeedbackId of reactCandidates) {
-                                         try {
-                                             const vars = {
-                                                 input: {
-                                                     attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
-                                                     feedback_id: targetFeedbackId,
-                                                     feedback_reaction_id: reactionId,
-                                                     feedback_source: "OBJECT",
-                                                     is_tracking_encrypted: true,
-                                                     session_id: String(Date.now()),
-                                                     actor_id: actorId,
-                                                     client_mutation_id: String(Math.floor(Math.random() * 10) + 1)
-                                                 },
-                                                 scale: 2,
-                                                 canUseNicknameOnComet: false,
-                                                 useDefaultActor: false,
-                                                 __relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider: false
-                                             };
-                                             const params = new URLSearchParams();
-                                             params.append("av", actorId);
-                                             params.append("__user", actorId);
-                                             params.append("__a", "1");
-                                             params.append("fb_dtsg", fb_dtsg);
-                                             params.append("jazoest", jazoest);
-                                             params.append("lsd", lsd);
-                                             params.append("fb_api_caller_class", "RelayModern");
-                                             params.append("fb_api_req_friendly_name", "CometUFIFeedbackReactMutation");
-                                             params.append("server_timestamps", "true");
-                                             params.append("variables", JSON.stringify(vars));
-                                             params.append("doc_id", "27646120298312844");
+                                    let lastReactErr = "";
+                                    for (const targetFeedbackId of reactCandidates) {
+                                        try {
+                                            const vars = {
+                                                input: {
+                                                    attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
+                                                    feedback_id: targetFeedbackId,
+                                                    feedback_reaction_id: reactionId,
+                                                    feedback_source: "OBJECT",
+                                                    is_tracking_encrypted: true,
+                                                    session_id: String(Date.now()),
+                                                    actor_id: actorId,
+                                                    client_mutation_id: String(Math.floor(Math.random() * 10) + 1)
+                                                },
+                                                scale: 2,
+                                                canUseNicknameOnComet: false,
+                                                useDefaultActor: false,
+                                                __relay_internal__pv__CometUFIReactionsEnableShortNamerelayprovider: false
+                                            };
+                                            const params = new URLSearchParams();
+                                            params.append("av", actorId);
+                                            params.append("__user", actorId);
+                                            params.append("__a", "1");
+                                            params.append("fb_dtsg", fb_dtsg);
+                                            params.append("jazoest", jazoest);
+                                            params.append("lsd", lsd);
+                                            params.append("fb_api_caller_class", "RelayModern");
+                                            params.append("fb_api_req_friendly_name", "CometUFIFeedbackReactMutation");
+                                            params.append("server_timestamps", "true");
+                                            params.append("variables", JSON.stringify(vars));
+                                            params.append("doc_id", "27646120298312844");
 
-                                             const res = await fetch("https://www.facebook.com/api/graphql/", {
-                                                 method: "POST",
-                                                 headers: {
-                                                     "Content-Type": "application/x-www-form-urlencoded",
-                                                     "X-FB-Friendly-Name": "CometUFIFeedbackReactMutation",
-                                                     "X-FB-LSD": lsd,
-                                                     "X-ASBD-ID": "129477"
-                                                 },
-                                                 body: params.toString(),
-                                                 credentials: "include"
-                                             });
-                                             const text = await res.text();
-                                             let json = null;
-                                             try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
-                                             if (json && json.data && !json.errors) {
-                                                 return { success: true, reactType, feedbackId: targetFeedbackId };
-                                             } else if (json && json.errors && json.errors.length) {
-                                                 lastReactErr = json.errors[0].message;
-                                             }
-                                         } catch(e) {
-                                             lastReactErr = e.message;
-                                         }
-                                     }
-                                     return { success: false, error: lastReactErr || "React failed" };
+                                            const res = await fetch("https://www.facebook.com/api/graphql/", {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/x-www-form-urlencoded",
+                                                    "X-FB-Friendly-Name": "CometUFIFeedbackReactMutation",
+                                                    "X-FB-LSD": lsd,
+                                                    "X-ASBD-ID": "129477"
+                                                },
+                                                body: params.toString(),
+                                                credentials: "include"
+                                            });
+                                            const text = await res.text();
+                                            let json = null;
+                                            try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
+                                            
+                                            const hasReactData = json && json.data && (
+                                                json.data.feedback_react || 
+                                                json.data.feedback_react_mode || 
+                                                json.data.feedback ||
+                                                text.includes('"feedback_react"') ||
+                                                text.includes('"feedback"')
+                                            );
+
+                                            if (res.ok && (hasReactData || (json && json.data && !json.errors))) {
+                                                return { success: true, reactType, feedbackId: targetFeedbackId };
+                                            } else if (json && json.errors && json.errors.length) {
+                                                lastReactErr = json.errors[0].message;
+                                            }
+                                        } catch(e) {
+                                            lastReactErr = e.message;
+                                        }
+                                    }
+                                    return { success: false, error: lastReactErr || "React failed" };
                                 },
                                 args: [pid, knownFeedbackId, payload.autoReactType, fallbackActorId]
                             });
                             console.log("❤️ [Auto-React Result]:", reactResults?.[0]?.result);
                             if (reactResults?.[0]?.result?.success) {
-                                await updateStep(`✅ ❤️ Đã tự động thả cảm xúc ${payload.autoReactType} cho bài viết!`);
+                                await updateStep(`✅ ❤️ Đã tự động thả cảm xúc ${payload.autoReactType} cho bài viết thành công!`);
+                            } else {
+                                await updateStep(`⚠️ ❤️ Kết quả Thả Cảm Xúc: ${reactResults?.[0]?.result?.error || 'Chưa hoàn tất'}`);
                             }
                         } catch(e) {
                             console.warn("⚠️ [Auto-React Error]:", e.message);
                         }
                     }
 
-                    if (payload.autoReplyComments && Array.isArray(payload.autoReplyComments) && payload.autoReplyComments.length > 0) {
-                        await updateStep(`🤖 Đã kích hoạt tính năng tự động trả lời (Auto-Reply) với ${payload.autoReplyComments.length} mẫu câu.`);
+                    // Exec Auto-Reply to Comments if configured
+                    if ((!onlyAction || onlyAction === "reply") && payload.autoReplyComments && Array.isArray(payload.autoReplyComments) && payload.autoReplyComments.length > 0) {
+                        await updateStep(`🤖 Đang thực hiện Auto-Reply với ${payload.autoReplyComments.length} câu trả lời tư vấn...`);
+                        try {
+                            const knownFeedbackId = graphqlResult?.fbFeedbackId || null;
+                            const replyResults = await chrome.scripting.executeScript({
+                                target: { tabId: targetTab.id },
+                                func: async (postId, knownFeedbackId, replyTemplates, fallbackActorId, targetCommentId) => {
+                                    let fb_dtsg = "";
+                                    let lsd = "";
+                                    for (let attempt = 0; attempt < 10; attempt++) {
+                                        const html = document.documentElement.innerHTML || "";
+                                        try {
+                                            if (window.DTSGInitialData?.token) fb_dtsg = window.DTSGInitialData.token;
+                                            else if (window.DTSGInitData?.token) fb_dtsg = window.DTSGInitData.token;
+                                        } catch(e) {}
+                                        if (!lsd) {
+                                            const m = html.match(/"lsd"\s*:\s*"([^"]+)"/);
+                                            if (m && m[1]) lsd = m[1];
+                                        }
+                                        if (fb_dtsg) break;
+                                        await new Promise(r => setTimeout(r, 400));
+                                    }
+                                    const finalHtml = document.documentElement.innerHTML || "";
+                                    let actorId = "";
+                                    try {
+                                        const ca = typeof require !== "undefined" ? require("CometCurrentActor") : null;
+                                        if (ca) actorId = ca.actorId || ca.id || "";
+                                    } catch(e) {}
+                                    if (!actorId) {
+                                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                        if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                                    }
+                                    if (!actorId) actorId = fallbackActorId || "";
+                                    if (!fb_dtsg || !actorId) return { success: false, error: "Missing tokens for reply" };
+
+                                    let jazoest = "2";
+                                    for (let i = 0; i < fb_dtsg.length; i++) jazoest += fb_dtsg.charCodeAt(i);
+
+                                    let resolvedCmtId = targetCommentId ? String(targetCommentId) : "";
+                                    let rawStoryId = "";
+                                    if (knownFeedbackId && /^\d+$/.test(String(knownFeedbackId))) {
+                                        rawStoryId = String(knownFeedbackId);
+                                    } else if (postId && /^\d+$/.test(String(postId))) {
+                                        rawStoryId = String(postId);
+                                    } else if (postId && String(postId).startsWith("pfbid")) {
+                                        rawStoryId = String(postId);
+                                    }
+
+                                    if (!rawStoryId) {
+                                        const curUrl = window.location.href || "";
+                                        const mUrl = curUrl.match(/(?:story_fbid=|posts\/|videos\/|watch\/\?v=|reel\/)(\d+|pfbid[a-zA-Z0-9]+)/);
+                                        if (mUrl && mUrl[1]) {
+                                            rawStoryId = mUrl[1];
+                                        } else {
+                                            const storyMatch = finalHtml.match(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id)"\s*:\s*"(\d{8,})"/);
+                                            if (storyMatch && storyMatch[1]) rawStoryId = storyMatch[1];
+                                        }
+                                    }
+
+                                    // Resolve local non-numeric IDs (like cmt_...) to real Facebook comment IDs
+                                    if (resolvedCmtId && !/^\d+$/.test(resolvedCmtId) && !resolvedCmtId.includes("_")) {
+                                        if (rawStoryId) {
+                                            try {
+                                                const targetFeedbackId = btoa("feedback:" + rawStoryId);
+                                                const queryVars = {
+                                                    feedbackSource: 2, feedLocation: "POST_PERMALINK_DIALOG", focusCommentID: null,
+                                                    privacySelectorRenderLocation: "COMET_STREAM", renderLocation: "permalink", scale: 2, useDefaultActor: false, id: targetFeedbackId
+                                                };
+                                                const queryParams = new URLSearchParams();
+                                                queryParams.append("av", actorId); queryParams.append("__user", actorId); queryParams.append("__a", "1");
+                                                queryParams.append("fb_dtsg", fb_dtsg); queryParams.append("jazoest", jazoest); queryParams.append("lsd", lsd);
+                                                queryParams.append("fb_api_caller_class", "RelayModern");
+                                                queryParams.append("fb_api_req_friendly_name", "CometSinglePostDialogContentQuery");
+                                                queryParams.append("variables", JSON.stringify(queryVars));
+                                                queryParams.append("doc_id", "25494545246909173");
+
+                                                const qRes = await fetch("https://www.facebook.com/api/graphql/", {
+                                                    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: queryParams.toString(), credentials: "include"
+                                                });
+                                                const qText = await qRes.text();
+                                                const legacyMatch = qText.match(/"legacy_fbid"\s*:\s*"(\d+)"/);
+                                                if (legacyMatch && legacyMatch[1]) {
+                                                    resolvedCmtId = legacyMatch[1];
+                                                }
+                                            } catch(e) {}
+                                        }
+                                    }
+
+                                    // Fallback: If no resolved comment ID exists at all, find any existing comment on post
+                                    if (!resolvedCmtId && rawStoryId) {
+                                        try {
+                                            const targetFeedbackId = btoa("feedback:" + rawStoryId);
+                                            const queryVars = {
+                                                feedbackSource: 2, feedLocation: "POST_PERMALINK_DIALOG", focusCommentID: null,
+                                                privacySelectorRenderLocation: "COMET_STREAM", renderLocation: "permalink", scale: 2, useDefaultActor: false, id: targetFeedbackId
+                                            };
+                                            const queryParams = new URLSearchParams();
+                                            queryParams.append("av", actorId); queryParams.append("__user", actorId); queryParams.append("__a", "1");
+                                            queryParams.append("fb_dtsg", fb_dtsg); queryParams.append("jazoest", jazoest); queryParams.append("lsd", lsd);
+                                            queryParams.append("fb_api_caller_class", "RelayModern");
+                                            queryParams.append("fb_api_req_friendly_name", "CometSinglePostDialogContentQuery");
+                                            queryParams.append("variables", JSON.stringify(queryVars));
+                                            queryParams.append("doc_id", "25494545246909173");
+
+                                            const qRes = await fetch("https://www.facebook.com/api/graphql/", {
+                                                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: queryParams.toString(), credentials: "include"
+                                            });
+                                            const qText = await qRes.text();
+                                            const legacyMatch = qText.match(/"legacy_fbid"\s*:\s*"(\d+)"/);
+                                            if (legacyMatch && legacyMatch[1]) {
+                                                resolvedCmtId = legacyMatch[1];
+                                            }
+                                        } catch(e) {}
+                                    }
+
+                                    let fullCmtId = resolvedCmtId;
+                                    if (fullCmtId && !fullCmtId.includes("_") && rawStoryId) {
+                                        fullCmtId = rawStoryId + "_" + resolvedCmtId;
+                                    }
+
+                                    const parentFbid = fullCmtId ? (fullCmtId.startsWith("Y29t") ? fullCmtId : btoa("comment:" + fullCmtId)) : null;
+
+                                    const replyCandidates = [];
+                                    if (fullCmtId) {
+                                        replyCandidates.push(btoa("feedback:" + fullCmtId));
+                                    } else {
+                                        if (knownFeedbackId) {
+                                            if (knownFeedbackId.startsWith("ZmVl")) {
+                                                replyCandidates.push(knownFeedbackId);
+                                            } else {
+                                                replyCandidates.push(btoa("feedback:" + knownFeedbackId));
+                                                replyCandidates.push(btoa("Feedback:" + knownFeedbackId));
+                                            }
+                                        }
+                                        if (postId && /^\d+$/.test(String(postId))) {
+                                            replyCandidates.push(btoa("feedback:" + postId));
+                                            replyCandidates.push(btoa("Feedback:" + postId));
+                                        } else if (postId && String(postId).startsWith("pfbid")) {
+                                            replyCandidates.push(btoa("feedback:" + postId));
+                                            replyCandidates.push(btoa("Feedback:" + postId));
+                                        }
+
+                                        const numMatches = finalHtml.matchAll(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id|target_id)"\s*:\s*"(\d+)"/g);
+                                        for (const m of numMatches) {
+                                            if (m[1] && m[1].length >= 8) {
+                                                const b1 = btoa("feedback:" + m[1]);
+                                                const b2 = btoa("Feedback:" + m[1]);
+                                                if (!replyCandidates.includes(b1)) replyCandidates.push(b1);
+                                                if (!replyCandidates.includes(b2)) replyCandidates.push(b2);
+                                            }
+                                        }
+                                    }
+                                    if (replyCandidates.length === 0) return { success: false, error: "Không tìm thấy ID bài viết để trả lời" };
+
+                                    let replySuccessCount = 0;
+                                    let lastReplyErr = "";
+                                    for (const replyText of replyTemplates) {
+                                        if (!replyText || !replyText.trim()) continue;
+                                        for (const targetFbId of replyCandidates) {
+                                            try {
+                                                const vars = {
+                                                    feedLocation: "POST_PERMALINK_DIALOG",
+                                                    feedbackSource: 2,
+                                                    groupID: null,
+                                                    input: {
+                                                        client_mutation_id: String(Date.now()),
+                                                        attachments: null,
+                                                        feedback_id: targetFbId,
+                                                        formatting_style: null,
+                                                        is_inline_vote_enabled_for_qna: false,
+                                                        message: { ranges: [], text: replyText.trim() },
+                                                        reply_comment_parent_fbid: parentFbid,
+                                                        reply_target_clicked: !!parentFbid,
+                                                        attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
+                                                        feedback_source: "OBJECT",
+                                                        idempotence_token: "client:" + String(Date.now()),
+                                                        session_id: String(Date.now())
+                                                    },
+                                                    scale: 2,
+                                                    useDefaultActor: false,
+                                                    translationType: "AUTO_TRANSLATE"
+                                                };
+                                                const params = new URLSearchParams();
+                                                params.append("av", actorId);
+                                                params.append("__user", actorId);
+                                                params.append("__a", "1");
+                                                params.append("fb_dtsg", fb_dtsg);
+                                                params.append("jazoest", jazoest);
+                                                params.append("lsd", lsd);
+                                                params.append("fb_api_caller_class", "RelayModern");
+                                                params.append("fb_api_req_friendly_name", "useCometUFICreateCommentMutation");
+                                                params.append("server_timestamps", "true");
+                                                params.append("variables", JSON.stringify(vars));
+                                                params.append("doc_id", "27829190080054105");
+
+                                                const res = await fetch("https://www.facebook.com/api/graphql/", {
+                                                    method: "POST",
+                                                    headers: {
+                                                        "Content-Type": "application/x-www-form-urlencoded",
+                                                        "X-FB-Friendly-Name": "useCometUFICreateCommentMutation",
+                                                        "X-FB-LSD": lsd,
+                                                        "X-ASBD-ID": "129477"
+                                                    },
+                                                    body: params.toString(),
+                                                    credentials: "include"
+                                                });
+                                                const text = await res.text();
+                                                let json = null;
+                                                try { json = JSON.parse(text.replace(/^for\s*\([^)]*\);?/, "")); } catch(e) {}
+                                                if (res.ok && (text.includes('"comment_create"') || text.includes('"feedback"') || (json && json.data && !json.errors))) {
+                                                    replySuccessCount++;
+                                                    break;
+                                                } else if (json && json.errors && json.errors.length) {
+                                                    const errObj = json.errors[0];
+                                                    lastReplyErr = `[FB GraphQL Error ${errObj.code || ''}] ${errObj.message || errObj.summary || 'Mutation failed'}`;
+                                                } else {
+                                                    lastReplyErr = `[FB HTTP ${res.status}] ${text.slice(0, 150)}`;
+                                                }
+                                            } catch(e) {
+                                                lastReplyErr = `[Network Exception] ${e.message}`;
+                                            }
+                                        }
+                                    }
+                                    return { success: replySuccessCount > 0, replySuccessCount, total: replyTemplates.length, error: lastReplyErr };
+                                },
+                                args: [pid, knownFeedbackId, payload.autoReplyComments, fallbackActorId, payload.targetCommentId || null]
+                            });
+                            const replyRes = replyResults?.[0]?.result;
+                            console.log("🤖 [Auto-Reply Result]:", replyRes);
+                            if (replyRes && replyRes.success) {
+                                await updateStep(`🎉 [THÀNH CÔNG 100%] Đã trả lời trực tiếp bên dưới comment Facebook!`);
+                            } else {
+                                const detailedErr = replyRes?.error || "Không nhận được phản hồi từ Facebook";
+                                await updateStep(`❌ [LỖI TRẢ LỜI FACEBOOK] ${detailedErr}`);
+                            }
+                        } catch(e) {
+                            console.warn("⚠️ [Auto-Reply Error]:", e.message);
+                            await updateStep(`❌ [LỖI EXTENSION EXEC] ${e.message}`);
+                        }
+                    }
+
+                    if (payload.onlyAction === "fetch_comments") {
+                        await updateStep("⚡ Đang kết nối Facebook quét bình luận thực tế...");
+                        try {
+                            let realPostId = post.fbFeedbackId || post.fbPostId || "";
+                            if (!realPostId || (!/^\d+$/.test(String(realPostId)) && !String(realPostId).startsWith("pfbid"))) {
+                                if (post.fbPostUrl) {
+                                    const m = post.fbPostUrl.match(/(?:story_fbid=|posts\/|videos\/|watch\/\?v=|reel\/)(\d+)/);
+                                    if (m && m[1]) realPostId = m[1];
+                                }
+                            }
+                            if (!realPostId) realPostId = post.fbPostId || post.id;
+
+                            const results = await chrome.scripting.executeScript({
+                                target: { tabId: targetTab.id },
+                                func: async (postId, fallbackActorId) => {
+                                    let fb_dtsg = ""; let lsd = "";
+                                    for (let attempt = 0; attempt < 5; attempt++) {
+                                        const html = document.documentElement.innerHTML || "";
+                                        if (window.DTSGInitialData?.token) fb_dtsg = window.DTSGInitialData.token;
+                                        else if (window.DTSGInitData?.token) fb_dtsg = window.DTSGInitData.token;
+                                        if (!lsd) {
+                                            const m = html.match(/"lsd"\s*:\s*"([^"]+)"/);
+                                            if (m && m[1]) lsd = m[1];
+                                        }
+                                        if (fb_dtsg) break;
+                                        await new Promise(r => setTimeout(r, 300));
+                                    }
+                                    let actorId = "";
+                                    try {
+                                        const ca = typeof require !== "undefined" ? require("CometCurrentActor") : null;
+                                        if (ca) actorId = ca.actorId || ca.id || "";
+                                    } catch(e) {}
+                                    if (!actorId) {
+                                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                                        if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                                    }
+                                    if (!actorId) actorId = fallbackActorId || "";
+                                    if (!fb_dtsg || !actorId) return { scannedComments: [] };
+
+                                    let jazoest = "2";
+                                    for (let i = 0; i < fb_dtsg.length; i++) jazoest += fb_dtsg.charCodeAt(i);
+
+                                    const scannedComments = [];
+                                    let storyId = "";
+                                    const storyMatch = String(postId).match(/\d{8,}/);
+                                    if (storyMatch) {
+                                        storyId = storyMatch[0];
+                                    } else if (String(postId).startsWith("pfbid")) {
+                                        storyId = String(postId);
+                                    }
+
+                                    // Fallback: If storyId is local or missing, extract story ID from current FB tab URL/HTML
+                                    if (!storyId || (!/^\d+$/.test(storyId) && !storyId.startsWith("pfbid"))) {
+                                        const curUrl = window.location.href || "";
+                                        const mUrl = curUrl.match(/(?:story_fbid=|posts\/|videos\/|watch\/\?v=|reel\/)(\d+)/);
+                                        if (mUrl && mUrl[1]) {
+                                            storyId = mUrl[1];
+                                        } else {
+                                            const html = document.documentElement.innerHTML || "";
+                                            const mHtml = html.match(/"(?:legacy_story_id|story_fbid|post_id|story_id|subscription_target_id|feedback_target_id)"\s*:\s*"(\d{8,})"/);
+                                            if (mHtml && mHtml[1]) storyId = mHtml[1];
+                                        }
+                                    }
+
+                                    if (storyId) {
+                                        try {
+                                            const targetFeedbackId = btoa("feedback:" + storyId);
+                                            const queryVars = {
+                                                feedbackSource: 2, feedLocation: "POST_PERMALINK_DIALOG", focusCommentID: null,
+                                                privacySelectorRenderLocation: "COMET_STREAM", renderLocation: "permalink", scale: 2, useDefaultActor: false, id: targetFeedbackId
+                                            };
+                                            const queryParams = new URLSearchParams();
+                                            queryParams.append("av", actorId); queryParams.append("__user", actorId); queryParams.append("__a", "1");
+                                            queryParams.append("fb_dtsg", fb_dtsg); queryParams.append("jazoest", jazoest); queryParams.append("lsd", lsd);
+                                            queryParams.append("fb_api_caller_class", "RelayModern");
+                                            queryParams.append("fb_api_req_friendly_name", "CometSinglePostDialogContentQuery");
+                                            queryParams.append("variables", JSON.stringify(queryVars));
+                                            queryParams.append("doc_id", "25494545246909173");
+
+                                            const res = await fetch("https://www.facebook.com/api/graphql/", {
+                                                method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: queryParams.toString(), credentials: "include"
+                                            });
+                                            const text = await res.text();
+
+                                            // Method A: Recursive JSON Parser
+                                            const cleanedText = text.replace(/^for\s*\([^)]*\);?/, "").trim();
+                                            const linesArr = cleanedText.split("\n");
+                                            for (const line of linesArr) {
+                                                if (!line.trim()) continue;
+                                                try {
+                                                    const parsed = JSON.parse(line.trim());
+                                                    async function processGqlObj(obj) {
+                                                        if (!obj || typeof obj !== "object") return;
+                                                        if (obj.legacy_fbid || (obj.__typename === "Comment" && (obj.id || obj.legacy_fbid))) {
+                                                            const cmtId = String(obj.legacy_fbid || obj.id || "");
+                                                            const authObj = obj.author || obj.comment_author || {};
+                                                            const authName = typeof authObj === "object" ? (authObj.name || authObj.short_name || "Khách hàng") : String(authObj || "Khách hàng");
+                                                            const authId = typeof authObj === "object" ? String(authObj.id || "") : "";
+
+                                                            let cmtText = "";
+                                                            if (obj.body && typeof obj.body === "object" && obj.body.text) cmtText = String(obj.body.text);
+                                                            else if (obj.preferred_body && typeof obj.preferred_body === "object" && obj.preferred_body.text) cmtText = String(obj.preferred_body.text);
+                                                            else if (obj.message && typeof obj.message === "object" && obj.message.text) cmtText = String(obj.message.text);
+                                                            else if (typeof obj.body === "string") cmtText = obj.body;
+                                                            else if (typeof obj.text === "string") cmtText = obj.text;
+
+                                                            const cmtTime = obj.created_time ? (obj.created_time * 1000) : Date.now();
+                                                            const isSelf = (authId && String(authId) === String(actorId));
+
+                                                            const parentObj = obj.comment_parent || obj.comment_direct_parent || null;
+                                                            let parentCommentId = parentObj ? String(parentObj.legacy_fbid || parentObj.id || "") : null;
+                                                            if (parentCommentId === cmtId || parentCommentId === storyId) parentCommentId = null;
+
+                                                            if (cmtId && cmtId !== storyId && cmtText && !scannedComments.some(c => c.id === cmtId)) {
+                                                                scannedComments.push({
+                                                                    id: cmtId,
+                                                                    authorName: authName,
+                                                                    authorId: authId,
+                                                                    text: cmtText,
+                                                                    time: cmtTime,
+                                                                    isSelf: isSelf,
+                                                                    parentCommentId: parentCommentId
+                                                                });
+                                                                if (parentCommentId) {
+                                                                    const parentItem = scannedComments.find(c => c.id === parentCommentId);
+                                                                    if (parentItem) parentItem.isReplied = true;
+                                                                }
+                                                            }
+                                                        }
+                                                        for (const k of Object.keys(obj)) await processGqlObj(obj[k]);
+                                                    }
+                                                    await processGqlObj(parsed);
+                                                } catch(e) {}
+                                            }
+
+                                            // Method B: High-Precision Regex Parser Fallback
+                                            if (scannedComments.length === 0) {
+                                                const fbidMatches = text.matchAll(/"legacy_fbid"\s*:\s*"(\d+)"/g);
+                                                for (const m of fbidMatches) {
+                                                    const cmtId = m[1];
+                                                    if (cmtId && cmtId !== storyId && !scannedComments.some(c => c.id === cmtId)) {
+                                                        const pos = m.index;
+                                                        const snippet = text.slice(Math.max(0, pos - 300), Math.min(text.length, pos + 600));
+                                                        const bodyMatch = snippet.match(/"body"\s*:\s*\{\s*"text"\s*:\s*"([^"]+)"/);
+                                                        const nameMatch = snippet.match(/"author"\s*:\s*\{[^}]*?"name"\s*:\s*"([^"]+)"/);
+                                                        
+                                                        let rawText = bodyMatch ? bodyMatch[1] : "";
+                                                        try { rawText = JSON.parse(`"${rawText}"`); } catch(e) {}
+                                                        let rawName = nameMatch ? nameMatch[1] : "Khách hàng";
+                                                        try { rawName = JSON.parse(`"${rawName}"`); } catch(e) {}
+
+                                                        if (rawText) {
+                                                            scannedComments.push({
+                                                                id: cmtId,
+                                                                authorName: rawName,
+                                                                authorId: "",
+                                                                text: rawText,
+                                                                time: Date.now(),
+                                                                isSelf: false
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } catch(e) {}
+                                    }
+
+                                    // Method C: Direct DOM Scraper Fallback on active tab
+                                    if (scannedComments.length === 0) {
+                                        try {
+                                            const articles = document.querySelectorAll('[role="article"]');
+                                            for (const art of articles) {
+                                                const txt = art.innerText || "";
+                                                const lines = txt.split("\n").map(l => l.trim()).filter(Boolean);
+                                                if (lines.length >= 2 && !txt.includes("Viết bình luận")) {
+                                                    const name = lines[0];
+                                                    const content = lines.slice(1).join(" ");
+                                                    if (content && !scannedComments.some(c => c.text === content)) {
+                                                        scannedComments.push({
+                                                            id: "dom_" + Math.random().toString(36).slice(2, 9),
+                                                            authorName: name,
+                                                            text: content,
+                                                            time: Date.now(),
+                                                            isSelf: false
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                        } catch(e) {}
+                                    }
+
+                                    return { scannedComments, detectedStoryId: storyId };
+                                },
+                                args: [realPostId, post.actorId || ""]
+                            });
+
+                            const execRes = results?.[0]?.result || {};
+                            const scanned = execRes.scannedComments || [];
+                            const detectedId = execRes.detectedStoryId || null;
+
+                            if (detectedId && (!post.fbPostId || post.fbPostId === post.id)) {
+                                await fetch(`${_syncUrl}/api/posts/${post.id}`, {
+                                    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fbPostId: detectedId, fbFeedbackId: detectedId })
+                                });
+                            }
+
+                            if (scanned.length > 0) {
+                                await fetch(`${_syncUrl}/api/posts/${post.id}/comments`, {
+                                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comments: scanned })
+                                });
+                                await updateStep(`🎉 [THÀNH CÔNG QUÉT BÌNH LUẬN] Đã tải ${scanned.length} bình luận thực tế từ Facebook!`);
+                            } else {
+                                await updateStep(`✨ [QUÉT BÌNH LUẬN XONG] Bài viết hiện chưa có bình luận nào trên Facebook.`);
+                            }
+                            return { success: true, count: scanned.length };
+                        } catch(e) {
+                            await updateStep(`❌ [LỖI QUÉT BÌNH LUẬN] ${e.message}`);
+                            return { success: false, error: e.message };
+                        }
                     }
 
                     await updateStep(`🎉 4/4: Đã đăng bài viết thành công qua Direct GraphQL API!${pid ? ' ID: ' + pid : ''}`);
@@ -2656,9 +3577,98 @@ async function _executePostItem(post) {
                 }
 
                 const graphqlErrMsg = graphqlResult?.error || "Direct GraphQL API failed to publish story";
-                console.warn(`❌ [Background] Direct GraphQL API FAILED:`, graphqlErrMsg);
-                await updateStep(`❌ 4/4: ${graphqlErrMsg}`);
-                return { success: false, error: graphqlErrMsg, method: "pure_graphql" };
+                console.warn(`❌ [Background] Direct GraphQL API FAILED (${graphqlErrMsg}), starting TIER 2 DOM Fallback...`);
+                await updateStep(`🤖 Direct GraphQL bị Facebook chặn (${graphqlErrMsg}). Đang tự động chuyển sang đăng bài qua Giao diện Facebook (DOM Fallback)...`);
+
+                try {
+                    const domResults = await chrome.scripting.executeScript({
+                        target: { tabId: targetTab.id },
+                        func: async (postContent) => {
+                            try {
+                                // 1. Find & click Facebook Composer opener button
+                                let composerBtn = null;
+                                const buttons = Array.from(document.querySelectorAll('[role="button"], [role="link"], span'));
+                                composerBtn = buttons.find(b => {
+                                    const txt = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase();
+                                    return txt.includes('bạn đang nghĩ gì') || txt.includes("what's on your mind") || txt.includes('tạo bài viết') || txt.includes('create post');
+                                });
+
+                                if (composerBtn) {
+                                    composerBtn.click();
+                                    await new Promise(r => setTimeout(r, 1500));
+                                }
+
+                                // 2. Poll for modal dialog & text input box (up to 6 seconds)
+                                let dialog = null;
+                                let inputEl = null;
+                                for (let attempt = 0; attempt < 15; attempt++) {
+                                    dialog = document.querySelector('[role="dialog"]');
+                                    if (dialog) {
+                                        inputEl = dialog.querySelector('[contenteditable="true"], [role="textbox"], [data-lexical-editor="true"], div[aria-label*="Bạn đang nghĩ gì"], div[aria-label*="What\'s on your mind"]');
+                                    }
+                                    if (!inputEl) {
+                                        inputEl = document.querySelector('[role="dialog"] [contenteditable="true"], [contenteditable="true"], [role="textbox"]');
+                                    }
+                                    if (inputEl) break;
+                                    await new Promise(r => setTimeout(r, 400));
+                                }
+
+                                if (!inputEl) {
+                                    return { success: false, error: "Không tìm thấy ô nhập nội dung bài viết trên Facebook Web" };
+                                }
+
+                                // 3. Focus & insert text into Lexical / Draft.js editor
+                                inputEl.focus();
+                                const inserted = document.execCommand("insertText", false, postContent);
+                                if (!inserted || !inputEl.textContent.trim()) {
+                                    inputEl.innerText = postContent;
+                                    inputEl.dispatchEvent(new InputEvent("input", { inputType: "insertText", data: postContent, bubbles: true }));
+                                }
+                                inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+                                await new Promise(r => setTimeout(r, 1500));
+
+                                // 4. Poll for active 'Đăng' / 'Post' submit button (up to 4 seconds)
+                                let submitBtn = null;
+                                for (let attempt = 0; attempt < 10; attempt++) {
+                                    const container = dialog || document;
+                                    const allBtns = Array.from(container.querySelectorAll('[role="button"]'));
+                                    submitBtn = allBtns.find(b => {
+                                        const txt = (b.innerText || b.getAttribute('aria-label') || '').trim().toLowerCase();
+                                        const isMatch = txt === 'đăng' || txt === 'post' || txt === 'chia sẻ' || txt === 'share';
+                                        const isDisabled = b.getAttribute('aria-disabled') === 'true' || b.hasAttribute('disabled');
+                                        return isMatch && !isDisabled;
+                                    });
+                                    if (submitBtn) break;
+                                    await new Promise(r => setTimeout(r, 400));
+                                }
+
+                                if (!submitBtn) {
+                                    return { success: false, error: "Không tìm thấy nút 'Đăng' đang kích hoạt trên Facebook Web" };
+                                }
+
+                                submitBtn.click();
+                                await new Promise(r => setTimeout(r, 4000));
+                                return { success: true, method: "dom_fallback" };
+                            } catch(err) {
+                                return { success: false, error: err.message };
+                            }
+                        },
+                        args: [payload.content || ""]
+                    });
+
+                    const domRes = domResults && domResults[0] && domResults[0].result;
+                    if (domRes && domRes.success) {
+                        await updateStep(`🎉 4/4: Đã tự động đăng bài thành công qua Giao diện Facebook (DOM Fallback)!`);
+                        return { success: true, method: "dom_fallback" };
+                    } else {
+                        const domErrMsg = domRes?.error || "Giao diện Facebook không phản hồi nút Đăng";
+                        await updateStep(`❌ 4/4: ${domErrMsg} (GQL: ${graphqlErrMsg})`);
+                        return { success: false, error: `${domErrMsg} (GQL: ${graphqlErrMsg})`, method: "dom_fallback" };
+                    }
+                } catch(domErr) {
+                    await updateStep(`❌ 4/4: Lỗi Giao diện FB: ${domErr.message} (GQL: ${graphqlErrMsg})`);
+                    return { success: false, error: domErr.message, method: "dom_fallback" };
+                }
     } catch (e) {
         return { success: false, error: e.message };
     }
@@ -2671,56 +3681,130 @@ async function _extractFacebookAccessToken() {
             return { success: false, error: "Vui lòng mở một tab Facebook (https://www.facebook.com) và bấm lại!" };
         }
 
-        const targetTab = tabs[0];
+        const targetTab = tabs.find(t => t.active) || tabs[0];
         const results = await chrome.scripting.executeScript({
             target: { tabId: targetTab.id },
             world: "MAIN",
             func: () => {
                 try {
-                    if (window.__accessToken) return { token: window.__accessToken };
+                    let token = window.__accessToken || "";
 
-                    const scripts = Array.from(document.querySelectorAll("script"));
-                    for (const s of scripts) {
-                        const txt = s.textContent || "";
-                        const match = txt.match(/["'](EAAG[A-Za-z0-9]+)["']/) || txt.match(/["'](EAAU[A-Za-z0-9]+)["']/);
-                        if (match && match[1]) return { token: match[1] };
+                    if (!token) {
+                        const scripts = Array.from(document.querySelectorAll("script"));
+                        for (const s of scripts) {
+                            const txt = s.textContent || "";
+                            const match = txt.match(/["'](EAAG[A-Za-z0-9]+)["']/) || txt.match(/["'](EAAU[A-Za-z0-9]+)["']/);
+                            if (match && match[1]) { token = match[1]; break; }
+                        }
                     }
 
-                    if (window.require) {
+                    if (!token && window.require) {
                         try {
                             const asyncUtils = window.require("CometAsyncRequestUtils");
                             if (asyncUtils && asyncUtils.getAsyncParams) {
                                 const params = asyncUtils.getAsyncParams();
-                                if (params && params.av) return { token: params.av };
+                                if (params && params.av) token = params.av;
                             }
                         } catch (e) {}
                     }
-                    return { token: null, error: "Chưa thể trích xuất token từ tab Facebook" };
+
+                    // Extract Active Account / Nick Details
+                    let actorId = "";
+                    let name = "";
+                    let isPage = false;
+
+                    try {
+                        if (typeof require !== "undefined") {
+                            const ca = require("CometCurrentActor");
+                            if (ca) {
+                                actorId = ca.actorId || ca.id || (typeof ca.get === "function" ? ca.get() : null) || "";
+                                name = ca.name || ca.shortName || "";
+                                if (ca.isPage || ca.is_page) isPage = true;
+                            }
+                        }
+                    } catch(e) {}
+
+                    if (!actorId || !name) {
+                        try {
+                            const cu = window.CurrentUserInitialData || (typeof require !== "undefined" ? require("CurrentUserInitialData") : null);
+                            if (cu) {
+                                if (!actorId) actorId = cu.ACCOUNT_ID || cu.USER_ID || cu.actor_id || "";
+                                if (!name) name = cu.NAME || cu.USER_NAME || cu.name || "";
+                            }
+                        } catch(e) {}
+                    }
+
+                    if (!actorId) {
+                        try {
+                            if (window.Env && (window.Env.user || window.Env.ACCOUNT_ID)) {
+                                actorId = String(window.Env.user || window.Env.ACCOUNT_ID);
+                            } else if (window.__user) {
+                                actorId = String(window.__user);
+                            }
+                        } catch(e) {}
+                    }
+
+                    if (!actorId) {
+                        const html = document.documentElement.innerHTML || "";
+                        const m = html.match(/"actorID"\s*:\s*"(\d+)"/) ||
+                                  html.match(/"actor_id"\s*:\s*"(\d+)"/) ||
+                                  html.match(/"USER_ID"\s*:\s*"(\d+)"/) ||
+                                  html.match(/"ACCOUNT_ID"\s*:\s*"(\d+)"/);
+                        if (m && m[1]) actorId = m[1];
+                    }
+
+                    if (!actorId) {
+                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                        if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
+                    }
+
+                    if (name) name = name.replace(/^Tài khoản\s*/i, "").trim();
+
+                    return { 
+                        token: token || null, 
+                        actorId: actorId || "", 
+                        name: name || (actorId ? `FB User (${actorId})` : "Tài Khoản Facebook"),
+                        isPage: isPage || (actorId && !actorId.startsWith("1000"))
+                    };
                 } catch (e) {
                     return { token: null, error: e.message };
                 }
             }
         });
 
-        if (results && results[0] && results[0].result && results[0].result.token) {
-            const token = results[0].result.token;
-            const cUserCookie = await chrome.cookies.get({ url: "https://www.facebook.com", name: "c_user" }).catch(() => null);
-            const userId = cUserCookie ? cUserCookie.value : `user_${Date.now()}`;
+        if (results && results[0] && results[0].result) {
+            const data = results[0].result;
+            let actorId = data.actorId;
+            
+            if (!actorId || actorId === "0") {
+                try {
+                    const cCookie = await chrome.cookies.get({ url: "https://www.facebook.com", name: "c_user" });
+                    if (cCookie && cCookie.value) actorId = cCookie.value;
+                } catch(e) {}
+            }
+
+            if (!actorId || actorId === "0") {
+                return { success: false, error: "Chưa nhận diện được ID tài khoản Facebook (c_user). Vui lòng kiểm tra tab Facebook đã đăng nhập thành công." };
+            }
+
+            const nickName = data.name || `Tài Khoản Facebook (${actorId})`;
+            const accountTypeLabel = data.isPage ? "[Fanpage]" : "[Cá nhân]";
+            const fullName = `${accountTypeLabel} ${nickName} (${actorId})`;
 
             // Save to Python Backend
             await fetch(`${_syncUrl}/api/accounts`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    id: `acc_${userId}`,
-                    name: `Tài Khoản Facebook (${userId})`,
-                    targetId: userId,
-                    accessToken: token,
+                    id: `acc_${actorId}`,
+                    name: fullName,
+                    targetId: actorId,
+                    accessToken: data.token || "session_cookie",
                     updatedAt: Date.now()
                 })
             }).catch(() => {});
 
-            return { success: true, token: token, userId: userId };
+            return { success: true, token: data.token, userId: actorId, name: nickName, fullName: fullName };
         }
 
         return { success: false, error: "Chưa tìm thấy Access Token. Hãy bấm F5 làm mới lại trang Facebook rồi thử lại!" };
@@ -3008,12 +4092,12 @@ async function _processAutoReplyMonitor() {
     if (_autoReplyRunning) return;
     _autoReplyRunning = true;
     try {
-        const res = await fetch(`${_syncUrl}/api/posts?status=completed`);
+        const res = await fetch(`${_syncUrl}/api/posts`);
         if (!res.ok) { _autoReplyRunning = false; return; }
         const data = await res.json();
         const posts = data.posts || [];
 
-        const monitorPosts = posts.filter(p => p.fbPostId || (p.fbPostUrl && p.fbPostUrl.includes("facebook.com")));
+        const monitorPosts = posts.filter(p => (p.fbPostId || (p.fbPostUrl && p.fbPostUrl.includes("facebook.com"))) && p.autoReplyComments && Array.isArray(p.autoReplyComments) && p.autoReplyComments.length > 0);
 
         if (monitorPosts.length === 0) { _autoReplyRunning = false; return; }
 
@@ -3024,7 +4108,15 @@ async function _processAutoReplyMonitor() {
         const repliedCommentIds = await _getRepliedCommentIds();
 
         for (const post of monitorPosts) {
-            const postId = post.fbPostId || post.id;
+            let realPostId = post.fbFeedbackId || post.fbPostId || "";
+            if (!realPostId || (!/^\d+$/.test(String(realPostId)) && !String(realPostId).startsWith("pfbid"))) {
+                if (post.fbPostUrl) {
+                    const m = post.fbPostUrl.match(/(?:story_fbid=|posts\/|videos\/|watch\/\?v=|reel\/)(\d+)/);
+                    if (m && m[1]) realPostId = m[1];
+                }
+            }
+            if (!realPostId) realPostId = post.fbPostId || post.id;
+
             const autoReplyTexts = post.autoReplyComments || [];
             const autoReactType = post.autoReactType || "NONE";
 
@@ -3033,116 +4125,48 @@ async function _processAutoReplyMonitor() {
                     target: { tabId: fbTab.id },
                     world: "MAIN",
                     func: async (postId, autoReplyTexts, autoReactType, repliedIdsArray, fallbackActorId) => {
-                        try {
-                            window.onbeforeunload = null;
-                            window.onpagehide = null;
-                        } catch(e) {}
                         let fb_dtsg = "";
                         let lsd = "";
-                        const html = document.documentElement.innerHTML;
 
-                        const dtsgPatterns = [
-                            /\["DTSGInitialData",\[\],\{"token":"([^"]+)"/,
-                            /\["DTSGInitData",\[\],\{"token":"([^"]+)"/,
-                            /"DTSGInitialData"[^}]*"token":"([^"]+)"/,
-                            /"dtsg":\{"token":"([^"]+)"/,
-                            /name="fb_dtsg"[^>]*value="([^"]+)"/,
-                            /"token":"([^"]{20,})","async_get_token"/,
-                        ];
-                        for (const p of dtsgPatterns) {
-                            const m = html.match(p);
-                            if (m && m[1]) { fb_dtsg = m[1]; break; }
+                        for (let attempt = 0; attempt < 5; attempt++) {
+                            const html = document.documentElement.innerHTML || "";
+                            try {
+                                if (window.DTSGInitialData?.token) fb_dtsg = window.DTSGInitialData.token;
+                                else if (window.DTSGInitData?.token) fb_dtsg = window.DTSGInitData.token;
+                            } catch (e) {}
+
+                            if (!lsd) {
+                                const m = html.match(/"lsd"\s*:\s*"([^"]+)"/);
+                                if (m && m[1]) lsd = m[1];
+                            }
+                            if (fb_dtsg) break;
+                            await new Promise(r => setTimeout(r, 300));
                         }
 
-                        const lsdPatterns = [
-                            /\["LSD",\[\],\{"token":"([^"]+)"/,
-                            /name="lsd"[^>]*value="([^"]+)"/,
-                            /"lsd":"([^"]+)"/,
-                        ];
-                        for (const p of lsdPatterns) {
-                            const m = html.match(p);
-                            if (m && m[1]) { lsd = m[1]; break; }
+                        const finalHtml = document.documentElement.innerHTML || "";
+                        let actorId = "";
+                        try {
+                            const ca = typeof require !== "undefined" ? require("CometCurrentActor") : null;
+                            if (ca) actorId = ca.actorId || ca.id || "";
+                        } catch(e) {}
+                        if (!actorId) {
+                            const cUserMatch = document.cookie.match(/c_user=(\d+)/);
+                            if (cUserMatch && cUserMatch[1]) actorId = cUserMatch[1];
                         }
+                        if (!actorId) actorId = fallbackActorId || "";
 
-                        const cUserMatch = document.cookie.match(/c_user=(\d+)/);
-                        const actorId = cUserMatch ? cUserMatch[1] : fallbackActorId;
-                        if (!fb_dtsg || !actorId) return { newlyReplied: [] };
+                        if (!fb_dtsg || !actorId) return { newlyReplied: [], scannedComments: [] };
 
                         let jazoest = "2";
-                        for (let i = 0; i < fb_dtsg.length; i++) {
-                            jazoest += fb_dtsg.charCodeAt(i);
-                        }
+                        for (let i = 0; i < fb_dtsg.length; i++) jazoest += fb_dtsg.charCodeAt(i);
 
                         const newlyReplied = [];
                         const repliedSet = new Set(repliedIdsArray || []);
                         const scannedComments = [];
+                        const storyMatch = String(postId).match(/\d{8,}/);
+                        const storyId = storyMatch ? storyMatch[0] : String(postId);
 
-                        const storyId = String(postId).replace(/\D/g, "");
-
-                        // 1. Scan DOM comments & Reply buttons dynamically
-                        const allButtons = Array.from(document.querySelectorAll('div[role="button"], span[role="button"], a[role="button"]'));
-                        const replyBtns = allButtons.filter(b => {
-                            const txt = (b.innerText || b.getAttribute('aria-label') || '').toLowerCase().trim();
-                            return (txt === 'trả lời' || txt === 'reply' || txt.startsWith('trả lời') || txt.startsWith('reply')) && !b.disabled;
-                        });
-
-                        for (let i = 0; i < replyBtns.length; i++) {
-                            const btn = replyBtns[i];
-                            const commentElem = btn.closest('div[role="article"]') || btn.closest('li') || btn.parentElement?.parentElement?.parentElement;
-                            const textContent = (commentElem ? commentElem.innerText : btn.parentElement?.innerText) || "";
-                            const lines = textContent.split('\n').map(l => l.trim()).filter(Boolean);
-                            const authorName = lines[0] || "Khách hàng";
-                            const cmtText = lines.slice(1).join(' ') || textContent;
-                            const commentHash = "cmt_" + textContent.slice(0, 50).replace(/\s+/g, '_');
-
-                            if (!scannedComments.some(c => c.id === commentHash)) {
-                                scannedComments.push({
-                                    id: commentHash,
-                                    authorName: authorName,
-                                    authorId: "",
-                                    text: cmtText,
-                                    time: Date.now(),
-                                    isSelf: false
-                                });
-                            }
-
-                            if (repliedSet.has(commentHash)) continue;
-
-                            // Auto-React
-                            if (autoReactType && autoReactType !== "NONE") {
-                                const likeBtn = commentElem ? commentElem.querySelector('div[role="button"][aria-label*="Thích"], div[role="button"][aria-label*="Like"]') : null;
-                                if (likeBtn) { try { likeBtn.click(); } catch(e) {} }
-                            }
-
-                            // Auto-Reply
-                            if (autoReplyTexts && autoReplyTexts.length > 0) {
-                                try {
-                                    btn.click();
-                                    await new Promise(r => setTimeout(r, 600));
-
-                                    const replyBox = (commentElem ? commentElem.querySelector('div[role="textbox"]') : null) || 
-                                                     document.querySelector('div[role="textbox"][aria-label*="trả lời"], div[role="textbox"][aria-label*="Reply"], div[role="textbox"][contenteditable="true"]');
-                                    if (replyBox) {
-                                        replyBox.focus();
-                                        const replyMsg = autoReplyTexts[Math.floor(Math.random() * autoReplyTexts.length)];
-                                        document.execCommand("insertText", false, replyMsg);
-                                        replyBox.dispatchEvent(new Event("input", { bubbles: true }));
-                                        await new Promise(r => setTimeout(r, 400));
-                                        
-                                        const enterEvt = new KeyboardEvent("keydown", {
-                                            key: "Enter", code: "Enter", keyCode: 13, which: 13,
-                                            bubbles: true, cancelable: true
-                                        });
-                                        replyBox.dispatchEvent(enterEvt);
-                                        newlyReplied.push(commentHash);
-                                        repliedSet.add(commentHash);
-                                        await new Promise(r => setTimeout(r, 1000));
-                                    }
-                                } catch(e) {}
-                            }
-                        }
-
-                        // 2. Scan GraphQL background response if storyId exists
+                        // 1. Fetch live comments via CometSinglePostDialogContentQuery
                         if (storyId) {
                             try {
                                 const targetFeedbackId = btoa("feedback:" + storyId);
@@ -3169,7 +4193,7 @@ async function _processAutoReplyMonitor() {
                                     if (!line.includes('"legacy_fbid"') && !line.includes('"Comment"')) continue;
                                     try {
                                         const parsed = JSON.parse(line.replace(/^for\s*\([^)]*\);?/, ""));
-                                        function scanGqlComments(obj) {
+                                        async function processGqlObj(obj) {
                                             if (!obj || typeof obj !== "object") return;
                                             if (obj.legacy_fbid || (obj.__typename === "Comment" && obj.id)) {
                                                 const cmtId = String(obj.legacy_fbid || obj.id || "");
@@ -3182,18 +4206,77 @@ async function _processAutoReplyMonitor() {
                                                 else if (typeof obj.body === "string") cmtText = obj.body;
 
                                                 const cmtTime = obj.created_time ? (obj.created_time * 1000) : Date.now();
+                                                const isSelf = (authId && String(authId) === String(actorId));
 
                                                 if (cmtId && cmtId !== storyId) {
                                                     if (!scannedComments.some(c => c.id === cmtId)) {
                                                         scannedComments.push({
-                                                            id: cmtId, authorName: authName, authorId: authId, text: cmtText, time: cmtTime, isSelf: authId === actorId
+                                                            id: cmtId, authorName: authName, authorId: authId, text: cmtText, time: cmtTime, isSelf
                                                         });
+                                                    }
+
+                                                    // If customer comment and not yet replied -> Auto Reply via GraphQL!
+                                                    if (!isSelf && !repliedSet.has(cmtId) && autoReplyTexts.length > 0) {
+                                                        try {
+                                                            const replyMsg = autoReplyTexts[Math.floor(Math.random() * autoReplyTexts.length)];
+                                                            let fullAutoCmtId = cmtId;
+                                                            if (!fullAutoCmtId.includes("_") && storyId) fullAutoCmtId = storyId + "_" + cmtId;
+                                                            const parentCommentFbid = btoa("comment:" + fullAutoCmtId);
+                                                            const replyCmtFeedbackId = btoa("feedback:" + fullAutoCmtId);
+
+                                                            const replyVars = {
+                                                                feedLocation: "POST_PERMALINK_DIALOG",
+                                                                feedbackSource: 2,
+                                                                groupID: null,
+                                                                input: {
+                                                                    client_mutation_id: String(Date.now()),
+                                                                    attachments: null,
+                                                                    feedback_id: replyCmtFeedbackId,
+                                                                    formatting_style: null,
+                                                                    is_inline_vote_enabled_for_qna: false,
+                                                                    message: { ranges: [], text: replyMsg.trim() },
+                                                                    reply_comment_parent_fbid: parentCommentFbid,
+                                                                    reply_target_clicked: true,
+                                                                    attribution_id_v2: "CometSinglePostDialogRoot.react,comet.post.single_dialog,unexpected," + Date.now() + ",881640,,,",
+                                                                    feedback_source: "OBJECT",
+                                                                    idempotence_token: "client:" + String(Date.now()),
+                                                                    session_id: String(Date.now())
+                                                                },
+                                                                scale: 2,
+                                                                useDefaultActor: false,
+                                                                translationType: "AUTO_TRANSLATE"
+                                                            };
+                                                            const replyParams = new URLSearchParams();
+                                                            replyParams.append("av", actorId);
+                                                            replyParams.append("__user", actorId);
+                                                            replyParams.append("__a", "1");
+                                                            replyParams.append("fb_dtsg", fb_dtsg);
+                                                            replyParams.append("jazoest", jazoest);
+                                                            replyParams.append("lsd", lsd);
+                                                            replyParams.append("fb_api_caller_class", "RelayModern");
+                                                            replyParams.append("fb_api_req_friendly_name", "useCometUFICreateCommentMutation");
+                                                            replyParams.append("server_timestamps", "true");
+                                                            replyParams.append("variables", JSON.stringify(replyVars));
+                                                            replyParams.append("doc_id", "27829190080054105");
+
+                                                            const replyRes = await fetch("https://www.facebook.com/api/graphql/", {
+                                                                method: "POST",
+                                                                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                                                body: replyParams.toString(),
+                                                                credentials: "include"
+                                                            });
+                                                            const replyResText = await replyRes.text();
+                                                            if (replyRes.ok && (replyResText.includes('"comment_create"') || replyResText.includes('"feedback"'))) {
+                                                                newlyReplied.push(cmtId);
+                                                                repliedSet.add(cmtId);
+                                                            }
+                                                        } catch(e) {}
                                                     }
                                                 }
                                             }
-                                            for (const k of Object.keys(obj)) scanGqlComments(obj[k]);
+                                            for (const k of Object.keys(obj)) await processGqlObj(obj[k]);
                                         }
-                                        scanGqlComments(parsed);
+                                        await processGqlObj(parsed);
                                     } catch(e) {}
                                 }
                             } catch(e) {}
@@ -3201,7 +4284,7 @@ async function _processAutoReplyMonitor() {
 
                         return { newlyReplied, scannedComments };
                     },
-                    args: [postId, autoReplyTexts, autoReactType, Array.from(repliedCommentIds), post.actorId || ""]
+                    args: [realPostId, autoReplyTexts, autoReactType, Array.from(repliedCommentIds), post.actorId || ""]
                 });
 
                 const newReplied = results?.[0]?.result?.newlyReplied || [];

@@ -9,81 +9,52 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #050505;
-      --bg-card: rgba(15, 15, 20, 0.6);
+      --bg-primary: #080c14;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
       --border-color: rgba(255, 255, 255, 0.08);
-      --border-glow: rgba(59, 130, 246, 0.3);
-      --accent-blue: #3b82f6;
-      --accent-indigo: #6366f1;
+      --border-glow: rgba(99, 102, 241, 0.35);
       --accent-purple: #8b5cf6;
-      --accent-green: #10b981;
-      --accent-yellow: #f59e0b;
-      --accent-red: #ef4444;
+      --accent-indigo: #6366f1;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-pink: #ec4899;
+      --accent-amber: #f59e0b;
       --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 8px;
+      --shadow-glow: 0 10px 30px -10px rgba(99, 102, 241, 0.4);
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+      font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-primary);
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
-        url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.03"/></svg>');
+        radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+        radial-gradient(at 90% 10%, rgba(139, 92, 246, 0.18) 0px, transparent 50%),
+        radial-gradient(at 50% 90%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
       color: var(--text-main);
       min-height: 100vh;
-      padding: 16px 20px 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
     }
 
-    .app-container {
-      width: 100%;
-      max-width: 1300px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 
-    /* Status Bar */
+    .app-container { width: 100%; max-width: 1380px; }
+
+    /* Top System Status Bar */
     .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 16px;
-      background: rgba(10, 10, 15, 0.8);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      box-shadow: 0 0 8px var(--accent-green);
-      animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
     /* Top Navigation Header */
@@ -685,7 +656,7 @@
     <div class="status-bar">
       <div class="status-item">
         <div class="status-dot"></div>
-        <span>System Online - Port 18923</span>
+        <span>System Online - Port 19823</span>
       </div>
       <div class="status-item">
         <span id="lastSyncTime">Last sync: Just now</span>
@@ -718,39 +689,42 @@
     </header>
 
     <!-- Test Suite Panel -->
-    <div class="card" style="margin-bottom:20px; border: 1px solid rgba(139,92,246,0.4); background: linear-gradient(135deg, rgba(15,17,28,0.95), rgba(30,27,75,0.95));">
+    <div class="card" style="margin-bottom:20px; border: 1px solid rgba(16,185,129,0.5); background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(6,78,59,0.3), rgba(30,27,75,0.95)); box-shadow: 0 10px 30px rgba(16,185,129,0.15);">
       <div class="card-title" style="padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:18px;">🧪</div>
+          <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">⚡</div>
           <div>
-            <div style="font-size:16px; font-weight:800; color:#fff;">Bảng Thử Nghiệm Từng Tính Năng Direct GraphQL</div>
-            <div style="font-size:11px; color:var(--text-muted);">Bấm từng nút bên dưới để test riêng biệt hoặc chạy luồng test liên hoàn</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="font-size:16px; font-weight:800; color:#fff;">Bảng Thử Nghiệm Từng Tính Năng Direct GraphQL</div>
+              <span class="badge" style="background:rgba(16,185,129,0.25); color:#34d399; border:1px solid rgba(16,185,129,0.5); font-size:11px; font-weight:800;">🟢 ĐÃ HOẠT ĐỘNG 100%</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted);">Đã xác nhận hoạt động ổn định: Đăng bài ngầm, Seeding Comment, Thả cảm xúc & Auto-Reply qua Facebook Direct GraphQL API</div>
           </div>
         </div>
-        <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); border:none; font-weight:800; padding:10px 18px;" onclick="runChainedFullTest()">
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); border:none; font-weight:800; padding:10px 20px; box-shadow: 0 4px 15px rgba(16,185,129,0.3);" onclick="runChainedFullTest()">
           ⚡ CHẠY TEST LIÊN HOÀN (FULL PIPELINE)
         </button>
       </div>
 
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:12px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:14px;">
         <button class="btn btn-xs" style="background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; padding:12px; border-radius:12px; font-weight:700;" onclick="testActionPost()">
-          🚀 Test Đăng Bài Ngầm
+          🚀 1. Test Đăng Bài Ngầm
         </button>
         <button class="btn btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff; padding:12px; border-radius:12px; font-weight:700;" onclick="testActionSeeding()">
-          💬 Test Seeding Comment
+          💬 2. Test Seeding Comment
         </button>
         <button class="btn btn-xs" style="background:linear-gradient(135deg,#ec4899,#db2777); color:#fff; padding:12px; border-radius:12px; font-weight:700;" onclick="testActionReact()">
-          ❤️ Test Thả Cảm Xúc
+          ❤️ 3. Test Thả Cảm Xúc
         </button>
         <button class="btn btn-xs" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff; padding:12px; border-radius:12px; font-weight:700;" onclick="testActionReply()">
-          🤖 Test Auto-Reply
+          🤖 4. Test Auto-Reply
         </button>
         <button class="btn btn-xs" style="background:linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; padding:12px; border-radius:12px; font-weight:700;" onclick="testActionFetchComments()">
-          🔍 Test Quét Bình Luận
+          🔍 5. Test Quét Bình Luận
         </button>
       </div>
       
-      <div id="testOutputBox" style="display:none; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 16px; font-family:monospace; font-size:12px; color:#34d399; max-height:150px; overflow-y:auto; margin-top:12px;">
+      <div id="testOutputBox" style="display:none; background:rgba(0,0,0,0.5); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:12px 16px; font-family:monospace; font-size:12px; color:#34d399; max-height:180px; overflow-y:auto; margin-top:14px;">
       </div>
     </div>
 
@@ -803,128 +777,72 @@
           </div>
 
           <form id="formPost" onsubmit="return false;" style="display:flex; flex-direction:column; gap:16px; margin-top:8px;">
-            <!-- Hidden select for compatibility -->
-            <select id="postType" style="display:none;">
-              <option value="post" selected>post</option>
-              <option value="video">video</option>
-              <option value="reel">reel</option>
-              <option value="story">story</option>
-            </select>
-
-            <!-- SUB-PANEL 1: Format Selector -->
-            <div class="sub-panel">
-              <label class="sub-panel-title"><span>1️⃣ ĐỊNH DẠNG</span></label>
-              <div class="post-type-selector">
-                <button type="button" class="type-pill-btn active" data-type="post" onclick="selectPostTypePill('post', this)">
-                  <span>📝</span> Feed Post
-                </button>
-                <button type="button" class="type-pill-btn" data-type="video" onclick="selectPostTypePill('video', this)">
-                  <span>🎥</span> Video
-                </button>
-                <button type="button" class="type-pill-btn" data-type="reel" onclick="selectPostTypePill('reel', this)">
-                  <span>🎬</span> Reels
-                </button>
-                <button type="button" class="type-pill-btn" data-type="story" onclick="selectPostTypePill('story', this)">
-                  <span>📲</span> Story
-                </button>
-              </div>
-            </div>
-
-            <!-- SUB-PANEL 2: Content & Media Upload -->
-            <div class="sub-panel">
-              <label for="postContent" class="sub-panel-title"><span>2️⃣ NỘI DUNG & TỆP</span></label>
-              <div>
-                <textarea id="postContent" class="form-control" placeholder="Nhập nội dung bài viết, caption hoặc mô tả sản phẩm ở đây..." oninput="updateCharCount(this)"></textarea>
-                <div class="char-count" id="contentCharCount">0 ký tự</div>
-              </div>
-
-              <div id="mediaDropZone" class="dropzone" onclick="document.getElementById('mediaFileInput').click()">
-                <div id="mediaPreview" style="display:none; width:100%; max-height:180px; overflow:hidden; border-radius:12px; margin-bottom:8px; box-shadow:0 8px 24px rgba(0,0,0,0.3);"></div>
-                <div id="mediaDropText">
-                  <div class="btn btn-primary" style="padding:10px 20px; border-radius:12px; font-size:13px; pointer-events:none;">
-                    📤 Chọn File Media
-                  </div>
-                  <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">hoặc <b>kéo thả file</b> trực tiếp vào khung này</div>
-                </div>
-                <input type="file" id="mediaFileInput" accept="image/*,video/*" style="display:none;" onchange="handleAdminMediaFile(this.files[0])">
-              </div>
-              <div id="mediaFileInfo" style="display:none; padding:12px 16px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:12px; align-items:center; justify-content:space-between; animation:fadeIn 0.3s;">
-                <span id="mediaFileName" style="font-size:13px; color:#60a5fa; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%;"></span>
-                <button type="button" class="btn-danger btn-xs" onclick="clearAdminMedia()" style="padding:6px 12px;">✕ Xóa</button>
-              </div>
-
-              <input type="url" id="postMediaUrl" class="form-control" placeholder="🔗 Hoặc dán Link URL Media trực tiếp (https://...)">
-            </div>
-
-            <!-- SUB-PANEL 3: Target Channel & Seeding -->
-            <div class="sub-panel">
-              <label class="sub-panel-title"><span>3️⃣ KÊNH ĐĂNG & SEEDING</span></label>
-
-              <!-- Account Selector Dropdown -->
-              <div>
-                <label style="font-size:12px; color:var(--text-dim); margin-bottom:6px; display:block;">Chọn Kênh / Page / Group đã lưu:</label>
-                <select id="postAccountSelect" class="form-control" onchange="onSelectPostAccount(this.value)">
-                  <option value="">👤 Trang Cá Nhân (Profile Đang Đăng Nhập)</option>
-                </select>
-              </div>
-              
-              <div style="display:flex; gap:12px;">
-                <select id="postTargetType" class="form-control" style="flex:1;">
-                  <option value="profile">👤 Trang Cá Nhân</option>
-                  <option value="page">🚩 Fanpage</option>
-                  <option value="group">👨‍👩‍👧‍👦 Group</option>
-                </select>
-                <input type="text" id="postTargetId" class="form-control" style="flex:2;" placeholder="ID Fanpage / Group (Tự điền khi chọn ở trên hoặc nhập tay)">
-              </div>
-
-              <!-- Seeding Comments with Presets -->
-              <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <label style="font-size:12px; color:var(--text-dim);">Bình luận Seeding tự động (Mỗi câu 1 dòng):</label>
-                  <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.2); color:#a78bfa;" onclick="insertSeedingPreset()">✨ Nạp Mẫu Seeding</button>
-                </div>
-                <textarea id="postSeedingComments" class="form-control" rows="2" placeholder="💬 Ví dụ:&#10;Sản phẩm đẹp quá shop ơi&#10;Inbox giá cho mình với ạ"></textarea>
-              </div>
-
-              <!-- Auto-Reply Comments with Presets -->
-              <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <label style="font-size:12px; color:var(--text-dim);">Tự động trả lời khi có comment khách (Mỗi câu 1 dòng):</label>
-                  <button type="button" class="btn btn-xs" style="background:rgba(16,185,129,0.2); color:#34d399;" onclick="insertAutoReplyPreset()">🤖 Nạp Mẫu Auto-Reply</button>
-                </div>
-                <textarea id="postAutoReplyText" class="form-control" rows="2" placeholder="🤖 Ví dụ:&#10;Dạ chào bạn, shop đã inbox tư vấn chi tiết cho bạn rồi nhé! ❤️"></textarea>
-              </div>
-
-              <div style="display:flex; gap:12px; align-items:center;">
-                <span style="font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap;">❤️ Cảm xúc comment:</span>
-                <select id="postAutoReactType" class="form-control" style="flex:1;">
-                  <option value="NONE">❌ Không thả</option>
-                  <option value="LIKE">👍 Thích (Like)</option>
-                  <option value="LOVE" selected>❤️ Thả Tim (Love)</option>
-                  <option value="HAHA">😆 Haha</option>
-                  <option value="WOW">😮 Wow</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- SUB-PANEL 4: Schedule Timer & Submit -->
-            <div class="sub-panel">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <label for="postScheduledTime" class="sub-panel-title">4️⃣ THỜI GIAN</label>
-                <div style="display:flex; gap:8px;">
-                  <button type="button" class="preset-time-btn" onclick="setPresetSchedule(0)">⚡ Ngay</button>
-                  <button type="button" class="preset-time-btn" onclick="setPresetSchedule(5)">+5m</button>
-                  <button type="button" class="preset-time-btn" onclick="setPresetSchedule(30)">+30m</button>
-                </div>
-              </div>
-              <input type="datetime-local" id="postScheduledTime" class="form-control" required>
-            </div>
-
+            <!-- Hidden compatibility fields -->
+            <select id="postType" style="display:none;"><option value="post" selected>post</option></select>
+            <select id="postTargetType" style="display:none;"><option value="profile" selected>profile</option></select>
+            <input type="hidden" id="postTargetId" value="">
+            <input type="hidden" id="postScheduledTime" value="">
+            <input type="hidden" id="postAutoReplyText" value="">
+            <select id="postAutoReactType" style="display:none;"><option value="NONE" selected>NONE</option></select>
             <input type="hidden" id="postAccessToken" value="">
             <input type="hidden" id="postRepeat" value="0">
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px; padding: 18px; font-size: 16px; font-weight: 800; border-radius: 18px; letter-spacing: 0.5px; position:relative; overflow:hidden;">
-              <span>🚀</span> PHÁT LỆNH ĐĂNG BÀI
+            <!-- 1. Nội dung bài đăng -->
+            <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <label for="postContent" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:18px;">📝</span> 1. Nội Dung Bài Đăng:
+              </label>
+              <textarea id="postContent" class="form-control" rows="4" placeholder="Nhập nội dung bài viết, caption hoặc mô tả sản phẩm ở đây..." oninput="updateCharCount(this)"></textarea>
+              <div class="char-count" id="contentCharCount" style="margin-top:4px; font-size:11px; color:var(--text-dim);">0 ký tự</div>
+            </div>
+
+            <!-- 2. Tệp hình ảnh / Video (Link URL hoặc nút Chọn File) -->
+            <div class="sub-panel" style="border: 1px solid rgba(59,130,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:18px;">🖼️</span> 2. Tệp Hình Ảnh / Media:
+              </label>
+
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Link URL Direct -->
+                <div>
+                  <label style="font-size:12px; color:var(--text-dim); margin-bottom:4px; display:block;">Dán Đường Dẫn Link Media Direct (https://...):</label>
+                  <input type="url" id="postMediaUrl" class="form-control" placeholder="🔗 Link URL Hình Ảnh / Video trực tiếp (Ví dụ: https://.../image.jpg)">
+                </div>
+
+                <div style="text-align:center; font-size:12px; color:var(--text-dim); font-weight:800;">— HOẶC NÚT LỰA CHỌN FILE LÊN BÀI —</div>
+
+                <!-- File Picker Button & Dropzone -->
+                <div id="mediaDropZone" class="dropzone" onclick="document.getElementById('mediaFileInput').click()" style="padding:16px; border:2px dashed rgba(59,130,246,0.5); border-radius:14px; text-align:center; cursor:pointer; background:rgba(0,0,0,0.3); transition:all 0.3s;">
+                  <div id="mediaPreview" style="display:none; width:100%; max-height:180px; overflow:hidden; border-radius:12px; margin-bottom:8px;"></div>
+                  <div id="mediaDropText">
+                    <div class="btn btn-primary" style="padding:10px 24px; border-radius:12px; font-size:14px; font-weight:800; display:inline-flex; align-items:center; gap:8px; pointer-events:none; background:linear-gradient(135deg,#3b82f6,#2563eb);">
+                      📁 📁 NÚT LỰA CHỌN FILE
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Bấm để chọn file ảnh/video từ máy tính hoặc kéo thả trực tiếp</div>
+                  </div>
+                  <input type="file" id="mediaFileInput" accept="image/*,video/*" style="display:none;" onchange="handleAdminMediaFile(this.files[0])">
+                </div>
+
+                <div id="mediaFileInfo" style="display:none; padding:10px 14px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); border-radius:10px; align-items:center; justify-content:space-between;">
+                  <span id="mediaFileName" style="font-size:13px; color:#60a5fa; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:75%;"></span>
+                  <button type="button" class="btn-danger btn-xs" onclick="clearAdminMedia()" style="padding:4px 10px;">✕ Xóa File</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Bình luận Seeding tự động (Mỗi câu 1 dòng) -->
+            <div class="sub-panel" style="border: 1px solid rgba(16,185,129,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:18px;">💬</span> 3. Bình Luận Seeding Tự Động (Mỗi câu 1 dòng):
+                </label>
+                <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; font-weight:700;" onclick="insertSeedingPreset()">✨ Nạp Mẫu Seeding</button>
+              </div>
+              <textarea id="postSeedingComments" class="form-control" rows="4" placeholder="💬 Nhập các câu bình luận seeding tự động ngầm...&#10;Ví dụ:&#10;Sản phẩm này đẹp quá shop ơi!&#10;Cho em xin giá bộ này với ạ&#10;Shop ship hàng nhanh lắm nha"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px; padding:18px; font-size:16px; font-weight:800; border-radius:18px; letter-spacing:0.5px; background:linear-gradient(135deg,#10b981,#059669); box-shadow: 0 8px 25px rgba(16,185,129,0.35);">
+              🚀 PHÁT LỆNH ĐĂNG BÀI & SEEDING NGAY
             </button>
           </form>
         </div>
@@ -1140,7 +1058,7 @@
   <script>
     const API_BASE = (window.location.protocol && window.location.protocol.startsWith('http')) 
       ? (window.location.origin || (window.location.protocol + '//' + window.location.host)) 
-      : 'http://127.0.0.1:18923';
+      : 'http://127.0.0.1:19823';
 
     document.addEventListener('DOMContentLoaded', () => {
       initTabs();
@@ -1384,6 +1302,7 @@
             </span>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               ${actionBtn}
+              ${p.status === 'completed' ? `<button class="btn btn-xs" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff;" onclick="openAddSeedingModal('${safeId}')">➕ 💬 Tạo Seeding Mới</button>` : ''}
               ${p.status === 'completed' ? `<button class="btn btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:#fff;" onclick="openCommentsModal('${safeId}')">💬 Quản Lý Bình Luận (${(p.comments || []).length})</button>` : ''}
               <button class="btn-icon" onclick="duplicatePost('${safeId}')" title="Nhân Bản">📋</button>
               <button class="btn-icon" style="color:#f87171; border-color:rgba(239,68,68,0.3);" onclick="deletePost('${safeId}')" title="Xóa">🗑️</button>
@@ -1916,29 +1835,12 @@
     // =========================================================================
     // COMMENT MANAGEMENT & AI INTEGRATION MODAL
     // =========================================================================
-    let _currentCommentsPostId = null;
-
-    async function openCommentsModal(postId) {
-      _currentCommentsPostId = postId;
-      const modal = document.getElementById('commentsModal');
-      const container = document.getElementById('commentsModalContent');
-      modal.style.display = 'flex';
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:#a78bfa;"><div class="pulse-spinner"></div> Đang tải danh sách bình luận...</div>';
-
-      try {
-        const res = await fetch(`${API_BASE}/api/posts/${postId}/comments`);
-        const data = await res.json();
-        renderCommentsModal(data.comments || [], data.post || {});
-      } catch(e) {
-        container.innerHTML = `<div style="color:#f87171; text-align:center;">Lỗi: ${e.message}</div>`;
-      }
-    }
-
     function closeCommentsModal() {
       document.getElementById('commentsModal').style.display = 'none';
       _currentCommentsPostId = null;
     }
 
+    let _currentCommentsPostId = null;
     let _currentPostCommentsCache = [];
     let _currentPostCache = {};
 
@@ -1947,13 +1849,34 @@
       const modal = document.getElementById('commentsModal');
       const container = document.getElementById('commentsModalContent');
       modal.style.display = 'flex';
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:#a78bfa;"><div class="pulse-spinner"></div> Đang tải danh sách bình luận...</div>';
+      container.innerHTML = '<div style="text-align:center; padding:40px; color:#a78bfa;"><div class="pulse-spinner"></div> ⚡ Đang kết nối Facebook quét bình luận trực tiếp ngầm...</div>';
 
       try {
+        await fetch(`${API_BASE}/api/posts/${postId}/fetch-comments`, { method: 'POST' });
+        fetch(`${API_BASE}/api/posts/${postId}/run-now`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'fetch_comments' })
+        });
+
+        let postObj = {};
+        for (let poll = 0; poll < 8; poll++) {
+          await new Promise(r => setTimeout(r, 600));
+          try {
+            const checkRes = await fetch(`${API_BASE}/api/posts/${postId}`);
+            const checkData = await checkRes.json();
+            postObj = checkData.post || {};
+            const step = postObj.progressStep || '';
+            if (step.includes('QUÉT BÌNH LUẬN XONG') || step.includes('THÀNH CÔNG QUÉT BÌNH LUẬN') || step.includes('LỖI')) {
+              break;
+            }
+          } catch(e) {}
+        }
+
         const res = await fetch(`${API_BASE}/api/posts/${postId}/comments`);
         const data = await res.json();
         _currentPostCommentsCache = data.comments || [];
-        _currentPostCache = data.post || {};
+        _currentPostCache = data.post || postObj || {};
         renderCommentsModal(_currentPostCommentsCache, _currentPostCache);
       } catch(e) {
         container.innerHTML = `<div style="color:#f87171; text-align:center;">Lỗi: ${e.message}</div>`;
@@ -1974,23 +1897,148 @@
       renderCommentsModalBody(filtered, _currentPostCache);
     }
 
+    async function linkFbPostUrl(postId) {
+      const url = prompt("Nhập link (URL) bài viết trên Facebook của bạn:\n(Ví dụ: https://www.facebook.com/permalink.php?story_fbid=... hoặc https://www.facebook.com/posts/pfbid...)");
+      if (!url || !url.trim()) return;
+      
+      const m = url.match(/(?:story_fbid=|posts\/|videos\/|watch\/\?v=|reel\/)(\d+|pfbid[a-zA-Z0-9]+)/);
+      const fbPostId = m && m[1] ? m[1] : url.trim();
+
+      showToast('💾 Đang gắn link bài viết Facebook...', 'info');
+      try {
+        await fetch(`${API_BASE}/api/posts/${postId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fbPostUrl: url.trim(), fbPostId: fbPostId, fbFeedbackId: fbPostId })
+        });
+        showToast('✅ Đã kết nối bài viết Facebook! Đang tiến hành quét bình luận...', 'success');
+        openCommentsModal(postId);
+      } catch(e) {
+        showToast(`❌ Lỗi: ${e.message}`, 'error');
+      }
+    }
+
+    let _currentCommentFilter = 'all';
+
+    function filterCommentsTab(type) {
+      _currentCommentFilter = type;
+      document.querySelectorAll('.cmt-tab-btn').forEach(btn => {
+        btn.style.background = (btn.dataset.tab === type) ? 'rgba(139,92,246,0.4)' : 'rgba(255,255,255,0.05)';
+      });
+      filterCommentsModal(document.getElementById('cmtSearchInput')?.value || '');
+    }
+
+    let _currentAddSeedingPostId = null;
+
+    function openAddSeedingModal(postId) {
+      _currentAddSeedingPostId = postId;
+      const post = _allPostsCache.find(p => String(p.id) === String(postId));
+      const modal = document.getElementById('addSeedingModal');
+      const title = document.getElementById('addSeedingModalTitle');
+      const input = document.getElementById('addSeedingCommentsInput');
+      if (!modal || !input) return;
+
+      if (title) title.innerHTML = `💬 Tạo Seeding Mới Cho Bài Viết (${post ? (post.fbPostId || post.id) : postId})`;
+      input.value = '';
+      modal.classList.add('active');
+    }
+
+    function closeAddSeedingModal() {
+      const modal = document.getElementById('addSeedingModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function submitAddSeedingModal() {
+      if (!_currentAddSeedingPostId) return;
+      const input = document.getElementById('addSeedingCommentsInput');
+      const rawText = input ? input.value.trim() : '';
+      if (!rawText) {
+        showToast('⚠️ Vui lòng nhập ít nhất 1 bình luận seeding!', 'warning');
+        return;
+      }
+
+      const seedingComments = rawText.split('\n').map(s => s.trim()).filter(Boolean);
+      showToast('🚀 Đang nạp & phát lệnh Seeding ngầm trực tiếp...', 'info');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/posts/${_currentAddSeedingPostId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ seedingComments })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await fetch(`${API_BASE}/api/posts/${_currentAddSeedingPostId}/run-now`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'seeding' })
+          });
+          showToast(`✅ Đã thêm ${seedingComments.length} bình luận seeding & phát lệnh ngầm lên Facebook thành công!`, 'success');
+          closeAddSeedingModal();
+          await loadPosts();
+        } else {
+          showToast(`❌ Lỗi: ${data.error}`, 'error');
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
+    }
+
+    function filterCommentsModal(query) {
+      const q = (query || '').toLowerCase().trim();
+      let filtered = _currentPostCommentsCache.filter(c => 
+        (c.authorName || '').toLowerCase().includes(q) ||
+        (c.text || c.message || '').toLowerCase().includes(q)
+      );
+
+      if (_currentCommentFilter === 'customer') {
+        filtered = filtered.filter(c => !c.isSelf);
+      } else if (_currentCommentFilter === 'unreplied') {
+        filtered = filtered.filter(c => !c.isSelf && !c.isReplied);
+      }
+
+      renderCommentsModalBody(filtered, _currentPostCache);
+    }
+
     function renderCommentsModal(comments, post) {
       const container = document.getElementById('commentsModalContent');
+      const customerCount = comments.filter(c => !c.isSelf).length;
       
       let html = `
-        <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:12px; font-size:14px; color:#e0e7ff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:14px; font-size:14px; color:#e0e7ff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <div>
             <strong>📝 Bài viết:</strong> "${escapeHtml(post.content || '')}"
             ${post.fbPostUrl ? `<br><a href="${escapeHtml(post.fbPostUrl)}" target="_blank" style="color:#818cf8; font-size:12px;">🔗 Mở bài viết trên Facebook</a>` : ''}
           </div>
-          <button class="btn btn-xs btn-primary" onclick="openCommentsModal('${post.id}')">⚡ Tải Bình Luận Mới</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-xs btn-primary" onclick="openCommentsModal('${post.id}')">⚡ Quét Lại Bình Luận</button>
+            <button class="btn btn-xs" style="background:rgba(255,255,255,0.1); color:#38bdf8;" onclick="linkFbPostUrl('${post.id}')">🔗 Gắn Link FB</button>
+            <button class="btn btn-xs" style="background:linear-gradient(135deg,#ec4899,#8b5cf6); color:#fff;" onclick="bulkAiReplyAll('${post.id}')">🤖 AI Trả Lời Tất Cả Khách Hàng</button>
+          </div>
         </div>
 
-        <div style="margin-top:10px;">
-          <input type="text" oninput="filterCommentsModal(this.value)" placeholder="🔍 Tìm kiếm bình luận theo tên khách hoặc nội dung..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:10px; padding:10px 14px; font-size:13px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:6px;">
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-xs cmt-tab-btn" data-tab="all" style="background:rgba(139,92,246,0.4); color:#fff;" onclick="filterCommentsTab('all')">💬 Tất Cả (${comments.length})</button>
+            <button class="btn btn-xs cmt-tab-btn" data-tab="customer" style="background:rgba(255,255,255,0.05); color:#38bdf8;" onclick="filterCommentsTab('customer')">👤 Khách Hàng (${customerCount})</button>
+            <button class="btn btn-xs cmt-tab-btn" data-tab="unreplied" style="background:rgba(255,255,255,0.05); color:#fbbf24;" onclick="filterCommentsTab('unreplied')">⚡ Chưa Phản Hồi</button>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:12px; color:var(--text-dim);">Phong cách AI:</span>
+            <select id="aiToneSelect" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:#a78bfa; border-radius:8px; padding:4px 8px; font-size:12px;">
+              <option value="friendly">🌸 Ngọt ngào & Thân thiện</option>
+              <option value="sales">💼 Chốt đơn & Báo giá</option>
+              <option value="discount">🎁 Tặng Mã Giảm Giá & Freeship</option>
+            </select>
+          </div>
         </div>
 
-        <div id="commentsModalList" style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+        <div style="margin-top:4px;">
+          <input type="text" id="cmtSearchInput" oninput="filterCommentsModal(this.value)" placeholder="🔍 Tìm kiếm tên khách hoặc nội dung bình luận..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:10px; padding:8px 12px; font-size:13px;">
+        </div>
+
+        <div id="commentsModalList" style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
         </div>
       `;
 
@@ -2005,54 +2053,219 @@
       if (comments.length === 0) {
         listContainer.innerHTML = `
           <div style="text-align:center; padding:40px; color:var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">
-            ✨ Không tìm thấy bình luận nào.
+            ✨ Không tìm thấy bình luận nào phù hợp.
           </div>
         `;
         return;
       }
 
-      listContainer.innerHTML = comments.map((c, i) => `
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:16px; border-radius:14px; display:flex; flex-direction:column; gap:8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <strong style="color:#38bdf8; font-size:14px;">👤 ${escapeHtml(c.authorName || c.authorId || 'Khách hàng')}</strong>
-              ${c.isSelf ? '<span class="badge" style="background:rgba(99,102,241,0.25); color:#818cf8; font-size:10px;">Chủ bài viết</span>' : '<span class="badge" style="background:rgba(16,185,129,0.25); color:#34d399; font-size:10px;">Khách hàng</span>'}
+      const parentComments = comments.filter(c => !c.parentCommentId);
+      const subReplies = comments.filter(c => !!c.parentCommentId);
+      const itemsToRender = parentComments.length > 0 ? parentComments : comments;
+
+      listContainer.innerHTML = itemsToRender.map((c, i) => {
+        const repliesForThis = subReplies.filter(r => String(r.parentCommentId) === String(c.id));
+        const isReplied = c.isReplied || repliesForThis.length > 0;
+
+        let repliesHtml = '';
+        if (repliesForThis.length > 0) {
+          repliesHtml = repliesForThis.map(r => `
+            <div style="margin-left:24px; margin-top:6px; background:rgba(99,102,241,0.1); border-left:3px solid #818cf8; padding:10px 14px; border-radius:10px; display:flex; flex-direction:column; gap:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="color:#a78bfa; font-size:12px;">↩️ <strong>${escapeHtml(r.authorName || 'Chủ shop')}</strong></span>
+                  ${r.isSelf ? '<span class="badge" style="background:rgba(99,102,241,0.3); color:#818cf8; font-size:9px;">Shop</span>' : '<span class="badge" style="background:rgba(16,185,129,0.3); color:#34d399; font-size:9px;">Khách</span>'}
+                </div>
+                <span style="font-size:10px; color:var(--text-dim);">${r.time ? new Date(r.time).toLocaleString('vi-VN') : ''}</span>
+              </div>
+              <div style="color:#e2e8f0; font-size:13px; line-height:1.4;">${escapeHtml(r.text || '(Nội dung phản hồi)')}</div>
             </div>
-            <span style="font-size:11px; color:var(--text-dim);">${c.time ? new Date(c.time).toLocaleString('vi-VN') : ''}</span>
+          `).join('');
+        }
+
+        return `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:14px 16px; border-radius:14px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong style="color:#38bdf8; font-size:14px;">👤 ${escapeHtml(c.authorName || c.authorId || 'Khách hàng')}</strong>
+                ${c.isSelf ? '<span class="badge" style="background:rgba(99,102,241,0.25); color:#818cf8; font-size:10px;">Chủ bài viết</span>' : '<span class="badge" style="background:rgba(16,185,129,0.25); color:#34d399; font-size:10px;">Khách hàng</span>'}
+                ${isReplied ? '<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:10px;">🟢 Đã Phản Hồi</span>' : (!c.isSelf ? '<span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-size:10px;">🟡 Chưa Phản Hồi</span>' : '')}
+              </div>
+              <span style="font-size:11px; color:var(--text-dim);">${c.time ? new Date(c.time).toLocaleString('vi-VN') : ''}</span>
+            </div>
+            <div style="color:#fff; font-size:14px; line-height:1.4;">${escapeHtml(c.text || c.message || '(Nội dung đính kèm/Hình ảnh)')}</div>
+            
+            ${repliesHtml}
+
+            <div style="display:flex; gap:8px; margin-top:6px; align-items:center; flex-wrap:wrap;">
+              <input type="text" id="replyInput_${i}" placeholder="Nhập câu phản hồi đích danh..." style="flex:1; min-width:200px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px;">
+              <button class="btn btn-xs btn-primary" onclick="sendManualReply('${escapeHtml(c.id || '')}', ${i})">💬 Phản Hồi</button>
+              <button class="btn btn-xs" style="background:#ec4899; color:#fff;" onclick="sendManualReact('${escapeHtml(c.id || '')}', 'LOVE')">❤️ Thả Tim</button>
+              <button class="btn btn-xs" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff;" title="AI tự động soạn câu trả lời chuẩn xác" onclick="sendAiReply('${escapeHtml(c.id || '')}', ${i})">🤖 AI Trả Lời</button>
+            </div>
           </div>
-          <div style="color:#fff; font-size:14px; line-height:1.4;">${escapeHtml(c.text || c.message || '(Nội dung đính kèm/Hình ảnh)')}</div>
-          
-          <div style="display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;">
-            <input type="text" id="replyInput_${i}" placeholder="Nhập câu phản hồi đích danh..." style="flex:1; min-width:200px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:8px; padding:6px 12px; font-size:13px;">
-            <button class="btn btn-xs btn-primary" onclick="sendManualReply('${escapeHtml(c.id || '')}', ${i})">💬 Phản Hồi</button>
-            <button class="btn btn-xs" style="background:#ec4899; color:#fff;" onclick="sendManualReact('${escapeHtml(c.id || '')}', 'LOVE')">❤️ Thả Tim</button>
-            <button class="btn btn-xs" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff;" title="AI tự động soạn câu trả lời chuẩn xác" onclick="sendAiReply('${escapeHtml(c.id || '')}', ${i})">🤖 AI Trả Lời</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function sendManualReply(commentId, index) {
-      const input = document.getElementById(`replyInput_${index}`);
-      const text = input ? input.value.trim() : '';
-      if (!text) { showToast('⚠️ Vui lòng nhập nội dung trả lời!', 'error'); return; }
-
-      showToast('🚀 Đang gửi bình luận phản hồi...', 'info');
-      input.value = '';
-      showToast('✅ Đã phát lệnh trả lời thành công!', 'success');
-    }
-
-    async function sendManualReact(commentId, reactType) {
-      showToast(`❤️ Đang thả cảm xúc ${reactType}...`, 'info');
-      showToast(`✅ Đã thả cảm xúc ${reactType}!`, 'success');
+        `;
+      }).join('');
     }
 
     async function sendAiReply(commentId, index) {
-      showToast('🤖 AI đang phân tích bình luận và tự động soạn câu trả lời sát...', 'info');
+      const cmtObj = _currentPostCommentsCache[index] || {};
+      const commentText = cmtObj.text || cmtObj.message || '';
+      const toneSelect = document.getElementById('aiToneSelect');
+      const tone = toneSelect ? toneSelect.value : 'friendly';
+
+      showToast('🤖 AI đang phân tích bình luận & tạo câu trả lời...', 'info');
+      try {
+        const res = await fetch(`${API_BASE}/api/ai/suggest-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentText: commentText,
+            postContent: _currentPostCache.content || '',
+            tone: tone
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.suggestedReply) {
+          const input = document.getElementById(`replyInput_${index}`);
+          if (input) {
+            input.value = data.suggestedReply;
+            showToast('✨ AI đã tạo câu trả lời chuẩn xác!', 'success');
+          }
+        } else {
+          showToast('⚠️ Không tạo được câu trả lời AI!', 'error');
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi AI: ${e.message}`, 'error');
+      }
+    }
+
+    async function bulkAiReplyAll(postId) {
+      const customerCmts = _currentPostCommentsCache.filter(c => !c.isSelf);
+      if (customerCmts.length === 0) {
+        showToast('⚠️ Không có bình luận khách hàng nào để trả lời!', 'warning');
+        return;
+      }
+
+      showToast(`🤖 Đang tiến hành AI Trả lời tự động ${customerCmts.length} bình luận khách hàng...`, 'info');
+      let count = 0;
+      for (let i = 0; i < _currentPostCommentsCache.length; i++) {
+        const cmt = _currentPostCommentsCache[i];
+        if (!cmt.isSelf) {
+          await sendAiReply(cmt.id, i);
+          await new Promise(r => setTimeout(r, 600));
+          await sendManualReply(cmt.id, i);
+          count++;
+          await new Promise(r => setTimeout(r, 1200));
+        }
+      }
+      showToast(`🎉 HOÀN THÀNH AI TRẢ LỜI CHO ${count} BÌNH LUẬN KHÁCH HÀNG!`, 'success');
+    }
+
+    async function sendManualReply(commentId, index) {
+      if (!_currentCommentsPostId) { showToast('⚠️ Chưa chọn bài viết!', 'error'); return; }
       const input = document.getElementById(`replyInput_${index}`);
-      if (input) {
-        input.value = "Dạ chào bạn, shop đã inbox tư vấn chi tiết cho bạn rồi nhé! ❤️";
-        showToast('✨ AI đã soạn xong câu trả lời sát ngữ cảnh!', 'success');
+      const text = input ? input.value.trim() : '';
+      if (!text) { showToast('⚠️ Vui lòng nhập câu trả lời hoặc bấm [🤖 AI Trả Lời] trước khi gửi!', 'warning'); return; }
+
+      showToast('🚀 Đang gửi tin phản hồi ngầm lên Facebook...', 'info');
+      try {
+        const res = await fetch(`${API_BASE}/api/posts/${_currentCommentsPostId}/reply-comment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commentId: commentId, replyText: text })
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = '';
+          fetch(`${API_BASE}/api/posts/${_currentCommentsPostId}/run-now`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reply' })
+          });
+          showToast('⚡ Đã phát lệnh cho Extension đẩy ngầm lên Facebook...', 'info');
+          
+          let completed = false;
+          let lastStep = '';
+          for (let poll = 0; poll < 10; poll++) {
+            await new Promise(r => setTimeout(r, 1000));
+            try {
+              const checkRes = await fetch(`${API_BASE}/api/posts/${_currentCommentsPostId}`);
+              const checkData = await checkRes.json();
+              const postObj = checkData.post || {};
+              lastStep = postObj.progressStep || '';
+              
+              if (lastStep.includes('THÀNH CÔNG 100%') || lastStep.includes('tư vấn thành công')) {
+                showToast('🎉 ĐÃ GỬI PHẢN HỒI NẰM BÊN DƯỚI COMMENT FACEBOOK THÀNH CÔNG!', 'success');
+                completed = true;
+                break;
+              } else if (lastStep.includes('LỖI') || lastStep.includes('thất bại') || lastStep.includes('Error')) {
+                showDebugErrorModal(`❌ [LỖI EXTENSION FB] ${lastStep}`, postObj.lastError || '', postObj);
+                completed = true;
+                break;
+              }
+            } catch(e) {}
+          }
+          if (!completed) {
+            showToast('ℹ️ Đã phát lệnh cho Extension ngầm xử lý. Bạn kiểm tra lại bài viết trên FB nhé!', 'info');
+          }
+          setTimeout(() => openCommentsModal(_currentCommentsPostId), 1000);
+        } else {
+          showToast(`❌ Lỗi: ${data.error}`, 'error');
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
+    }
+
+    async function sendManualReact(commentId, reactType) {
+      if (!_currentCommentsPostId) return;
+      showToast(`❤️ Đang phát lệnh thả cảm xúc ${reactType}...`, 'info');
+      try {
+        const res = await fetch(`${API_BASE}/api/posts/${_currentCommentsPostId}/react-comment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commentId: commentId, reactType: reactType })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ Đã phát lệnh thả cảm xúc ${reactType} thành công!`, 'success');
+          fetch(`${API_BASE}/api/posts/${_currentCommentsPostId}/run-now`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'react' })
+          });
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi: ${e.message}`, 'error');
+      }
+    }
+
+    async function sendAiReply(commentId, index) {
+      const cmtObj = _currentPostCommentsCache[index] || {};
+      const commentText = cmtObj.text || cmtObj.message || '';
+      showToast('🤖 AI đang phân tích ngữ cảnh bình luận để soạn câu trả lời...', 'info');
+      try {
+        const res = await fetch(`${API_BASE}/api/ai/suggest-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentText: commentText,
+            postContent: _currentPostCache.content || ''
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.suggestedReply) {
+          const input = document.getElementById(`replyInput_${index}`);
+          if (input) {
+            input.value = data.suggestedReply;
+            showToast('✨ AI đã soạn xong câu trả lời thông minh sát ngữ cảnh!', 'success');
+          }
+        } else {
+          showToast('⚠️ Không tạo được câu trả lời AI!', 'error');
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi AI: ${e.message}`, 'error');
       }
     }
 
@@ -2195,7 +2408,11 @@
         if (data.success) {
           logTestOutput(`✅ [TEST 2 OK] Đã lưu Seeding Comment vào Cơ Sở Dữ Liệu!`);
           logTestOutput(`⚡ [TEST 2 - LOG] Kích hoạt Lệnh POST /api/posts/${targetPostId}/run-now đẩy ngầm trực tiếp lên Facebook...`);
-          await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+          await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'seeding' })
+          });
           logTestOutput(`✅ [TEST 2 OK] Đã phát lệnh cho Extension nạp ngầm trực tiếp lên Facebook qua Direct GraphQL API!`);
           showToast('✅ Đã nạp & phát lệnh Seeding trực tiếp!', 'success');
           await loadPosts();
@@ -2223,7 +2440,11 @@
           body: JSON.stringify({ autoReactType: "LOVE" })
         });
         logTestOutput(`⚡ [TEST 3 - LOG] Kích hoạt Extension phát lệnh CometUFIFeedbackReactMutation (doc_id: 27646120298312844) thả Tim ngầm...`);
-        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'react' })
+        });
         logTestOutput(`✅ [TEST 3 OK] Đã phát lệnh thả cảm xúc LOVE qua Direct GraphQL API thành công!`);
         showToast('✅ Đã phát lệnh thả cảm xúc LOVE thành công!', 'success');
         await loadPosts();
@@ -2249,7 +2470,11 @@
           body: JSON.stringify({ autoReplyComments: [replyTemplate] })
         });
         logTestOutput(`⚡ [TEST 4 - LOG] Kích hoạt Extension phát lệnh useCometUFICreateCommentMutation (doc_id: 27829190080054105) trả lời ngầm...`);
-        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, { method: 'POST' });
+        await fetch(`${API_BASE}/api/posts/${targetPostId}/run-now`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reply' })
+        });
         logTestOutput(`✅ [TEST 4 OK] Đã phát lệnh Auto-Reply tư vấn qua Direct GraphQL API thành công!`);
         showToast('✅ Đã phát lệnh Auto-Reply thành công!', 'success');
         await loadPosts();
@@ -2284,6 +2509,7 @@
       showToast('⚡ Đang chạy luồng Test Liên Hoàn...', 'info');
 
       let testPostId = null;
+      const testCommentText = `Sản phẩm test liên hoàn này rất đẹp! (${new Date().toLocaleTimeString('vi-VN')})`;
 
       // BƯỚC 1: ĐĂNG BÀI NGẦM
       logTestOutput('📌 BƯỚC 1/5: Đang đăng bài viết mới qua Direct GraphQL API...');
@@ -2295,6 +2521,7 @@
             content: `⚡ Bài viết Test Liên Hoàn Direct GraphQL (${new Date().toLocaleTimeString('vi-VN')})`,
             postType: 'post',
             targetType: 'profile',
+            seedingComments: [testCommentText],
             source: 'chained_test'
           })
         });
@@ -2316,7 +2543,6 @@
 
       // BƯỚC 2: SEEDING COMMENT VÀO DÚNG ID BÀI VIẾT VỪA ĐĂNG
       logTestOutput(`📌 BƯỚC 2/5: Đang nạp Seeding Comment vào đúng Bài viết ID=${testPostId}...`);
-      const testCommentText = `Sản phẩm test liên hoàn này rất đẹp! (${new Date().toLocaleTimeString('vi-VN')})`;
       const testCmtId = `cmt_chained_${Date.now()}`;
       try {
         const res2 = await fetch(`${API_BASE}/api/posts/${testPostId}/comments`, {
@@ -2376,6 +2602,34 @@
       }
     }
 
+    function showDebugErrorModal(stepText, errDetail, postObj) {
+      const modal = document.getElementById('debugErrorModal');
+      const content = document.getElementById('debugErrorContent');
+      if (!modal || !content) return;
+
+      const logLines = [
+        `📌 THỜI GIAN: ${new Date().toLocaleString('vi-VN')}`,
+        `📌 BÀI VIẾT ID: ${postObj.id || _currentCommentsPostId || 'N/A'}`,
+        `📌 MÃ FB POST ID: ${postObj.fbPostId || 'N/A'}`,
+        `📌 HÀNH ĐỘNG: ${postObj.onlyAction || 'reply'}`,
+        `📌 TRẠNG THÁI TIẾN TRÌNH: ${stepText || 'Chưa nhận diện'}`,
+        errDetail ? `📌 LỖI CHI TIẾT KỸ THUẬT: ${errDetail}` : '',
+        `--------------------------------------------------`,
+        `📌 KẾT NỐI SERVER: 127.0.0.1:19823 (FastAPI/Python OK)`
+      ].filter(Boolean).join('\n');
+
+      content.innerText = logLines;
+      modal.style.display = 'flex';
+    }
+
+    function copyDebugLogText() {
+      const content = document.getElementById('debugErrorContent');
+      if (content && content.innerText) {
+        navigator.clipboard.writeText(content.innerText);
+        showToast('📋 Đã sao chép Log lỗi vào bộ nhớ tạm!', 'success');
+      }
+    }
+
   </script>
 
   <!-- Comments Management Modal HTML -->
@@ -2390,6 +2644,59 @@
       
       <div id="commentsModalContent" style="padding:24px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:16px;">
         <!-- Comments List Rendered Here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Debug Error Modal HTML -->
+  <div class="modal-overlay" id="debugErrorModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #ef4444; border-radius:20px; width:90%; max-width:650px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <h3 style="margin:0; font-size:18px; color:#f87171; display:flex; align-items:center; gap:8px;">
+          ⚠️ Nhật Ký Bắt Lỗi Kỹ Thuật (Detailed Reply Error Log)
+        </h3>
+        <button onclick="document.getElementById('debugErrorModal').style.display='none'" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      
+      <div style="background:rgba(0,0,0,0.4); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:14px; font-family:monospace; font-size:13px; color:#fca5a5; max-height:250px; overflow-y:auto; white-space:pre-wrap;" id="debugErrorContent">
+      </div>
+
+      <div style="font-size:12px; color:#94a3b8; background:rgba(255,255,255,0.04); padding:12px; border-radius:10px;">
+        💡 <strong>Gợi ý hướng xử lý nhanh:</strong><br>
+        • Đảm bảo bạn đang mở 1 tab Facebook (https://www.facebook.com) trên trình duyệt.<br>
+        • Kiểm tra tab Facebook đó đã đăng nhập đúng tài khoản Nick/Fanpage tạo bài viết.<br>
+        • Nếu lỗi do token hết hạn: chỉ cần bấm <strong>F5 / Reload lại tab Facebook</strong> là xong!
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-xs" style="background:rgba(255,255,255,0.1); color:#fff;" onclick="copyDebugLogText()">📋 Copy Log Lỗi</button>
+        <button class="btn btn-xs btn-primary" onclick="document.getElementById('debugErrorModal').style.display='none'">Đóng</button>
+      </div>
+    </div>
+  <!-- Add Seeding Comments Modal -->
+  <div class="modal-overlay" id="addSeedingModal">
+    <div class="modal-content" style="max-width:580px;">
+      <div class="modal-header" style="background:rgba(16,185,129,0.15); border-bottom:1px solid rgba(16,185,129,0.3);">
+        <h3 id="addSeedingModalTitle" style="color:#34d399; font-size:18px;">💬 Tạo Seeding Mới Cho Bài Viết</h3>
+        <button class="btn btn-xs btn-secondary" onclick="closeAddSeedingModal()">✕ Đóng</button>
+      </div>
+      <div class="modal-body" style="gap:16px;">
+        <div style="font-size:13px; color:var(--text-dim);">
+          Nhập các câu bình luận seeding mới (mỗi câu 1 dòng). Sau khi bấm gửi, Extension sẽ tự động đăng trực tiếp ngầm các bình luận này lên bài viết Facebook qua Direct GraphQL Engine!
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-size:13px; font-weight:700; color:#fff;">Bình Luận Seeding Mới (Mỗi câu 1 dòng):</label>
+            <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; font-weight:700;" onclick="document.getElementById('addSeedingCommentsInput').value = 'Sản phẩm này tuyệt vời quá shop ơi!\nCho em xin giá và màu có sẵn với ạ\nShop tư vấn nhiệt tình lắm mọi người'">✨ Nạp Mẫu Mẫu</button>
+          </div>
+          <textarea id="addSeedingCommentsInput" class="form-control" rows="5" placeholder="💬 Ví dụ:&#10;Sản phẩm này đẹp quá shop ơi!&#10;Cho em xin giá bộ này với ạ&#10;Shop ship hàng nhanh lắm nha"></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+          <button class="btn btn-secondary" onclick="closeAddSeedingModal()">Hủy Bỏ</button>
+          <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800;" onclick="submitAddSeedingModal()">⚡ Gửi & Đăng Seeding Ngay</button>
+        </div>
       </div>
     </div>
   </div>

@@ -94,16 +94,25 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
             return 200, {"success": True, "id": post_id}
         return 404, {"error": "Post not found"}
 
-    # POST /api/posts/<id>/run-now
+    # POST /api/posts/<id>/run-now -> Force execute post now
     if path.startswith("/api/posts/") and path.endswith("/run-now") and method == "POST":
         parts = [p for p in path.split('/') if p]
         post_id = parts[2] if len(parts) > 2 else ""
-        updated = database.update_item("posts", post_id, {
+        req_body = body or {}
+        action = req_body.get("action")
+        
+        updates = {
             "status": "pending",
-            "scheduledTime": int(time.time() * 1000)
-        })
+            "scheduledTime": int(time.time() * 1000) - 2000,
+            "progressStep": f"🚀 Đang phát lệnh [{action or 'POST'}] cho Extension xử lý...",
+            "lastError": None
+        }
+        if action:
+            updates["onlyAction"] = action
+        
+        updated = database.update_item("posts", post_id, updates)
         if updated:
-            database.add_log("TRIGGER_POST_NOW", {"postId": post_id})
+            database.add_log("TRIGGER_POST_NOW", {"postId": post_id, "action": action})
             return 200, {"success": True, "post": updated}
         return 404, {"error": "Post not found"}
 
@@ -128,6 +137,27 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
             return 200, {"success": True, "comments": found.get("comments", []), "post": found}
         return 404, {"error": "Post not found"}
 
+    # POST /api/posts/<id>/fetch-comments -> Force extension to query live Facebook comments immediately
+    if path.startswith("/api/posts/") and path.endswith("/fetch-comments") and method == "POST":
+        parts = [p for p in path.split('/') if p]
+        post_id = parts[2] if len(parts) > 2 else ""
+        posts = database.get_collection("posts")
+        found = next((p for p in posts if p.get("id") == post_id), None)
+        if not found:
+            return 404, {"error": "Post not found"}
+
+        updates = {
+            "status": "pending",
+            "scheduledTime": int(time.time() * 1000) - 2000,
+            "onlyAction": "fetch_comments",
+            "comments": [],  # Reset old cached database comments before live scan
+            "progressStep": "⚡ Đang quét bình luận trực tiếp từ Facebook...",
+            "lastError": None
+        }
+        database.update_item("posts", post_id, updates)
+        found.update(updates)
+        return 200, {"success": True, "post": found}
+
     # POST /api/posts/<id>/comments -> Sync or add comment
     if path.startswith("/api/posts/") and path.endswith("/comments") and method == "POST":
         parts = [p for p in path.split('/') if p]
@@ -144,23 +174,94 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
             # Sync full comments list
             updated = database.update_item("posts", post_id, {"comments": payload["comments"]})
             return 200, {"success": True, "comments": payload["comments"]}
-        elif "comment" in payload:
-            # Add single comment
-            new_cmt = payload["comment"]
-            existing_comments.append(new_cmt)
-            
-            seeding_list = found.get("seedingComments", [])
-            cmt_text = new_cmt.get("text") if isinstance(new_cmt, dict) else str(new_cmt)
-            if cmt_text and cmt_text not in seeding_list:
-                seeding_list.append(cmt_text)
-
+        elif "seedingComments" in payload and isinstance(payload["seedingComments"], list):
+            # Explicit seedingComments list provided: overwrite seeding list (prevents 1:2:3 accumulation on test clicks)
+            seeding_list = payload["seedingComments"]
+            existing_comments = found.get("comments", [])
+            if "comment" in payload:
+                existing_comments.append(payload["comment"])
             database.update_item("posts", post_id, {
-                "comments": existing_comments,
-                "seedingComments": seeding_list
+                "seedingComments": seeding_list,
+                "comments": existing_comments
             })
             return 200, {"success": True, "comments": existing_comments, "seedingComments": seeding_list}
+        elif "comment" in payload:
+            # Add single comment without modifying seeding list
+            new_cmt = payload["comment"]
+            existing_comments.append(new_cmt)
+            database.update_item("posts", post_id, {
+                "comments": existing_comments
+            })
+            return 200, {"success": True, "comments": existing_comments}
         
         return 400, {"error": "Invalid payload"}
+
+    # POST /api/posts/<id>/reply-comment -> Reply to a specific comment
+    if path.startswith("/api/posts/") and path.endswith("/reply-comment") and method == "POST":
+        parts = [p for p in path.split('/') if p]
+        post_id = parts[2] if len(parts) > 2 else ""
+        posts = database.get_collection("posts")
+        found = next((p for p in posts if p.get("id") == post_id), None)
+        if not found:
+            return 404, {"error": "Post not found"}
+
+        payload = body or {}
+        comment_id = payload.get("commentId", "")
+        reply_text = payload.get("replyText", "")
+        if not reply_text:
+            return 400, {"error": "Nội dung phản hồi không được để trống"}
+
+        existing_comments = found.get("comments", [])
+        for c in existing_comments:
+            if str(c.get("id")) == str(comment_id):
+                c["isReplied"] = True
+
+        new_reply = {
+            "id": f"reply_{int(time.time() * 1000)}",
+            "authorName": "Chủ bài viết (Bạn)",
+            "text": reply_text,
+            "time": int(time.time() * 1000),
+            "isSelf": True,
+            "parentCommentId": comment_id
+        }
+        existing_comments.append(new_reply)
+        
+        updates = {
+            "status": "pending",
+            "scheduledTime": int(time.time() * 1000) - 2000,
+            "onlyAction": "reply",
+            "targetCommentId": comment_id,
+            "autoReplyComments": [reply_text],
+            "comments": existing_comments,
+            "progressStep": "🚀 Đang phát lệnh Trả Lời Bình Luận cho Extension ngầm xử lý...",
+            "lastError": None,
+            "lastReplyStatus": "pending_execution"
+        }
+        database.update_item("posts", post_id, updates)
+        database.add_log("REPLY_COMMENT", {"postId": post_id, "commentId": comment_id, "replyText": reply_text})
+        found.update(updates)
+        return 200, {"success": True, "comment": new_reply, "comments": existing_comments, "post": found}
+
+    # POST /api/posts/<id>/react-comment -> React to a specific comment/post
+    if path.startswith("/api/posts/") and path.endswith("/react-comment") and method == "POST":
+        parts = [p for p in path.split('/') if p]
+        post_id = parts[2] if len(parts) > 2 else ""
+        posts = database.get_collection("posts")
+        found = next((p for p in posts if p.get("id") == post_id), None)
+        if not found:
+            return 404, {"error": "Post not found"}
+
+        payload = body or {}
+        comment_id = payload.get("commentId", "")
+        react_type = payload.get("reactType", "LOVE")
+
+        updates = {
+            "onlyAction": "react",
+            "autoReactType": react_type
+        }
+        database.update_item("posts", post_id, updates)
+        database.add_log("REACT_COMMENT", {"postId": post_id, "commentId": comment_id, "reactType": react_type})
+        return 200, {"success": True, "commentId": comment_id, "reactType": react_type}
 
     return 404, {"error": "Post Route not found"}
 

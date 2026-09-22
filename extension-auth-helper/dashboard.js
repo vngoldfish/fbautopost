@@ -130,7 +130,7 @@ function handleSaveSchedule(e) {
   };
 
   // Also sync to Python Backend
-  fetch('http://127.0.0.1:18923/api/posts', {
+  fetch('http://127.0.0.1:19823/api/posts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newPost)
@@ -163,7 +163,7 @@ async function loadScheduledPosts() {
 
   let backendPosts = [];
   try {
-    const res = await fetch('http://127.0.0.1:18923/api/posts');
+    const res = await fetch('http://127.0.0.1:19823/api/posts');
     if (res.ok) {
       const data = await res.json();
       backendPosts = data.posts || [];
@@ -297,11 +297,11 @@ function deletePost(id) {
   });
 
   // Also delete from backend
-  fetch(`http://127.0.0.1:18923/api/posts/${id}`, { method: 'DELETE' }).catch(() => {});
+  fetch(`http://127.0.0.1:19823/api/posts/${id}`, { method: 'DELETE' }).catch(() => {});
 }
 
 function runPostNow(id) {
-  fetch(`http://127.0.0.1:18923/api/posts/${id}/run-now`, { method: 'POST' }).catch(() => {});
+  fetch(`http://127.0.0.1:19823/api/posts/${id}/run-now`, { method: 'POST' }).catch(() => {});
   chrome.runtime.sendMessage({ type: 'TRIGGER_POST_NOW', postId: id }, (response) => {
     showToast('⚡ Đã phát lệnh đăng ngay!');
     setTimeout(loadScheduledPosts, 1000);
@@ -337,7 +337,7 @@ function duplicatePost(id, allPosts) {
   });
 
   // Sync to backend
-  fetch('http://127.0.0.1:18923/api/posts', {
+  fetch('http://127.0.0.1:19823/api/posts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newPost)

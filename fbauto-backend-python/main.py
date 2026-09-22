@@ -10,6 +10,9 @@ from routes.sync import handle_sync_route
 from routes.posts import handle_posts_route
 from routes.accounts import handle_accounts_route
 from routes.settings import handle_settings_route
+from routes.ai import handle_ai_route
+
+from contextlib import asynccontextmanager
 
 _admin_html_cache = None
 _admin_html_mtime = 0
@@ -25,11 +28,18 @@ try:
 except ImportError:
     HAS_FASTAPI = False
 
+@asynccontextmanager
+async def lifespan(app_instance):
+    scheduler_service.start_scheduler(15)
+    yield
+    scheduler_service.stop_scheduler()
+
 if HAS_FASTAPI:
     app = FastAPI(
         title="fbAUTO Python Backend",
         description="Standalone Facebook Auto-Posting & Scheduling Engine in Python",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
 
     app.add_middleware(
@@ -39,14 +49,6 @@ if HAS_FASTAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    @app.on_event("startup")
-    def startup_event():
-        scheduler_service.start_scheduler(15)
-
-    @app.on_event("shutdown")
-    def shutdown_event():
-        scheduler_service.stop_scheduler()
 
     @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
     async def catch_all(request: Request, path: str):
@@ -75,12 +77,20 @@ if HAS_FASTAPI:
             status, res_data = handle_accounts_route(full_path, request.method, body)
             return JSONResponse(status_code=status, content=res_data)
 
+        if full_path.startswith("/api/settings"):
+            status, res_data = handle_settings_route(full_path, request.method, body)
+            return JSONResponse(status_code=status, content=res_data)
+
+        if full_path.startswith("/api/ai"):
+            status, res_data = handle_ai_route(full_path, request.method, body)
+            return JSONResponse(status_code=status, content=res_data)
+
         if full_path == "/api/logs":
             all_logs = database.get_collection("logs")
             logs = all_logs[-100:][::-1]
             return JSONResponse(status_code=200, content={"logs": logs, "total": len(all_logs)})
 
-        if full_path in ["/", "", "/admin", "/admin/"]:
+        if full_path in ["/", "", "/admin", "/admin/", "/admin.html"]:
             try:
                 global _admin_html_cache, _admin_html_mtime
                 admin_path = os.path.join(config.BASE_DIR, "admin.html")
@@ -155,7 +165,7 @@ class FallbackHTTPHandler(BaseHTTPRequestHandler):
                 except Exception:
                     body = {"raw": raw_body}
 
-        if path in ["/", "", "/admin", "/admin/"]:
+        if path in ["/", "", "/admin", "/admin/", "/admin.html"]:
             try:
                 global _admin_html_cache, _admin_html_mtime
                 admin_path = os.path.join(config.BASE_DIR, "admin.html")

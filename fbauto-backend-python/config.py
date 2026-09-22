@@ -1,6 +1,6 @@
 import os
 
-PORT = int(os.environ.get("PORT", 18923))
+PORT = int(os.environ.get("PORT", 19823))
 HOST = os.environ.get("HOST", "0.0.0.0")
 THEME_VER = 0x5A
 

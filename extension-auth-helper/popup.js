@@ -1,6 +1,6 @@
 
 
-let _syncPort = 18923;
+let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
 
 function _updateSyncPort(port) {
