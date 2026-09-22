@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  fbauto-backend:
+    build:
+      context: ./fbauto-backend-python
+      dockerfile: Dockerfile
+    container_name: fbauto-backend
+    restart: always
+    ports:
+      - "19823:19823"
+    environment:
+      - PORT=19823
+      - HOST=0.0.0.0
+      - SYNC_TOKEN=
+    volumes:
+      - ./fbauto-backend-python/data:/app/data

@@ -2,13 +2,31 @@
 
 let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
+let _syncToken = "";
 
-function _updateSyncPort(port) {
-    if (port && typeof port === "number" && port >= 1 && port <= 65535) {
+function _updateSyncTarget(target) {
+    if (!target) return;
+    const s = String(target).trim();
+    if (s.startsWith("http://") || s.startsWith("https://")) {
+        _syncUrl = s.replace(/\/+$/, "");
+        _syncPort = 0;
+        return;
+    }
+    const port = parseInt(s, 10);
+    if (!isNaN(port) && port >= 1 && port <= 65535) {
         _syncPort = port;
         _syncUrl = `http://127.0.0.1:${_syncPort}`;
     }
 }
+
+function _updateSyncPort(port) { _updateSyncTarget(port); }
+
+function _getSyncHeaders(extra = {}) {
+    const h = { ...extra };
+    if (_syncToken) h["X-Sync-Token"] = _syncToken;
+    return h;
+}
+
 const _RENDER_URL = "https://labs.google/fx/tools/flow";
 
 const dotBridge = document.getElementById("dotBridge");
@@ -23,8 +41,6 @@ const btnVerify = document.getElementById("btnTestCaptcha");
 const btnRefresh = document.getElementById("btnRefresh");
 const btnOpenTab = document.getElementById("btnOpenTab");
 
-// Guard: check Facebook session tab instead of Labs tab for FB Auto Post
-// Elements may be null if popup.html doesn't include them
 const resultBox = document.getElementById("resultBox");
 
 const statTokens = document.getElementById("statTokens");
@@ -34,9 +50,16 @@ const statLast = document.getElementById("statLast");
 let currentTabId = null;
 
 function init() {
-    chrome.storage.local.get(["syncPort"], (data) => {
-        if (data && data.syncPort) {
-            _updateSyncPort(data.syncPort);
+    chrome.storage.local.get(["syncPort", "syncTarget", "syncToken"], (data) => {
+        if (data) {
+            if (data.syncTarget) {
+                _updateSyncTarget(data.syncTarget);
+            } else if (data.syncPort) {
+                _updateSyncTarget(data.syncPort);
+            }
+            if (data.syncToken) {
+                _syncToken = String(data.syncToken).trim();
+            }
         }
         _pullSnapshot();
         _pingTheme().catch(() => {});
@@ -49,11 +72,17 @@ function init() {
     });
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === "local" && changes.syncPort) {
-            _updateSyncPort(changes.syncPort.newValue);
-            _pullSnapshot();
-            _pingTheme().catch(() => {});
+        if (areaName !== "local") return;
+        if (changes.syncTarget) {
+            _updateSyncTarget(changes.syncTarget.newValue);
+        } else if (changes.syncPort) {
+            _updateSyncTarget(changes.syncPort.newValue);
         }
+        if (changes.syncToken) {
+            _syncToken = changes.syncToken.newValue ? String(changes.syncToken.newValue).trim() : "";
+        }
+        _pullSnapshot();
+        _pingTheme().catch(() => {});
     });
 }
 

@@ -56,6 +56,13 @@ if HAS_FASTAPI:
             return JSONResponse(status_code=204, content={})
         
         full_path = "/" + path.lstrip("/")
+
+        # Check SYNC_TOKEN security if configured on remote VPS
+        if config.SYNC_TOKEN:
+            token = request.headers.get("X-Sync-Token") or request.headers.get("x-sync-token")
+            if token != config.SYNC_TOKEN and not full_path.startswith("/admin") and full_path != "/":
+                return JSONResponse(status_code=401, content={"error": "Unauthorized Sync Token"})
+
         query = dict(request.query_params)
         body = {}
         if request.method in ["POST", "PUT", "PATCH"]:

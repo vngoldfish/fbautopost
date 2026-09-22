@@ -2,6 +2,7 @@
 
 let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
+let _syncToken = "";
 
 // ===================================================================
 // 📡 AUTOMATIC GRAPHQL DOC_ID SNIFFER & DYNAMIC AUTO-CAPTURE
@@ -45,23 +46,51 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
     );
 }
 
-
-function _updateSyncPort(port) {
-    if (port && typeof port === "number" && port >= 1 && port <= 65535) {
+function _updateSyncTarget(target) {
+    if (!target) return;
+    const s = String(target).trim();
+    if (s.startsWith("http://") || s.startsWith("https://")) {
+        _syncUrl = s.replace(/\/+$/, "");
+        _syncPort = 0;
+        return;
+    }
+    const port = parseInt(s, 10);
+    if (!isNaN(port) && port >= 1 && port <= 65535) {
         _syncPort = port;
         _syncUrl = `http://127.0.0.1:${_syncPort}`;
     }
 }
 
-chrome.storage.local.get(["syncPort"], (data) => {
-    if (data && data.syncPort) {
-        _updateSyncPort(data.syncPort);
+function _updateSyncPort(port) { _updateSyncTarget(port); }
+
+function _getSyncHeaders(extra = {}) {
+    const h = { ...extra };
+    if (_syncToken) h["X-Sync-Token"] = _syncToken;
+    return h;
+}
+
+chrome.storage.local.get(["syncPort", "syncTarget", "syncToken"], (data) => {
+    if (data) {
+        if (data.syncTarget) {
+            _updateSyncTarget(data.syncTarget);
+        } else if (data.syncPort) {
+            _updateSyncTarget(data.syncPort);
+        }
+        if (data.syncToken) {
+            _syncToken = String(data.syncToken).trim();
+        }
     }
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === "local" && changes.syncPort) {
-        _updateSyncPort(changes.syncPort.newValue);
+    if (areaName !== "local") return;
+    if (changes.syncTarget) {
+        _updateSyncTarget(changes.syncTarget.newValue);
+    } else if (changes.syncPort) {
+        _updateSyncTarget(changes.syncPort.newValue);
+    }
+    if (changes.syncToken) {
+        _syncToken = changes.syncToken.newValue ? String(changes.syncToken.newValue).trim() : "";
     }
 });
 const _FONT_INTERVAL = 1500;        

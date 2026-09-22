@@ -16,7 +16,7 @@
    } ],
    "default_locale": "en",
    "description": "Tự động đăng bài viết, video, thước phim (reels), bản tin (stories) trên Facebook",
-   "host_permissions": [ "https://*.facebook.com/*", "https://*.fb.com/*", "http://localhost/*", "http://127.0.0.1/*" ],
+   "host_permissions": [ "<all_urls>", "https://*.facebook.com/*", "https://*.fb.com/*", "http://localhost/*", "http://127.0.0.1/*" ],
    "icons": {
       "128": "icon128.png",
       "48": "icon48.png"

@@ -1,6 +1,42 @@
-// Dashboard Script v3.0 — Media Upload Support
+// Dashboard Script v3.0 — Media Upload Support & Remote VPS Sync
+
+let _apiBaseCache = "http://127.0.0.1:19823";
+let _apiTokenCache = "";
+
+function resolveApiBase() {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(["syncTarget", "syncPort", "syncToken"], (data) => {
+        if (data) {
+          if (data.syncTarget) {
+            const s = String(data.syncTarget).trim();
+            if (s.startsWith("http://") || s.startsWith("https://")) {
+              _apiBaseCache = s.replace(/\/+$/, "");
+            } else {
+              const port = parseInt(s, 10);
+              if (!isNaN(port)) _apiBaseCache = `http://127.0.0.1:${port}`;
+            }
+          } else if (data.syncPort) {
+            _apiBaseCache = `http://127.0.0.1:${data.syncPort}`;
+          }
+          if (data.syncToken) {
+            _apiTokenCache = String(data.syncToken).trim();
+          }
+        }
+      });
+    }
+  } catch(e) {}
+}
+resolveApiBase();
+
+function getApiHeaders(extra = {}) {
+  const h = { ...extra };
+  if (_apiTokenCache) h["X-Sync-Token"] = _apiTokenCache;
+  return h;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  resolveApiBase();
   initFormDefaultTime();
   loadScheduledPosts();
   setupEventListeners();
@@ -130,9 +166,9 @@ function handleSaveSchedule(e) {
   };
 
   // Also sync to Python Backend
-  fetch('http://127.0.0.1:19823/api/posts', {
+  fetch(`${_apiBaseCache}/api/posts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getApiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(newPost)
   }).catch(() => {});
 
@@ -163,7 +199,7 @@ async function loadScheduledPosts() {
 
   let backendPosts = [];
   try {
-    const res = await fetch('http://127.0.0.1:19823/api/posts');
+    const res = await fetch(`${_apiBaseCache}/api/posts`, { headers: getApiHeaders() });
     if (res.ok) {
       const data = await res.json();
       backendPosts = data.posts || [];
@@ -297,11 +333,11 @@ function deletePost(id) {
   });
 
   // Also delete from backend
-  fetch(`http://127.0.0.1:19823/api/posts/${id}`, { method: 'DELETE' }).catch(() => {});
+  fetch(`${_apiBaseCache}/api/posts/${id}`, { method: 'DELETE', headers: getApiHeaders() }).catch(() => {});
 }
 
 function runPostNow(id) {
-  fetch(`http://127.0.0.1:19823/api/posts/${id}/run-now`, { method: 'POST' }).catch(() => {});
+  fetch(`${_apiBaseCache}/api/posts/${id}/run-now`, { method: 'POST', headers: getApiHeaders() }).catch(() => {});
   chrome.runtime.sendMessage({ type: 'TRIGGER_POST_NOW', postId: id }, (response) => {
     showToast('⚡ Đã phát lệnh đăng ngay!');
     setTimeout(loadScheduledPosts, 1000);
@@ -337,9 +373,9 @@ function duplicatePost(id, allPosts) {
   });
 
   // Sync to backend
-  fetch('http://127.0.0.1:19823/api/posts', {
+  fetch(`${_apiBaseCache}/api/posts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getApiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(newPost)
   }).catch(() => {});
 }
