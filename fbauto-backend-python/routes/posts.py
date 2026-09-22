@@ -10,10 +10,15 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
         posts = database.get_collection("posts")
         status = query.get("status") if query else None
         post_type = query.get("postType") or query.get("type") if query else None
+        project_key = query.get("projectKey") or query.get("project") if query else None
+
         if status and status != "all":
             posts = [p for p in posts if p.get("status") == status]
         if post_type and post_type != "all":
             posts = [p for p in posts if p.get("postType") == post_type]
+        if project_key and project_key != "all":
+            posts = [p for p in posts if not p.get("projectKey") or p.get("projectKey") in [project_key, "all"]]
+
         return 200, {"posts": posts, "total": len(posts)}
 
     # GET /api/posts/<id>
@@ -55,8 +60,11 @@ def handle_posts_route(path: str, method: str, body: dict = None, query: dict = 
         except (ValueError, TypeError):
             repeat_interval = 0
 
+        project_key = payload.get("projectKey") or payload.get("project") or "all"
+
         new_post = {
             "id": f"post_{int(time.time() * 1000)}_{rand_str}",
+            "projectKey": project_key,
             "postType": post_type, # post | video | reel | story
             "content": content,
             "targetType": payload.get("targetType", "profile"), # profile | page | group

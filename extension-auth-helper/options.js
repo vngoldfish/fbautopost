@@ -1,6 +1,7 @@
 
 const DEFAULT_TARGET = "19823";
 const inputTarget = document.getElementById("syncTarget");
+const inputProjectKey = document.getElementById("projectKey");
 const inputToken = document.getElementById("syncToken");
 const btnSave = document.getElementById("btnSave");
 const statusMsg = document.getElementById("statusMsg");
@@ -8,7 +9,7 @@ const statusMsg = document.getElementById("statusMsg");
 // Load settings
 document.addEventListener("DOMContentLoaded", () => {
     try {
-        chrome.storage.local.get(["syncPort", "syncTarget", "syncToken"], (data) => {
+        chrome.storage.local.get(["syncPort", "syncTarget", "syncToken", "projectKey"], (data) => {
             if (chrome.runtime.lastError) {
                 console.error("Error loading settings:", chrome.runtime.lastError);
                 return;
@@ -17,6 +18,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputTarget.value = data.syncTarget;
             } else {
                 inputTarget.value = data.syncPort || DEFAULT_TARGET;
+            }
+            if (data.projectKey) {
+                inputProjectKey.value = data.projectKey;
+            } else {
+                inputProjectKey.value = "taikhoan1";
             }
             if (data.syncToken) {
                 inputToken.value = data.syncToken;
@@ -30,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Save settings & test connection
 btnSave.addEventListener("click", () => {
     const targetVal = (inputTarget.value || "").trim();
+    const projectVal = (inputProjectKey.value || "taikhoan1").trim().toLowerCase();
     const tokenVal = (inputToken.value || "").trim();
 
     if (!targetVal) {
@@ -49,6 +56,7 @@ btnSave.addEventListener("click", () => {
     try {
         const saveData = {
             syncTarget: targetVal,
+            projectKey: projectVal,
             syncToken: tokenVal
         };
         if (isPort) {

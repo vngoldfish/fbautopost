@@ -16,14 +16,21 @@ FILES = {
     "logs": config.LOGS_FILE,
     "targets": os.path.join(config.DATA_DIR, "targets.json"),
     "accounts": os.path.join(config.DATA_DIR, "accounts.json"),
-    "settings": os.path.join(config.DATA_DIR, "settings.json")
+    "settings": os.path.join(config.DATA_DIR, "settings.json"),
+    "projects": os.path.join(config.DATA_DIR, "projects.json")
 }
 
 # Initialize empty JSON files
-for file_path in FILES.values():
+for key, file_path in FILES.items():
     if not os.path.exists(file_path):
+        default_data = []
+        if key == "projects":
+            default_data = [
+                {"id": "taikhoan1", "name": "Tài khoản 1 (taikhoan1)", "description": "Dự án / Extension 1", "createdAt": int(time.time() * 1000)},
+                {"id": "taikhoan2", "name": "Tài khoản 2 (taikhoan2)", "description": "Dự án / Extension 2", "createdAt": int(time.time() * 1000)}
+            ]
         with open(file_path, "w", encoding="utf-8") as f:
-            json.dump([], f, ensure_ascii=False, indent=2)
+            json.dump(default_data, f, ensure_ascii=False, indent=2)
 
 def get_collection(name: str) -> list:
     with _db_lock:

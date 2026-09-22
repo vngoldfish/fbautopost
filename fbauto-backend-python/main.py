@@ -11,6 +11,7 @@ from routes.posts import handle_posts_route
 from routes.accounts import handle_accounts_route
 from routes.settings import handle_settings_route
 from routes.ai import handle_ai_route
+from routes.projects import handle_projects_route
 
 from contextlib import asynccontextmanager
 
@@ -79,6 +80,10 @@ if HAS_FASTAPI:
             status, res_data = handle_posts_route(full_path, request.method, body, query)
             return JSONResponse(status_code=status, content=res_data)
 
+
+        if full_path.startswith("/api/projects"):
+            status, res_data = handle_projects_route(full_path, request.method, body, query)
+            return JSONResponse(status_code=status, content=res_data)
 
         if full_path.startswith("/api/accounts"):
             status, res_data = handle_accounts_route(full_path, request.method, body)

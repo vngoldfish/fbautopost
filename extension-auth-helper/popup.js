@@ -3,6 +3,7 @@
 let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
 let _syncToken = "";
+let _projectKey = "taikhoan1";
 
 function _updateSyncTarget(target) {
     if (!target) return;
@@ -24,6 +25,7 @@ function _updateSyncPort(port) { _updateSyncTarget(port); }
 function _getSyncHeaders(extra = {}) {
     const h = { ...extra };
     if (_syncToken) h["X-Sync-Token"] = _syncToken;
+    if (_projectKey) h["X-Project-Key"] = _projectKey;
     return h;
 }
 
@@ -50,7 +52,7 @@ const statLast = document.getElementById("statLast");
 let currentTabId = null;
 
 function init() {
-    chrome.storage.local.get(["syncPort", "syncTarget", "syncToken"], (data) => {
+    chrome.storage.local.get(["syncPort", "syncTarget", "syncToken", "projectKey"], (data) => {
         if (data) {
             if (data.syncTarget) {
                 _updateSyncTarget(data.syncTarget);
@@ -59,6 +61,9 @@ function init() {
             }
             if (data.syncToken) {
                 _syncToken = String(data.syncToken).trim();
+            }
+            if (data.projectKey) {
+                _projectKey = String(data.projectKey).trim();
             }
         }
         _pullSnapshot();
@@ -80,6 +85,9 @@ function init() {
         }
         if (changes.syncToken) {
             _syncToken = changes.syncToken.newValue ? String(changes.syncToken.newValue).trim() : "";
+        }
+        if (changes.projectKey) {
+            _projectKey = changes.projectKey.newValue ? String(changes.projectKey.newValue).trim() : "taikhoan1";
         }
         _pullSnapshot();
         _pingTheme().catch(() => {});

@@ -2,11 +2,12 @@
 
 let _apiBaseCache = "http://127.0.0.1:19823";
 let _apiTokenCache = "";
+let _projectKeyCache = "taikhoan1";
 
 function resolveApiBase() {
   try {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(["syncTarget", "syncPort", "syncToken"], (data) => {
+      chrome.storage.local.get(["syncTarget", "syncPort", "syncToken", "projectKey"], (data) => {
         if (data) {
           if (data.syncTarget) {
             const s = String(data.syncTarget).trim();
@@ -22,6 +23,9 @@ function resolveApiBase() {
           if (data.syncToken) {
             _apiTokenCache = String(data.syncToken).trim();
           }
+          if (data.projectKey) {
+            _projectKeyCache = String(data.projectKey).trim();
+          }
         }
       });
     }
@@ -32,6 +36,7 @@ resolveApiBase();
 function getApiHeaders(extra = {}) {
   const h = { ...extra };
   if (_apiTokenCache) h["X-Sync-Token"] = _apiTokenCache;
+  if (_projectKeyCache) h["X-Project-Key"] = _projectKeyCache;
   return h;
 }
 
