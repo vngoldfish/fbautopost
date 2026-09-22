@@ -4,9 +4,13 @@ __pycache__/
 *.pyo
 venv/
 .env
+*.db
+*.sqlite
 
-# Data files (chứa base64 media lớn)
+# Data & Upload files
 fbauto-backend-python/data/*.json
+fbauto-backend-python/uploads/
+fbauto-backend-python/fbauto.db
 
 # Server logs
 fbauto-backend-python/server.log
@@ -19,14 +23,16 @@ fbauto-backend-python/nohup.out
 .DS_Store
 Thumbs.db
 
-# IDE
+# IDE & Agents
 .idea/
 .vscode/
 *.swp
 *.swo
+.agents/
 
 # Node
 node_modules/
 
 # Gemini
 .gemini/
+

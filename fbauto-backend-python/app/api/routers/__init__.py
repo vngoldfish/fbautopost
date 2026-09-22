@@ -1,0 +1,3 @@
+"""
+Modular APIRouter submodules.
+"""

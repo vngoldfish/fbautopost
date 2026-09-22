@@ -1,17 +1,60 @@
-version: '3.8'
+# ==============================================================================
+# Production Docker Compose for FB Auto Post C2 Management Server
+# 1-Click VPS Deployment Manifest
+# ==============================================================================
 
 services:
   fbauto-backend:
     build:
       context: ./fbauto-backend-python
       dockerfile: Dockerfile
-    container_name: fbauto-backend
-    restart: always
+    image: fbauto-backend-python:latest
+    container_name: fbauto-backend-prod
+    restart: unless-stopped
     ports:
-      - "19823:19823"
+      # Host:Container port mapping 19823:19823
+      - "${PORT:-19823}:19823"
     environment:
-      - PORT=19823
+      - PORT=${PORT:-19823}
       - HOST=0.0.0.0
-      - SYNC_TOKEN=
+      - SYNC_TOKEN=${SYNC_TOKEN:-fbauto_secret_token_prod_2026}
+      - PROJECT_KEY_DEFAULT=${PROJECT_KEY_DEFAULT:-all}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_POLL_PER_MIN=${RATE_LIMIT_POLL_PER_MIN:-60}
+      - RATE_LIMIT_CREATION_PER_MIN=${RATE_LIMIT_CREATION_PER_MIN:-120}
+      - RATE_LIMIT_GENERAL_PER_MIN=${RATE_LIMIT_GENERAL_PER_MIN:-300}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     volumes:
+      # Persistent SQLite WAL Database directory
       - ./fbauto-backend-python/data:/app/data
+      # Persistent offloaded media uploads (images/videos)
+      - ./fbauto-backend-python/uploads:/app/uploads
+      # Persistent application logs
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:19823/health || python -c \"import urllib.request; urllib.request.urlopen('http://localhost:19823/health', timeout=5)\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    networks:
+      - fbauto-network
+
+networks:
+  fbauto-network:
+    name: fbauto-network
+    driver: bridge

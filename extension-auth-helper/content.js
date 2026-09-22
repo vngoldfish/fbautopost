@@ -463,11 +463,123 @@
     `;
     document.head.appendChild(bannerStyle);
 
-    // Listen for progress/result messages from background to show visual feedback
+    // Keepalive Port to maintain service worker liveness on Facebook tab
+    let _keepAlivePort = null;
+    function _connectKeepAlive() {
+        try {
+            if (!chrome.runtime?.id) return;
+            _keepAlivePort = chrome.runtime.connect({ name: "worker_heartbeat_port" });
+            _keepAlivePort.onDisconnect.addListener(() => {
+                _keepAlivePort = null;
+                setTimeout(_connectKeepAlive, 5000);
+            });
+        } catch (e) {}
+    }
+    if (isFacebookPage) {
+        _connectKeepAlive();
+        setInterval(() => {
+            try {
+                if (_keepAlivePort) _keepAlivePort.postMessage({ ping: 1 });
+                else _connectKeepAlive();
+            } catch (e) {}
+        }, 20000);
+    }
+
+    // Checkpoint & Session Health DOM Scanner
+    function _scanPageForCheckpoint() {
+        try {
+            const bodyText = (document.body ? document.body.innerText : "") || "";
+            const keywords = [
+                "tài khoản của bạn đã bị khóa",
+                "tài khoản của bạn đã bị tạm khóa",
+                "phê duyệt đăng nhập",
+                "xác nhận danh tính",
+                "phiên đăng nhập đã hết hạn",
+                "your account has been locked",
+                "account suspended",
+                "login approval needed"
+            ];
+            const lower = bodyText.toLowerCase();
+            for (const kw of keywords) {
+                if (lower.includes(kw)) {
+                    chrome.runtime.sendMessage({
+                        type: "CHECKPOINT_DETECTED",
+                        keyword: kw,
+                        url: window.location.href
+                    }).catch(() => {});
+                    break;
+                }
+            }
+        } catch (e) {}
+    }
+    if (isFacebookPage) {
+        setTimeout(_scanPageForCheckpoint, 3000);
+        setInterval(_scanPageForCheckpoint, 30000);
+    }
+
+    // Listen for progress/result/warm-up messages from background
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-        if (msg && (msg.type === "POST_STATUS_UPDATE" || msg.action === "SHOW_HUD")) {
+        if (!msg) return;
+
+        if (msg.type === "POST_STATUS_UPDATE" || msg.action === "SHOW_HUD") {
             showOnScreenBanner(msg.message || msg.step || "FB AUTO: Processing...");
             sendResponse({ ok: true });
+            return true;
+        }
+
+        // Warm-up smooth scroll execution
+        if (msg.type === "EXECUTE_WARMUP_SCROLL") {
+            const targetDist = msg.distance || 350;
+            const durationMs = msg.duration || 500;
+            const startY = window.scrollY || window.pageYOffset || 0;
+            const startTime = performance.now();
+            const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : 3 * t * t - 2 * t * t * t);
+
+            let hasMedia = false;
+            try {
+                const videos = Array.from(document.querySelectorAll("video"));
+                for (const v of videos) {
+                    const rect = v.getBoundingClientRect();
+                    if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                        hasMedia = true;
+                        break;
+                    }
+                }
+            } catch (e) {}
+
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / durationMs, 1);
+                const currentY = startY + targetDist * ease(progress);
+                window.scrollTo(0, currentY);
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    sendResponse({ ok: true, scrolledY: window.scrollY, hasMedia });
+                }
+            }
+            requestAnimationFrame(step);
+            return true; // asynchronous response
+        }
+
+        // DOM Fallback typing (Lexical / Draft.js contenteditable)
+        if (msg.type === "DOM_FALLBACK_TYPE") {
+            const text = msg.text || "";
+            const selector = msg.selector || 'div[contenteditable="true"][role="textbox"], div[role="textbox"], .notranslate[contenteditable="true"]';
+            const el = document.querySelector(selector);
+            if (el) {
+                el.focus();
+                try {
+                    document.execCommand("insertText", false, text);
+                } catch (e) {
+                    el.textContent = text;
+                }
+                el.dispatchEvent(new InputEvent("input", { bubbles: true, cancelable: true }));
+                sendResponse({ ok: true });
+            } else {
+                sendResponse({ ok: false, error: "Lexical editor textbox not found" });
+            }
             return true;
         }
     });

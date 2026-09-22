@@ -160,7 +160,10 @@
     }
 
     .tab-content.active {
-      display: grid;
+      display: block !important;
+    }
+    .tab-content.active.posts-grid {
+      display: grid !important;
     }
 
     .posts-grid {
@@ -649,6 +652,549 @@
     }
 
 
+    /* ==========================================================================
+       WORKER NODE MONITORING STYLES (Milestone 4)
+       ========================================================================== */
+    .badge-status-online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-status-busy {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-status-paused {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-status-offline {
+      background: rgba(100, 116, 139, 0.15);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot-online {
+      background-color: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: statusPulseGreen 2s infinite ease-in-out;
+    }
+    .status-dot-busy {
+      background-color: #3b82f6;
+      box-shadow: 0 0 8px #3b82f6;
+      animation: statusPulseBlue 1.5s infinite ease-in-out;
+    }
+    .status-dot-paused {
+      background-color: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+    }
+    .status-dot-offline {
+      background-color: #64748b;
+    }
+    @keyframes statusPulseGreen {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @keyframes statusPulseBlue {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+    .worker-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .worker-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
+    }
+    .worker-card.border-online { border-left: 4px solid #10b981; }
+    .worker-card.border-busy { border-left: 4px solid #3b82f6; }
+    .worker-card.border-paused { border-left: 4px solid #f59e0b; }
+    .worker-card.border-offline { border-left: 4px solid #64748b; }
+    .worker-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .worker-meta-label {
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .worker-meta-value {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .account-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .worker-table th, .worker-table td {
+      padding: 14px 16px;
+      vertical-align: middle;
+    }
+    .worker-table tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s;
+    }
+    .worker-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .modal-account-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-account-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+    .modal-account-item.selected {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    /* ==========================================================================
+       ACCOUNT FARM MANAGEMENT STYLES (Milestone 4)
+       ========================================================================== */
+    .farm-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      width: 100%;
+    }
+    .farm-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .farm-kpi-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .farm-kpi-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    .farm-kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .farm-kpi-val {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff;
+    }
+    .farm-kpi-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-top: 2px;
+    }
+    .farm-filter-bar {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    @media (max-width: 1200px) {
+      .farm-filter-bar {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .farm-filter-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+    .farm-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      background: rgba(10, 14, 26, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    }
+    .farm-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+      min-width: 980px;
+    }
+    .farm-table th {
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.7px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .farm-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: middle;
+      color: #e2e8f0;
+    }
+    .farm-table tbody tr {
+      transition: background 0.2s ease;
+    }
+    .farm-table tbody tr:hover {
+      background: rgba(99, 102, 241, 0.06);
+    }
+    .farm-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .status-live {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .status-live .status-dot-pulse {
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .status-checkpoint {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .status-checkpoint .status-dot-pulse {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .status-expired {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .status-expired .status-dot-pulse {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .status-quarantine {
+      background: rgba(168, 85, 247, 0.18);
+      color: #e879f9;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+    .status-quarantine .status-dot-pulse {
+      background: #a855f7;
+      box-shadow: 0 0 8px #a855f7;
+    }
+    .class-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .class-profile {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .class-page {
+      background: rgba(236, 72, 153, 0.15);
+      color: #f472b6;
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+    .class-group {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    .target-id-snippet {
+      font-family: monospace;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #38bdf8;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ==========================================================================
+       TASK QUEUE & SAAS TABLE STYLES (Milestone 4)
+       ========================================================================== */
+    .saas-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+    }
+    .saas-table th {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+    .saas-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-main);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+      background: rgba(15, 23, 42, 0.4);
+      transition: background 0.2s ease;
+    }
+    .saas-table tr:hover td {
+      background: rgba(30, 41, 59, 0.7);
+    }
+    .saas-table tr:last-child td {
+      border-bottom: none;
+    }
+    .task-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .task-status-pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .task-status-assigned {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a78bfa;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .task-status-running {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+    }
+    .task-status-completed {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .task-status-failed {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .task-status-cancelled {
+      background: rgba(148, 163, 184, 0.12);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .task-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .task-type-post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .task-type-seed { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .task-type-warmup { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .task-type-reply_comment { background: rgba(236, 72, 153, 0.15); color: #f472b6; }
+    .filter-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .filter-pill:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .filter-pill.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+      border-color: #8b5cf6;
+      color: #fff;
+      font-weight: 700;
+    }
+    .lease-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .lease-green {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .lease-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .lease-expired {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      animation: pulseExpire 1.5s infinite;
+    }
+    @keyframes pulseExpire {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+    .log-level-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.4px;
+    }
+    .log-level-info {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .log-level-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .log-level-error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+    .log-entity-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+    .copy-id-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .copy-id-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
   </style>
 </head>
 <body>
@@ -683,9 +1229,23 @@
             ✅ Đã Đăng 
             <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">0</span>
           </button>
-          <button class="nav-tab-btn" data-tab="tabAccounts">👤 Tài Khoản</button>
+          <button class="nav-tab-btn" data-tab="tabAccounts">
+            👥 Quản Lý Nông Trại Facebook
+            <span id="navAccountsBadge" class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; margin-left:4px;">0</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tabWorkers">
+            🖥️ Worker Nodes
+            <span id="navWorkersBadge" class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa; margin-left:4px;">0</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tabQueue" id="navTabQueue">
+            ⚡ Hàng Đợi Tasks
+            <span id="navQueueBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tabLogs" id="navTabLogs">
+            📊 KPI & Live Logs
+            <span id="navLogsBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">LIVE</span>
+          </button>
           <button class="nav-tab-btn" data-tab="tabSettings">⚙️ Cài Đặt</button>
-          <button class="nav-tab-btn" data-tab="tabLogs">📊 Logs</button>
         </div>
 
         <div style="display:flex; align-items:center; gap:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(139,92,246,0.4); padding:6px 14px; border-radius:14px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
@@ -740,8 +1300,78 @@
       </div>
     </div>
 
-    <!-- KPI Stats Overview Grid -->
-    <div class="stats-overview-grid">
+    <!-- Enterprise Realtime KPI Analytics Overview (Milestone 4) -->
+    <div class="stats-overview-grid" id="kpiOverviewGrid" style="margin-bottom: 20px;">
+      <!-- Card 1: Worker Nodes -->
+      <div class="stat-card" id="cardKpiWorkers">
+        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(37,99,235,0.35)); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);">🖥️</div>
+        <div class="stat-info" style="flex:1;">
+          <div class="stat-label">WORKER NODES (MÁY/TRÌNH DUYỆT)</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div class="stat-value" id="kpiWorkerNodes">0 / 0</div>
+            <span class="badge" id="kpiWorkerStatusBadge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; padding:2px 8px;">
+              <span class="status-dot-pulse status-dot-online" style="margin-right:4px;"></span>
+              <span id="kpiWorkerPercent">0% Online</span>
+            </span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="kpiWorkerSubtext">0 node đang thực thi tác vụ</div>
+        </div>
+      </div>
+
+      <!-- Card 2: Account Farm Vitality -->
+      <div class="stat-card" id="cardKpiAccounts">
+        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(5,150,105,0.35)); color:#34d399; border:1px solid rgba(16,185,129,0.3);">🛡️</div>
+        <div class="stat-info" style="flex:1;">
+          <div class="stat-label">SỨC KHỎE DÀN TÀI KHOẢN (FARM)</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div class="stat-value" id="kpiAccountVitality" style="color:#34d399;">100%</div>
+            <span class="badge" id="kpiAccountCountsBadge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:11px; padding:2px 8px;">
+              <span id="kpiLiveAccounts">0</span> Live / <span id="kpiTotalAccounts">0</span> Tổng
+            </span>
+          </div>
+          <!-- Mini Vitality Bar -->
+          <div class="vitality-bar-bg" style="width:100%; height:4px; background:rgba(239,68,68,0.3); border-radius:2px; margin-top:6px; overflow:hidden;">
+            <div id="kpiVitalityBar" style="width:100%; height:100%; background:linear-gradient(90deg,#10b981,#34d399); transition:width 0.5s ease;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: 24h Queue Throughput -->
+      <div class="stat-card" id="cardKpiThroughput">
+        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(124,58,237,0.35)); color:#c084fc; border:1px solid rgba(139,92,246,0.3);">⚡</div>
+        <div class="stat-info" style="flex:1;">
+          <div class="stat-label">NĂNG SUẤT HÀNG ĐỢI (24H)</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div class="stat-value" id="kpiQueueThroughput">0 Tasks</div>
+            <span class="badge" id="kpiSuccessRateBadge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; padding:2px 8px;">
+              <span id="kpiSuccessRate">100% Đạt</span>
+            </span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="kpiThroughputBreakdown">
+            ✅ <span id="kpiCompletedCount" style="color:#34d399; font-weight:700;">0</span> hoàn tất · ❌ <span id="kpiFailedCount" style="color:#f87171; font-weight:700;">0</span> lỗi
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Active Warm-up Sessions -->
+      <div class="stat-card" id="cardKpiWarmup">
+        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.35)); color:#fbbf24; border:1px solid rgba(245,158,11,0.3);">🔥</div>
+        <div class="stat-info" style="flex:1;">
+          <div class="stat-label">PHIÊN NUÔI NICK TỰ ĐỘNG</div>
+          <div style="display:flex; align-items:baseline; gap:8px;">
+            <div class="stat-value" id="kpiActiveWarmup" style="color:#fbbf24;">0 Sessions</div>
+            <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-size:11px; padding:2px 8px;">
+              <span class="pulse-spinner" style="display:inline-block; width:8px; height:8px; margin-right:4px;"></span>
+              Đang chạy
+            </span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tự động lướt Newsfeed & React Bézier</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post System Summary Counters -->
+    <div class="stats-overview-grid" style="margin-bottom: 20px;">
       <div class="stat-card">
         <div class="stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.3)); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">📝</div>
         <div class="stat-info">
@@ -918,66 +1548,453 @@
       </div>
     </div>
 
-    <!-- Tab 3: Accounts Management -->
-    <div class="tab-content accounts-grid" id="tabAccounts">
-      <div class="card sticky-sidebar">
-        <div class="card-title">
-          <span>👤 Thêm Tài Khoản</span>
+    <!-- Tab 3: Account Farm Operations Center (Milestone 4) -->
+    <div class="tab-content" id="tabAccounts">
+      <div class="farm-container">
+
+        <!-- 1. Farm KPI Overview Cards -->
+        <div class="farm-kpi-grid">
+          <div class="farm-kpi-card">
+            <div class="farm-kpi-icon" style="background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3);">👥</div>
+            <div>
+              <div class="farm-kpi-val" id="farmStatTotal">0</div>
+              <div class="farm-kpi-lbl">TỔNG TÀI KHOẢN FARM</div>
+            </div>
+          </div>
+          <div class="farm-kpi-card">
+            <div class="farm-kpi-icon" style="background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3);">🟢</div>
+            <div>
+              <div class="farm-kpi-val" id="farmStatLive" style="color:#34d399;">0</div>
+              <div class="farm-kpi-lbl">KHỎE MẠNH (LIVE)</div>
+            </div>
+          </div>
+          <div class="farm-kpi-card">
+            <div class="farm-kpi-icon" style="background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3);">🟡</div>
+            <div>
+              <div class="farm-kpi-val" id="farmStatCheckpoint" style="color:#fbbf24;">0</div>
+              <div class="farm-kpi-lbl">CẢNH BÁO CHECKPOINT</div>
+            </div>
+          </div>
+          <div class="farm-kpi-card">
+            <div class="farm-kpi-icon" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3);">🔴</div>
+            <div>
+              <div class="farm-kpi-val" id="farmStatExpired" style="color:#f87171;">0</div>
+              <div class="farm-kpi-lbl">HẾT HẠN / BỊ KHÓA</div>
+            </div>
+          </div>
         </div>
 
-        <form id="formAccount" onsubmit="return false;">
-          <div class="form-group">
-            <label for="accName">Tên Tài Khoản / Trang</label>
-            <input type="text" id="accName" class="form-control" placeholder="Fanpage Bán Hàng" required>
+        <!-- 2. Multi-Dimensional Filter Toolbar -->
+        <div class="card" style="padding:16px 20px; border:1px solid var(--border-color);">
+          <div class="farm-filter-bar">
+            <!-- Search -->
+            <div>
+              <input type="text" id="filterFarmSearch" class="form-control" placeholder="🔍 Tìm kiếm Target ID, tên nick..." oninput="debouncedFilterFarm()">
+            </div>
+
+            <!-- Target Type Filter -->
+            <div>
+              <select id="filterFarmType" class="form-control" onchange="applyFarmFilters()">
+                <option value="all">🌐 Tất cả loại đối tượng</option>
+                <option value="profile">👤 Cá nhân (Profile)</option>
+                <option value="page">🚩 Trang (Fanpage)</option>
+                <option value="group">👨‍👩‍👧‍👦 Nhóm (Group)</option>
+              </select>
+            </div>
+
+            <!-- Project Filter -->
+            <div>
+              <select id="filterFarmProject" class="form-control" onchange="applyFarmFilters()">
+                <option value="all">📁 Tất cả Project</option>
+              </select>
+            </div>
+
+            <!-- Worker Node Filter -->
+            <div>
+              <select id="filterFarmWorker" class="form-control" onchange="applyFarmFilters()">
+                <option value="all">🖥️ Tất cả Worker Nodes</option>
+                <option value="unassigned">⚠️ Chưa gán Node</option>
+              </select>
+            </div>
+
+            <!-- Health Status Filter -->
+            <div>
+              <select id="filterFarmHealth" class="form-control" onchange="applyFarmFilters()">
+                <option value="all">🛡️ Tất cả sức khỏe</option>
+                <option value="live">🟢 Live / Khỏe mạnh</option>
+                <option value="checkpoint">🟡 Checkpoint</option>
+                <option value="expired">🔴 Hết hạn / Mất phiên</option>
+                <option value="locked">🟣 Bị khóa / Quarantine</option>
+              </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+              <button class="btn btn-xs" style="background:rgba(255,255,255,0.06); color:#cbd5e1;" onclick="resetFarmFilters()" title="Đặt lại bộ lọc">
+                🔄 Đặt Lại
+              </button>
+              <button class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800; padding:10px 18px; white-space:nowrap;" onclick="openAddAccountModal()">
+                ➕ Thêm Nick FB
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Multi-Account Farm Inventory Table -->
+        <div class="card" style="padding:0; overflow:hidden; border:1px solid var(--border-color);">
+          <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; background:rgba(15,23,42,0.7);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:16px; font-weight:800; color:#fff;">Danh Sách Nông Trại Facebook (Multi-Account Farm)</span>
+              <span class="badge" id="farmTableTotalBadge" style="background:rgba(99,102,241,0.2); color:#a78bfa; font-size:11px;">0 tài khoản</span>
+            </div>
+            <button class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#cbd5e1;" onclick="loadAccountFarm(true)">🔄 Làm Mới Dữ Liệu</button>
           </div>
 
-          <div class="form-group">
-            <label for="accType">Loại đối tượng</label>
-            <select id="accType" class="form-control">
-              <option value="page">Fanpage</option>
-              <option value="group">Nhóm (Group)</option>
-              <option value="user">Trang Cá Nhân (Profile)</option>
+          <div class="farm-table-wrapper" style="border:none; border-radius:0;">
+            <table class="farm-table">
+              <thead>
+                <tr>
+                  <th style="width:170px;">Facebook Target ID</th>
+                  <th style="width:200px;">Tên Đối Tượng</th>
+                  <th style="width:120px;">Phân Loại</th>
+                  <th style="width:130px;">Project Gán</th>
+                  <th style="width:160px;">Worker Gán</th>
+                  <th style="width:140px;">Sức Khỏe & Cookie</th>
+                  <th style="width:150px;">Hoạt Động Gần Nhất</th>
+                  <th style="width:140px; text-align:right;">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="accountFarmTableBody">
+                <tr>
+                  <td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">
+                    <div class="pulse-spinner" style="margin:0 auto 10px;"></div>
+                    Đang tải danh sách tài khoản Facebook...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab: Worker Nodes Monitor (Máy / Trình duyệt) (Milestone 4) -->
+    <div class="tab-content" id="tabWorkers">
+      <!-- 1. KPI Stats Summary Row -->
+      <div class="stats-overview-grid" style="margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(79,70,229,0.3)); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25);">🖥️</div>
+          <div class="stat-info">
+            <div class="stat-label">TỔNG WORKER NODES</div>
+            <div class="stat-value" id="statWorkerTotal">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.3)); color:#34d399; border:1px solid rgba(16,185,129,0.25);">🟢</div>
+          <div class="stat-info">
+            <div class="stat-label">NODES ONLINE (SẴN SÀNG)</div>
+            <div class="stat-value" id="statWorkerOnline" style="color:#34d399;">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.3)); color:#60a5fa; border:1px solid rgba(59,130,246,0.25);">⚡</div>
+          <div class="stat-info">
+            <div class="stat-label">ĐANG CHẠY NHIỆM VỤ (BUSY)</div>
+            <div class="stat-value" id="statWorkerBusy" style="color:#60a5fa;">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.3)); color:#f87171; border:1px solid rgba(239,68,68,0.25);">🔴</div>
+          <div class="stat-info">
+            <div class="stat-label">MẤT KẾT NỐI (OFFLINE)</div>
+            <div class="stat-value" id="statWorkerOffline" style="color:#f87171;">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.3)); color:#c084fc; border:1px solid rgba(139,92,246,0.25);">👤</div>
+          <div class="stat-info">
+            <div class="stat-label">NICK FB ĐÃ PHÂN BỔ</div>
+            <div class="stat-value" id="statWorkerAssignedAccs" style="color:#c084fc;">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Controls & Search Toolbar -->
+      <div class="card" style="padding:16px 24px; margin-bottom:20px; border:1px solid var(--border-color);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+          <!-- Left: Search and Filters -->
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; flex:1;">
+            <div style="position:relative; min-width:240px; flex:1; max-width:360px;">
+              <input type="text" id="workerSearchInput" class="form-control" placeholder="🔍 Tìm theo Node ID, tên máy, IP..." oninput="debouncedFilterWorkers()" style="padding-left:14px;">
+            </div>
+
+            <select id="workerFilterStatus" class="form-control" style="width:160px;" onchange="renderWorkerNodes()">
+              <option value="all">🌐 Tất cả trạng thái</option>
+              <option value="online">🟢 Online</option>
+              <option value="busy">⚡ Đang chạy (Busy)</option>
+              <option value="paused">⏸️ Tạm dừng (Paused)</option>
+              <option value="offline">🔴 Mất kết nối (Offline)</option>
+            </select>
+
+            <select id="workerFilterProject" class="form-control" style="width:170px;" onchange="renderWorkerNodes()">
+              <option value="all">📁 Tất cả Projects</option>
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="accTargetId">Facebook Target ID</label>
-            <input type="text" id="accTargetId" class="form-control" placeholder="ID Trang hoặc ID Nhóm">
-          </div>
+          <!-- Right: View Mode Toggle & Auto-refresh Controls -->
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <!-- View Mode Switch -->
+            <div style="display:flex; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:12px; padding:3px;">
+              <button type="button" id="btnWorkerViewGrid" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#fff; border-radius:9px; font-weight:700;" onclick="setWorkerViewMode('grid')">
+                🔲 Thẻ Cards
+              </button>
+              <button type="button" id="btnWorkerViewTable" class="btn btn-xs" style="background:transparent; color:var(--text-muted); border-radius:9px; font-weight:700;" onclick="setWorkerViewMode('table')">
+                📄 Bảng Dữ Liệu
+              </button>
+            </div>
 
-          <div class="form-group">
-            <label for="accToken">Access Token</label>
-            <textarea id="accToken" class="form-control" style="min-height: 100px;" placeholder="Nhập Access Token..." required></textarea>
-          </div>
+            <!-- Auto-refresh Countdown Badge & Toggle -->
+            <div style="display:flex; align-items:center; gap:8px; background:rgba(15,23,42,0.6); border:1px solid var(--border-color); padding:6px 12px; border-radius:12px;">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-dim); margin:0;">
+                <input type="checkbox" id="chkWorkerAutoRefresh" checked onchange="toggleWorkerAutoRefresh(this.checked)" style="accent-color:#10b981; width:15px; height:15px;">
+                Tự động
+              </label>
+              <span id="workerRefreshCountdown" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; padding:3px 8px;">5s</span>
+            </div>
 
-          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top:8px;">
-            <span>➕</span> Lưu Tài Khoản
-          </button>
-        </form>
+            <!-- Manual Refresh Button -->
+            <button type="button" class="btn btn-primary btn-xs" style="padding:10px 18px; font-weight:800; border-radius:12px;" onclick="loadWorkerNodes(true)">
+              🔄 Làm Mới Ngay
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">
-          <span>Danh Sách Đã Lưu</span>
-          <span class="badge" id="accountsCount">0 tài khoản</span>
+      <!-- 3. Workers Content Presentation (Cards Grid & Table Views) -->
+      <div id="workerGridContainer" class="workers-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); gap:20px;">
+        <div style="grid-column: 1 / -1; text-align:center; padding:60px; color:var(--text-dim);">
+          <div class="pulse-spinner" style="margin:0 auto 12px; width:24px; height:24px;"></div>
+          Đang tải danh sách Worker Nodes...
+        </div>
+      </div>
+
+      <div id="workerTableContainer" style="display:none; background:var(--bg-card); border:1px solid var(--border-color); border-radius:24px; padding:20px; overflow-x:auto;">
+        <table class="worker-table" style="width:100%; border-collapse:collapse; text-align:left;">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">
+              <th style="padding:12px 16px;">Trạng Thái</th>
+              <th style="padding:12px 16px;">Node ID & Tên</th>
+              <th style="padding:12px 16px;">IP & Phiên Bản</th>
+              <th style="padding:12px 16px;">Project Key</th>
+              <th style="padding:12px 16px;">Heartbeat (Last Seen)</th>
+              <th style="padding:12px 16px;">Nhiệm Vụ Hiện Tại</th>
+              <th style="padding:12px 16px;">Nick FB Phân Bổ</th>
+              <th style="padding:12px 16px; text-align:right;">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="workerTableBody">
+            <tr>
+              <td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">Đang tải...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Distributed Task Queue Monitor (Milestone 4) -->
+    <div class="tab-content" id="tabQueue">
+      <div class="card" style="border:1px solid rgba(99,102,241,0.35); box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+        <!-- Card Header -->
+        <div class="card-title" style="padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 15px rgba(99,102,241,0.35);">⚡</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="font-size:18px; font-weight:800; color:#fff;">Quản Lý Hàng Đợi Phân Tán (Distributed Task Queue)</div>
+                <span class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa; border:1px solid rgba(99,102,241,0.4); font-size:11px; font-weight:800;">LEASE LOCKING 60S</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted);">Phân bổ nhiệm vụ Đăng bài, Seeding, Nuôi nick và Trả lời bình luận tới các Worker Nodes</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="btn btn-primary" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; font-weight:800; padding:10px 18px; box-shadow:0 4px 15px rgba(99,102,241,0.35);" onclick="openCreateTaskModal()">
+              ✨ Tạo Task Phân Tán
+            </button>
+            <button class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.15); padding:10px 14px;" onclick="loadTasks(true)">
+              🔄 Làm Mới
+            </button>
+          </div>
         </div>
 
-        <div class="item-list" id="accountsList">
-          <div style="text-align: center; padding: 40px; color: var(--text-dim);">Đang tải...</div>
+        <!-- State & Attribute Filter Toolbar -->
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+          <!-- Row 1: Status Pills -->
+          <div style="display:flex; align-items:center; gap:8px; overflow-x:auto; padding-bottom:4px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted); white-space:nowrap;">TRẠNG THÁI:</span>
+            <button class="filter-pill active" data-task-status="all" onclick="setTaskStatusFilter('all', this)">
+              Tất cả (<span id="countFilterAll">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="pending" onclick="setTaskStatusFilter('pending', this)">
+              ⏳ Đang chờ (<span id="countFilterPending">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="assigned" onclick="setTaskStatusFilter('assigned', this)">
+              🎯 Đã gán (<span id="countFilterAssigned">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="running" onclick="setTaskStatusFilter('running', this)">
+              ⚡ Đang chạy (<span id="countFilterRunning">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="completed" onclick="setTaskStatusFilter('completed', this)">
+              ✅ Hoàn thành (<span id="countFilterCompleted">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="failed" onclick="setTaskStatusFilter('failed', this)">
+              ❌ Thất bại (<span id="countFilterFailed">0</span>)
+            </button>
+            <button class="filter-pill" data-task-status="cancelled" onclick="setTaskStatusFilter('cancelled', this)">
+              🚫 Đã hủy (<span id="countFilterCancelled">0</span>)
+            </button>
+          </div>
+
+          <!-- Row 2: Secondary Dropdown & Keyword Filters -->
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; background:rgba(0,0,0,0.25); padding:12px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <!-- Type Filter -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:12px; color:var(--text-muted); font-weight:700;">LOẠI TASK:</label>
+                <select id="taskTypeFilter" class="form-control" style="width:auto; padding:6px 12px; font-size:12px;" onchange="applyTaskFilters()">
+                  <option value="all">Tất cả loại</option>
+                  <option value="post">📝 Đăng bài (post)</option>
+                  <option value="seed">💬 Seeding (seed)</option>
+                  <option value="warmup">🔥 Nuôi nick (warmup)</option>
+                  <option value="reply_comment">🤖 Trả lời (reply_comment)</option>
+                </select>
+              </div>
+
+              <!-- Worker Filter -->
+              <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:12px; color:var(--text-muted); font-weight:700;">WORKER:</label>
+                <select id="taskWorkerFilter" class="form-control" style="width:auto; padding:6px 12px; font-size:12px;" onchange="applyTaskFilters()">
+                  <option value="all">Tất cả Workers</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Search Input -->
+            <div style="flex:1; max-width:320px;">
+              <input type="text" id="taskSearchInput" class="form-control" placeholder="🔍 Tìm Task ID, Target ID, nội dung..." style="padding:8px 14px; font-size:12px;" oninput="applyTaskFilters()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Queue State Table -->
+        <div style="margin-top:16px; overflow-x:auto; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+          <table class="saas-table" id="taskQueueTable" style="width:100%; border-collapse:collapse; text-align:left;">
+            <thead>
+              <tr>
+                <th style="width:140px;">TASK ID</th>
+                <th style="width:130px;">LOẠI NHIỆM VỤ</th>
+                <th style="width:150px;">TARGET / ACCOUNT</th>
+                <th style="width:140px;">WORKER GÁN</th>
+                <th style="width:130px;">TRẠNG THÁI</th>
+                <th style="width:90px;">THỬ LẠI</th>
+                <th style="width:150px;">HẠN THUÊ (LEASE)</th>
+                <th style="width:130px;">KHỞI TẠO</th>
+                <th style="width:140px; text-align:center;">THAO TÁC</th>
+              </tr>
+            </thead>
+            <tbody id="taskQueueTableBody">
+              <tr>
+                <td colspan="9" style="text-align:center; padding:40px; color:var(--text-dim);">
+                  <div class="pulse-spinner" style="margin:0 auto 10px;"></div>
+                  Đang tải danh sách hàng đợi phân tán...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Queue Pagination & Summary Footer -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12px; color:var(--text-muted); flex-wrap:wrap; gap:8px;">
+          <div>
+            Hiển thị <span id="lblTasksShowingCount" style="color:#fff; font-weight:700;">0</span> / <span id="lblTasksTotalCount">0</span> nhiệm vụ trong hàng đợi
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span id="lblQueueSyncStatus" style="color:var(--text-dim);">Đồng bộ mỗi 3s</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 4: System Logs -->
-    <div class="tab-content logs-grid" id="tabLogs">
-      <div class="card">
-        <div class="card-title">
-          <span>📊 Nhật Ký Hoạt Động (Logs)</span>
-          <button class="btn btn-xs btn-primary" id="btnRefreshLogs">🔄 Làm Mới</button>
+    <!-- Tab: System Logs & KPI Analytics (Milestone 4) -->
+    <div class="tab-content" id="tabLogs">
+      <div class="card" style="border: 1px solid rgba(16,185,129,0.3); box-shadow: 0 16px 40px rgba(0,0,0,0.5);">
+        <!-- Header -->
+        <div class="card-title" style="padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 15px rgba(16,185,129,0.3);">📊</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="font-size:18px; font-weight:800; color:#fff;">Nhật Ký Hoạt Động & Giám Sát Thời Gian Thực</div>
+                <span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; font-weight:800;">
+                  <span class="status-dot-pulse status-dot-online" style="margin-right:4px;"></span>
+                  LIVE STREAM
+                </span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted);">Ghi nhận toàn bộ thao tác Claim Task, Báo Cáo Tiến Độ, Thay Đổi Trạng Thái & Lỗi Hệ Thống</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="btn btn-xs" id="btnToggleLogAutoScroll" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.15);" onclick="toggleLogAutoScroll()">
+              📌 Tự động cuộn: <span id="lblLogAutoScroll" style="color:#34d399; font-weight:700;">BẬT</span>
+            </button>
+            <button class="btn btn-xs btn-primary" id="btnRefreshLogsEnhanced" onclick="loadLogs(true)">🔄 Làm Mới</button>
+          </div>
         </div>
 
-        <div class="item-list" id="logsList" style="background:rgba(0,0,0,0.3); padding:16px; border-radius:16px; border:1px solid var(--border-color); font-family:monospace;">
-          <div style="text-align: center; padding: 40px; color: var(--text-dim);">Đang tải logs...</div>
+        <!-- Multi-Dimensional Filter Toolbar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:16px; background:rgba(0,0,0,0.25); padding:12px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.05);">
+          <!-- Level Filters -->
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">MỨC ĐỘ:</span>
+            <button class="filter-pill active" data-log-level="all" onclick="setLogLevelFilter('all', this)">Tất cả</button>
+            <button class="filter-pill" data-log-level="info" onclick="setLogLevelFilter('info', this)">
+              <span style="display:inline-block; width:6px; height:6px; background:#60a5fa; border-radius:50%; margin-right:4px;"></span>INFO
+            </button>
+            <button class="filter-pill" data-log-level="warning" onclick="setLogLevelFilter('warning', this)">
+              <span style="display:inline-block; width:6px; height:6px; background:#fbbf24; border-radius:50%; margin-right:4px;"></span>WARNING
+            </button>
+            <button class="filter-pill" data-log-level="error" onclick="setLogLevelFilter('error', this)">
+              <span style="display:inline-block; width:6px; height:6px; background:#f87171; border-radius:50%; margin-right:4px;"></span>ERROR
+            </button>
+          </div>
+
+          <!-- Entity & Search Filters -->
+          <div style="display:flex; align-items:center; gap:10px; flex:1; max-width:550px; justify-content:flex-end;">
+            <select id="logEntityFilter" class="form-control" style="width:auto; padding:8px 12px; font-size:12px;" onchange="applyLogFilters()">
+              <option value="all">🌐 Tất cả đối tượng</option>
+              <option value="task">📋 Tasks</option>
+              <option value="worker">🖥️ Workers</option>
+              <option value="account">👤 Accounts</option>
+              <option value="post">📝 Posts</option>
+            </select>
+            <input type="text" id="logSearchInput" class="form-control" placeholder="🔍 Tìm kiếm sự kiện, ID, lỗi..." style="padding:8px 14px; font-size:12px; min-width:200px;" oninput="applyLogFilters()">
+          </div>
+        </div>
+
+        <!-- Live Stream Container -->
+        <div id="logsStreamContainer" style="background:#070b12; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px; margin-top:16px; max-height:540px; overflow-y:auto; font-family:'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size:12px;">
+          <div id="logsList">
+            <div style="text-align: center; padding: 40px; color: var(--text-dim);">Đang kết nối live stream logs...</div>
+          </div>
+        </div>
+
+        <!-- Stream Footer Stats -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:11px; color:var(--text-muted);">
+          <div>Đang hiển thị <span id="lblLogFilteredCount" style="color:#fff; font-weight:700;">0</span> / <span id="lblLogTotalCount">0</span> bản ghi nhật ký</div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="status-dot-pulse status-dot-online"></span>
+            <span>Polling chu kỳ 3s</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1088,15 +2105,28 @@
     document.addEventListener('DOMContentLoaded', () => {
       initTabs();
       setDefaultDateTime();
+      if (typeof initTaskQueueListeners === 'function') initTaskQueueListeners();
       loadProjects();
       loadPosts();
-      loadAccounts();
+      loadAccountFarm();
+      loadWorkerNodes();
+      loadTasks();
       loadLogs();
+      loadKpiMetrics();
       loadSettingsForm();
 
-      document.getElementById('formPost').addEventListener('submit', handleAddPost);
-      document.getElementById('formAccount').addEventListener('submit', handleAddAccount);
-      document.getElementById('btnRefreshLogs').addEventListener('click', loadLogs);
+      startWorkerAutoRefresh();
+      startWorkerTicker();
+
+      if (_leaseCountdownInterval) clearInterval(_leaseCountdownInterval);
+      _leaseCountdownInterval = setInterval(updateLeaseCountdownsInDom, 1000);
+
+      const formPost = document.getElementById('formPost');
+      if (formPost) formPost.addEventListener('submit', handleAddPost);
+      const formAccount = document.getElementById('formAccount');
+      if (formAccount) formAccount.addEventListener('submit', handleAddAccount);
+      const btnRefresh = document.getElementById('btnRefreshLogs') || document.getElementById('btnRefreshLogsEnhanced');
+      if (btnRefresh) btnRefresh.addEventListener('click', () => loadLogs(true));
 
       // Auto-refresh post list and system logs every 2s
       setInterval(() => {
@@ -1104,6 +2134,12 @@
         loadLogs();
         updateLastSync();
       }, 2000);
+
+      // Auto-refresh task queue and top KPI metrics every 2.5s
+      setInterval(() => {
+        loadTasks();
+        loadKpiMetrics();
+      }, 2500);
     });
     
     function updateCharCount(el) {
@@ -1126,7 +2162,21 @@
 
           const targetTabId = btn.getAttribute('data-tab');
           btn.classList.add('active');
-          document.getElementById(targetTabId).classList.add('active');
+          const targetPane = document.getElementById(targetTabId);
+          if (targetPane) targetPane.classList.add('active');
+
+          // Trigger tab-specific refresh
+          if (targetTabId === 'tabWorkers') {
+            loadWorkerNodes(true);
+          } else if (targetTabId === 'tabAccounts') {
+            loadAccountFarm();
+          } else if (targetTabId === 'tabQueue') {
+            loadTasks(true);
+          } else if (targetTabId === 'tabLogs') {
+            loadLogs(true);
+          } else if (targetTabId === 'tabCompleted' || targetTabId === 'tabPosts') {
+            loadPosts();
+          }
         });
       });
     }
@@ -1692,7 +2742,32 @@
       } catch (e) {}
     }
 
+    // =========================================================================
+    // ENTERPRISE STATE MANAGEMENT (Milestone 4)
+    // =========================================================================
     let _allAccountsCache = [];
+    let _allWorkersCache = [];
+    let _workerViewMode = 'grid'; // 'grid' | 'table'
+    let _workerCountdown = 5;
+    let _workerCountdownInterval = null;
+    let _workerAutoRefreshEnabled = true;
+    let _selectedWorkerForAssign = null;
+    let _currentAssignSelectedAccIds = new Set();
+    let _workerSearchTimeout = null;
+
+    let _accountsFarmCache = [];
+    let _workersFarmCache = [];
+    let _activeEditAccountId = null;
+    let _activeHealthAccountId = null;
+    let _farmSearchDebounceTimer = null;
+
+    let _allTasksCache = [];
+    let _lastTasksHash = "";
+    let _allLogsCache = [];
+    let _logAutoScroll = true;
+    let _currentLogLevelFilter = 'all';
+    let _currentTaskStatusFilter = 'all';
+    let _leaseCountdownInterval = null;
 
     function populatePostAccountDropdown(accounts) {
       _allAccountsCache = accounts || [];
@@ -1737,114 +2812,1843 @@
       showToast('🤖 Đã nạp mẫu Auto-Reply Tư Vấn!', 'success');
     }
 
-    async function loadAccounts() {
-      try {
-        const res = await fetch(`${API_BASE}/api/accounts`);
-        const data = await res.json();
-        renderAccounts(data.accounts || []);
-      } catch (e) {}
+    // =========================================================================
+    // UI UTILITIES & HELPERS
+    // =========================================================================
+    function animateValue(el, start, end, duration) {
+      if (!el) return;
+      if (start === end) {
+        el.textContent = end;
+        return;
+      }
+      const range = end - start;
+      let current = start;
+      const increment = end > start ? 1 : -1;
+      const stepTime = Math.max(15, Math.abs(Math.floor(duration / (range || 1))));
+      const timer = setInterval(() => {
+        current += increment;
+        el.textContent = current;
+        if (current === end) {
+          clearInterval(timer);
+        }
+      }, stepTime);
     }
 
-    function renderAccounts(accounts) {
-      const container = document.getElementById('accountsList');
-      document.getElementById('accountsCount').textContent = `${accounts.length} tài khoản`;
-      populatePostAccountDropdown(accounts);
+    function copyToClipboard(text, label = 'Nội dung') {
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`📋 Đã sao chép ${label}: ${text}`, 'info');
+        }).catch(() => fallbackCopy(text, label));
+      } else {
+        fallbackCopy(text, label);
+      }
+    }
 
-      if (accounts.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">Chưa có tài khoản nào.</div>';
+    function fallbackCopy(text, label) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast(`📋 Đã sao chép ${label}: ${text}`, 'info');
+      } catch (err) {
+        showToast(`❌ Không thể sao chép: ${text}`, 'error');
+      }
+    }
+
+    function formatRelativeTime(timestamp) {
+      const ts = Number(timestamp);
+      if (!timestamp || isNaN(ts) || ts <= 0) return { text: 'Chưa có dữ liệu', tier: 'red', sec: 999999 };
+      const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+      
+      let text = '';
+      if (diffSec < 5) text = 'Vừa xong (Just now)';
+      else if (diffSec < 60) text = `${diffSec}s trước (${diffSec}s ago)`;
+      else if (diffSec < 3600) text = `${Math.floor(diffSec / 60)} phút trước`;
+      else if (diffSec < 86400) text = `${Math.floor(diffSec / 3600)} giờ trước`;
+      else text = `${Math.floor(diffSec / 86400)} ngày trước`;
+
+      const tier = diffSec <= 20 ? 'green' : (diffSec <= 45 ? 'amber' : 'red');
+      return { text, tier, sec: diffSec };
+    }
+
+    // =========================================================================
+    // WORKER NODE MONITORING CONTROLLER
+    // =========================================================================
+    async function loadWorkerNodes(force = false) {
+      try {
+        const selProj = document.getElementById('globalProjectSelect')?.value || 'all';
+        const workerUrl = selProj !== 'all' 
+          ? `${API_BASE}/api/workers?projectKey=${encodeURIComponent(selProj)}` 
+          : `${API_BASE}/api/workers`;
+
+        const [wRes, aRes] = await Promise.allSettled([
+          fetch(workerUrl),
+          fetch(`${API_BASE}/api/accounts`)
+        ]);
+
+        if (wRes.status === 'fulfilled' && wRes.value.ok) {
+          const wData = await wRes.value.json();
+          _allWorkersCache = wData.workers || [];
+        }
+
+        if (aRes.status === 'fulfilled' && aRes.value.ok) {
+          const aData = await aRes.value.json();
+          _allAccountsCache = aData.accounts || [];
+        }
+
+        updateWorkerFilterProjectDropdown();
+        updateWorkerKPIs(_allWorkersCache, _allAccountsCache);
+        renderWorkerNodes();
+      } catch (err) {
+        console.warn('Failed to load workers:', err);
+      }
+    }
+
+    function updateWorkerFilterProjectDropdown() {
+      const sel = document.getElementById('workerFilterProject');
+      if (!sel) return;
+      const currentVal = sel.value || 'all';
+      
+      let html = '<option value="all">📁 Tất cả Projects</option>';
+      if (Array.isArray(_allProjectsCache)) {
+        html += _allProjectsCache.map(p => 
+          `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`
+        ).join('');
+      }
+      sel.innerHTML = html;
+      sel.value = currentVal;
+    }
+
+    function updateWorkerKPIs(workers, accounts) {
+      const now = Date.now();
+      let total = workers.length;
+      let online = 0;
+      let busy = 0;
+      let offline = 0;
+      let assignedAccCount = 0;
+
+      workers.forEach(w => {
+        const lastSeen = w.lastSeen || 0;
+        const isStale = (now - lastSeen) > 45000;
+        const status = (w.status || 'offline').toLowerCase();
+
+        if (isStale || status === 'offline') {
+          offline++;
+        } else if (status === 'busy' || w.currentTaskId) {
+          busy++;
+        } else {
+          online++;
+        }
+
+        if (Array.isArray(w.assignedAccounts)) {
+          assignedAccCount += w.assignedAccounts.length;
+        }
+      });
+
+      const elTotal = document.getElementById('statWorkerTotal');
+      const elOnline = document.getElementById('statWorkerOnline');
+      const elBusy = document.getElementById('statWorkerBusy');
+      const elOffline = document.getElementById('statWorkerOffline');
+      const elAssigned = document.getElementById('statWorkerAssignedAccs');
+      const navBadge = document.getElementById('navWorkersBadge');
+
+      if (elTotal) elTotal.textContent = total;
+      if (elOnline) elOnline.textContent = online;
+      if (elBusy) elBusy.textContent = busy;
+      if (elOffline) elOffline.textContent = offline;
+      if (elAssigned) elAssigned.textContent = assignedAccCount;
+      if (navBadge) navBadge.textContent = online;
+    }
+
+    function resolveWorkerStatus(w, now = Date.now()) {
+      const lastSeen = w.lastSeen || 0;
+      const isStale = (now - lastSeen) > 45000;
+      const raw = (w.status || 'offline').toLowerCase();
+
+      if (isStale || raw === 'offline') {
+        return { key: 'offline', label: 'OFFLINE', badgeClass: 'badge-status-offline', dotClass: 'status-dot-offline', borderClass: 'border-offline' };
+      }
+      if (raw === 'busy' || w.currentTaskId) {
+        return { key: 'busy', label: 'BUSY', badgeClass: 'badge-status-busy', dotClass: 'status-dot-busy', borderClass: 'border-busy' };
+      }
+      if (raw === 'paused') {
+        return { key: 'paused', label: 'PAUSED', badgeClass: 'badge-status-paused', dotClass: 'status-dot-paused', borderClass: 'border-paused' };
+      }
+      return { key: 'online', label: 'ONLINE', badgeClass: 'badge-status-online', dotClass: 'status-dot-online', borderClass: 'border-online' };
+    }
+
+    function renderWorkerNodes() {
+      const gridContainer = document.getElementById('workerGridContainer');
+      const tableBody = document.getElementById('workerTableBody');
+      const searchVal = (document.getElementById('workerSearchInput')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('workerFilterStatus')?.value || 'all';
+      const projectFilter = document.getElementById('workerFilterProject')?.value || 'all';
+
+      const now = Date.now();
+
+      const filtered = _allWorkersCache.filter(w => {
+        const resolved = resolveWorkerStatus(w, now);
+        if (statusFilter !== 'all' && resolved.key !== statusFilter) return false;
+        if (projectFilter !== 'all' && w.projectKey !== projectFilter && w.projectKey !== 'all') return false;
+
+        if (searchVal) {
+          const matchId = (w.id || '').toLowerCase().includes(searchVal);
+          const matchName = (w.name || '').toLowerCase().includes(searchVal);
+          const matchIp = (w.ip || '').toLowerCase().includes(searchVal);
+          const matchProj = (w.projectKey || '').toLowerCase().includes(searchVal);
+          if (!matchId && !matchName && !matchIp && !matchProj) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        const emptyHtml = `
+          <div style="grid-column: 1 / -1; text-align:center; padding:60px; color:var(--text-dim); background:rgba(0,0,0,0.2); border-radius:18px; border:1px dashed var(--border-color);">
+            <div style="font-size:36px; margin-bottom:12px;">🖥️</div>
+            <div style="font-size:16px; font-weight:700; color:#fff;">Không tìm thấy Worker Node nào</div>
+            <div style="font-size:12px; margin-top:4px;">Chưa có Extension kết nối hoặc không khớp bộ lọc tìm kiếm.</div>
+          </div>
+        `;
+        if (gridContainer) gridContainer.innerHTML = emptyHtml;
+        if (tableBody) tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-dim);">Không có worker node nào phù hợp.</td></tr>`;
         return;
       }
 
-      container.innerHTML = accounts.map(a => `
-        <div class="list-card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="color:#fff; font-size:15px;">${escapeHtml(a.name)}</strong>
-            <span class="badge">${a.type}</span>
-          </div>
-          <div style="font-size:12px; color:var(--text-muted); word-break:break-all;">Target ID: ${escapeHtml(a.targetId || 'N/A')}</div>
-          <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-            <button class="btn btn-xs btn-danger" onclick="deleteAccount('${a.id}')">Xóa</button>
-          </div>
-        </div>
-      `).join('');
+      if (gridContainer) {
+        gridContainer.innerHTML = filtered.map(w => renderWorkerCardHtml(w, now)).join('');
+      }
+
+      if (tableBody) {
+        tableBody.innerHTML = filtered.map(w => renderWorkerTableRowHtml(w, now)).join('');
+      }
     }
 
-    async function handleAddAccount(e) {
-      e.preventDefault();
-      const name = document.getElementById('accName').value.trim();
-      const type = document.getElementById('accType').value;
-      const targetId = document.getElementById('accTargetId').value.trim();
-      const accessToken = document.getElementById('accToken').value.trim();
+    function renderWorkerCardHtml(w, now) {
+      const st = resolveWorkerStatus(w, now);
+      const rel = formatRelativeTime(w.lastSeen);
+      const assignedCount = Array.isArray(w.assignedAccounts) ? w.assignedAccounts.length : 0;
 
-      const res = await fetch(`${API_BASE}/api/accounts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, type, targetId, accessToken })
+      const assignedChips = (w.assignedAccounts || []).slice(0, 3).map(accId => {
+        const acc = _allAccountsCache.find(a => a.id === accId || a.targetId === accId);
+        const name = acc ? acc.name : accId;
+        return `<span class="account-chip" title="${escapeHtml(name)} (${escapeHtml(accId)})">👤 ${escapeHtml(name)}</span>`;
+      }).join('');
+      const moreChips = assignedCount > 3 ? `<span class="account-chip" style="color:#a78bfa;">+${assignedCount - 3} nữa</span>` : '';
+
+      const activeTaskHtml = w.currentTaskId 
+        ? `<span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:11px;">🚀 ${escapeHtml(w.currentTaskId)}</span>`
+        : `<span style="color:var(--text-muted); font-size:12px;">Đang rảnh (Idle)</span>`;
+
+      return `
+        <div class="worker-card ${st.borderClass}" id="worker-card-${escapeHtml(w.id)}">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h4 style="margin:0; font-size:16px; font-weight:800; color:#fff;">${escapeHtml(w.name || w.id)}</h4>
+                <span class="badge" style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.06); color:#cbd5e1;">v${escapeHtml(w.version || '7.0.0')}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+                <code style="font-size:11px; color:#a78bfa; background:rgba(99,102,241,0.1); padding:2px 6px; border-radius:6px;">${escapeHtml(w.id)}</code>
+                <button type="button" class="btn-icon" style="padding:2px 6px; font-size:10px;" title="Sao chép Node ID" onclick="copyToClipboard('${escapeHtml(w.id)}', 'Node ID')">📋</button>
+              </div>
+            </div>
+            <span class="badge ${st.badgeClass}">
+              <span class="status-dot-pulse ${st.dotClass}"></span>
+              ${st.label}
+            </span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:2px; background:rgba(0,0,0,0.25); padding:10px 14px; border-radius:14px; border:1px solid rgba(255,255,255,0.03); margin-top:8px;">
+            <div class="worker-meta-row">
+              <span class="worker-meta-label">🌐 Địa Chỉ IP:</span>
+              <span class="worker-meta-value">${escapeHtml(w.ip || '127.0.0.1')}</span>
+            </div>
+            <div class="worker-meta-row">
+              <span class="worker-meta-label">📁 Project Key:</span>
+              <span class="worker-meta-value"><span class="badge" style="padding:2px 8px; font-size:11px;">${escapeHtml(w.projectKey || 'all')}</span></span>
+            </div>
+            <div class="worker-meta-row">
+              <span class="worker-meta-label">💓 Nhịp Tim (Last Seen):</span>
+              <span class="worker-meta-value">
+                <span class="worker-last-seen-text" data-timestamp="${w.lastSeen || 0}" style="color:${rel.tier === 'green' ? '#34d399' : (rel.tier === 'amber' ? '#fbbf24' : '#f87171')}; font-size:12px;">
+                  ${rel.text}
+                </span>
+              </span>
+            </div>
+            <div class="worker-meta-row" style="border-bottom:none;">
+              <span class="worker-meta-label">⚡ Nhiệm Vụ Đang Chạy:</span>
+              <span class="worker-meta-value">${activeTaskHtml}</span>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Tài khoản Facebook:</span>
+              <span class="badge" style="background:rgba(139,92,246,0.15); color:#c084fc; font-size:11px; padding:2px 8px;">${assignedCount} nick</span>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; min-height:26px;">
+              ${assignedCount > 0 ? (assignedChips + moreChips) : '<span style="color:var(--text-dim); font-size:11px; font-style:italic;">Chưa gán tài khoản nào</span>'}
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06);">
+            <button type="button" class="btn btn-xs" style="background:linear-gradient(135deg,#3b82f6,#6366f1); color:#fff; font-weight:800; border-radius:10px; padding:8px 14px;" onclick="openWorkerAssignModal('${escapeHtml(w.id)}')">
+              👤 Phân Bổ Nick FB
+            </button>
+            <button type="button" class="btn btn-xs btn-danger" style="border-radius:10px; padding:6px 10px;" title="Xóa Worker Node" onclick="deleteWorkerNode('${escapeHtml(w.id)}')">
+              🗑️ Xóa
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWorkerTableRowHtml(w, now) {
+      const st = resolveWorkerStatus(w, now);
+      const rel = formatRelativeTime(w.lastSeen);
+      const assignedCount = Array.isArray(w.assignedAccounts) ? w.assignedAccounts.length : 0;
+
+      return `
+        <tr id="worker-row-${escapeHtml(w.id)}">
+          <td style="padding:14px 16px;">
+            <span class="badge ${st.badgeClass}">
+              <span class="status-dot-pulse ${st.dotClass}"></span>
+              ${st.label}
+            </span>
+          </td>
+          <td style="padding:14px 16px;">
+            <div style="font-weight:700; color:#fff;">${escapeHtml(w.name || w.id)}</div>
+            <code style="font-size:11px; color:#a78bfa;">${escapeHtml(w.id)}</code>
+          </td>
+          <td style="padding:14px 16px;">
+            <div>${escapeHtml(w.ip || '127.0.0.1')}</div>
+            <span style="font-size:11px; color:var(--text-muted);">v${escapeHtml(w.version || '7.0.0')}</span>
+          </td>
+          <td style="padding:14px 16px;">
+            <span class="badge">${escapeHtml(w.projectKey || 'all')}</span>
+          </td>
+          <td style="padding:14px 16px;">
+            <span class="worker-last-seen-text" data-timestamp="${w.lastSeen || 0}" style="color:${rel.tier === 'green' ? '#34d399' : (rel.tier === 'amber' ? '#fbbf24' : '#f87171')}; font-weight:600;">
+              ${rel.text}
+            </span>
+          </td>
+          <td style="padding:14px 16px;">
+            ${w.currentTaskId 
+              ? `<span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa;">🚀 ${escapeHtml(w.currentTaskId)}</span>`
+              : `<span style="color:var(--text-dim); font-size:12px;">Idle</span>`}
+          </td>
+          <td style="padding:14px 16px;">
+            <span class="badge" style="background:rgba(139,92,246,0.15); color:#c084fc;">👤 ${assignedCount} nick</span>
+          </td>
+          <td style="padding:14px 16px; text-align:right;">
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+              <button type="button" class="btn btn-xs btn-primary" onclick="openWorkerAssignModal('${escapeHtml(w.id)}')">👤 Gán Nick</button>
+              <button type="button" class="btn btn-xs btn-danger" onclick="deleteWorkerNode('${escapeHtml(w.id)}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function setWorkerViewMode(mode) {
+      _workerViewMode = mode;
+      const grid = document.getElementById('workerGridContainer');
+      const table = document.getElementById('workerTableContainer');
+      const btnGrid = document.getElementById('btnWorkerViewGrid');
+      const btnTable = document.getElementById('btnWorkerViewTable');
+
+      if (mode === 'grid') {
+        if (grid) grid.style.display = 'grid';
+        if (table) table.style.display = 'none';
+        if (btnGrid) { btnGrid.style.background = 'rgba(99,102,241,0.25)'; btnGrid.style.color = '#fff'; }
+        if (btnTable) { btnTable.style.background = 'transparent'; btnTable.style.color = 'var(--text-muted)'; }
+      } else {
+        if (grid) grid.style.display = 'none';
+        if (table) table.style.display = 'block';
+        if (btnGrid) { btnGrid.style.background = 'transparent'; btnGrid.style.color = 'var(--text-muted)'; }
+        if (btnTable) { btnTable.style.background = 'rgba(99,102,241,0.25)'; btnTable.style.color = '#fff'; }
+      }
+    }
+
+    function startWorkerAutoRefresh() {
+      if (_workerCountdownInterval) clearInterval(_workerCountdownInterval);
+      _workerCountdown = 5;
+
+      _workerCountdownInterval = setInterval(() => {
+        if (!_workerAutoRefreshEnabled) return;
+
+        const modal = document.getElementById('workerAssignModal');
+        if (modal && modal.style.display === 'flex') return;
+
+        _workerCountdown--;
+        const badge = document.getElementById('workerRefreshCountdown');
+        if (badge) badge.textContent = `${_workerCountdown}s`;
+
+        if (_workerCountdown <= 0) {
+          _workerCountdown = 5;
+          loadWorkerNodes();
+        }
+      }, 1000);
+    }
+
+    function toggleWorkerAutoRefresh(enabled) {
+      _workerAutoRefreshEnabled = enabled;
+      const badge = document.getElementById('workerRefreshCountdown');
+      if (badge) {
+        badge.textContent = enabled ? `${_workerCountdown}s` : '⏸ Tắt';
+        badge.style.background = enabled ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)';
+        badge.style.color = enabled ? '#34d399' : '#f87171';
+      }
+    }
+
+    function startWorkerTicker() {
+      setInterval(() => {
+        const textEls = document.querySelectorAll('.worker-last-seen-text');
+        textEls.forEach(el => {
+          const ts = parseInt(el.getAttribute('data-timestamp'), 10) || 0;
+          if (ts > 0) {
+            const rel = formatRelativeTime(ts);
+            el.textContent = rel.text;
+            el.style.color = rel.tier === 'green' ? '#34d399' : (rel.tier === 'amber' ? '#fbbf24' : '#f87171');
+          }
+        });
+      }, 1000);
+    }
+
+    function debouncedFilterWorkers() {
+      if (_workerSearchTimeout) clearTimeout(_workerSearchTimeout);
+      _workerSearchTimeout = setTimeout(() => {
+        renderWorkerNodes();
+      }, 250);
+    }
+
+    function openWorkerAssignModal(workerId) {
+      _selectedWorkerForAssign = _allWorkersCache.find(w => w.id === workerId);
+      if (!_selectedWorkerForAssign) {
+        showToast('❌ Không tìm thấy thông tin Worker Node', 'error');
+        return;
+      }
+
+      document.getElementById('assignModalWorkerName').textContent = _selectedWorkerForAssign.name || _selectedWorkerForAssign.id;
+      document.getElementById('assignModalWorkerId').textContent = _selectedWorkerForAssign.id;
+      document.getElementById('assignModalProjectKey').textContent = _selectedWorkerForAssign.projectKey || 'all';
+
+      const existing = _selectedWorkerForAssign.assignedAccounts || [];
+      _currentAssignSelectedAccIds = new Set(existing);
+
+      renderAssignModalAccountsList();
+
+      const modal = document.getElementById('workerAssignModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeWorkerAssignModal() {
+      const modal = document.getElementById('workerAssignModal');
+      if (modal) modal.style.display = 'none';
+      _selectedWorkerForAssign = null;
+      _currentAssignSelectedAccIds.clear();
+    }
+
+    function renderAssignModalAccountsList(filterText = '') {
+      const container = document.getElementById('assignAccountsList');
+      if (!container) return;
+
+      const normFilter = filterText.toLowerCase().trim();
+      const currentWorkerId = _selectedWorkerForAssign ? _selectedWorkerForAssign.id : '';
+
+      let hasCollision = false;
+      let renderedCount = 0;
+
+      const itemsHtml = _allAccountsCache.map(acc => {
+        const matchName = (acc.name || '').toLowerCase().includes(normFilter);
+        const matchTarget = (acc.targetId || '').toLowerCase().includes(normFilter);
+        if (normFilter && !matchName && !matchTarget) return '';
+
+        renderedCount++;
+        const isChecked = _currentAssignSelectedAccIds.has(acc.id) || _currentAssignSelectedAccIds.has(acc.targetId);
+        
+        const isOwnedByCurrent = (acc.workerId === currentWorkerId) || isChecked;
+        const isOwnedByOther = (acc.workerId && acc.workerId !== currentWorkerId);
+
+        if (isChecked && isOwnedByOther) {
+          hasCollision = true;
+        }
+
+        let ownershipBadge = '';
+        if (isOwnedByOther) {
+          ownershipBadge = `<span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-size:10px;">⚠️ Gán: ${escapeHtml(acc.workerId)}</span>`;
+        } else if (isOwnedByCurrent) {
+          ownershipBadge = `<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:10px;">🟢 Node này</span>`;
+        } else {
+          ownershipBadge = `<span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:10px;">⚪ Chưa gán</span>`;
+        }
+
+        const health = (acc.healthStatus || acc.status || 'live').toLowerCase();
+        let healthBadge = '';
+        if (health === 'live' || health === 'active') {
+          healthBadge = `<span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399; font-size:10px;">🟢 Live</span>`;
+        } else if (health === 'checkpoint' || health === 'locked') {
+          healthBadge = `<span class="badge" style="background:rgba(239,68,68,0.15); color:#f87171; font-size:10px;">🔴 Checkpoint</span>`;
+        } else {
+          healthBadge = `<span class="badge" style="background:rgba(245,158,11,0.15); color:#fbbf24; font-size:10px;">⚠️ ${escapeHtml(health)}</span>`;
+        }
+
+        return `
+          <div class="modal-account-item ${isChecked ? 'selected' : ''}" onclick="toggleAssignAccountItem('${escapeHtml(acc.id)}')">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="checkbox" id="chk-acc-${escapeHtml(acc.id)}" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); toggleAssignAccountItem('${escapeHtml(acc.id)}')" style="width:17px; height:17px; accent-color:#6366f1; cursor:pointer;">
+              <div>
+                <div style="font-weight:700; color:#fff; font-size:14px; display:flex; align-items:center; gap:8px;">
+                  ${escapeHtml(acc.name)}
+                  <span class="badge" style="padding:1px 6px; font-size:10px;">${escapeHtml(acc.type || 'profile')}</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Target ID: ${escapeHtml(acc.targetId || acc.id)}</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${healthBadge}
+              ${ownershipBadge}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = renderedCount > 0 ? itemsHtml : '<div style="text-align:center; padding:30px; color:var(--text-dim);">Không có tài khoản nào khớp tìm kiếm.</div>';
+
+      const summaryEl = document.getElementById('assignModalSelectionSummary');
+      if (summaryEl) {
+        summaryEl.textContent = `Đã chọn: ${_currentAssignSelectedAccIds.size} / ${_allAccountsCache.length} nick`;
+      }
+
+      const collisionEl = document.getElementById('assignCollisionNotice');
+      if (collisionEl) {
+        collisionEl.style.display = hasCollision ? 'flex' : 'none';
+      }
+    }
+
+    function toggleAssignAccountItem(accId) {
+      if (_currentAssignSelectedAccIds.has(accId)) {
+        _currentAssignSelectedAccIds.delete(accId);
+      } else {
+        _currentAssignSelectedAccIds.add(accId);
+      }
+      renderAssignModalAccountsList(document.getElementById('assignAccountSearchInput')?.value || '');
+    }
+
+    function filterAssignAccountsModal(val) {
+      renderAssignModalAccountsList(val);
+    }
+
+    function quickSelectModalAccounts(type) {
+      if (type === 'all') {
+        _allAccountsCache.forEach(a => _currentAssignSelectedAccIds.add(a.id));
+      } else if (type === 'none') {
+        _currentAssignSelectedAccIds.clear();
+      } else if (type === 'live') {
+        _currentAssignSelectedAccIds.clear();
+        _allAccountsCache.forEach(a => {
+          const h = (a.healthStatus || a.status || '').toLowerCase();
+          if (h === 'live' || h === 'active') {
+            _currentAssignSelectedAccIds.add(a.id);
+          }
+        });
+      }
+      renderAssignModalAccountsList(document.getElementById('assignAccountSearchInput')?.value || '');
+    }
+
+    async function submitWorkerAssignment() {
+      if (!_selectedWorkerForAssign) return;
+
+      const workerId = _selectedWorkerForAssign.id;
+      const accountIds = Array.from(_currentAssignSelectedAccIds);
+      const mode = document.querySelector('input[name="assignModeRadio"]:checked')?.value || 'replace';
+
+      const btn = document.getElementById('btnSubmitWorkerAssign');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang lưu...';
+      }
+
+      try {
+        const url = mode === 'replace'
+          ? `${API_BASE}/api/workers/${encodeURIComponent(workerId)}/accounts`
+          : `${API_BASE}/api/workers/${encodeURIComponent(workerId)}/assign`;
+
+        const method = mode === 'replace' ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountIds })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ Đã phân bổ ${accountIds.length} tài khoản cho ${workerId}!`, 'success');
+          closeWorkerAssignModal();
+          loadWorkerNodes(true);
+          loadAccountFarm();
+        } else {
+          showToast(`❌ Lỗi phân bổ: ${data.detail || data.error || 'Thao tác thất bại'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '💾 Lưu Phân Bổ Tài Khoản';
+        }
+      }
+    }
+
+    async function deleteWorkerNode(workerId) {
+      if (!confirm(`Bạn có chắc chắn muốn hủy đăng ký Worker Node '${workerId}'?\nCác tài khoản đang gán cho node này sẽ được giải phóng (unassigned).`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/workers/${encodeURIComponent(workerId)}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`🗑️ Đã xóa Worker Node '${workerId}'`, 'success');
+          loadWorkerNodes(true);
+          loadAccountFarm();
+        } else {
+          showToast(`❌ Lỗi xóa worker: ${data.detail || data.error || 'Thất bại'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+      }
+    }
+
+    // =========================================================================
+    // ACCOUNT FARM MANAGEMENT CONTROLLER
+    // =========================================================================
+    async function loadAccountFarm() {
+      try {
+        const [accRes, workerRes, projRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/accounts`),
+          fetch(`${API_BASE}/api/workers`),
+          fetch(`${API_BASE}/api/projects`)
+        ]);
+
+        if (accRes.status === 'fulfilled' && accRes.value.ok) {
+          const accData = await accRes.value.json();
+          _accountsFarmCache = accData.accounts || [];
+        }
+
+        if (workerRes.status === 'fulfilled' && workerRes.value.ok) {
+          const workerData = await workerRes.value.json();
+          _workersFarmCache = workerData.workers || [];
+        }
+
+        if (projRes.status === 'fulfilled' && projRes.value.ok) {
+          const projData = await projRes.value.json();
+          _allProjectsCache = projData.projects || [];
+        }
+
+        _allAccountsCache = _accountsFarmCache;
+        populatePostAccountDropdown(_accountsFarmCache);
+        updateFarmKpiCounters(_accountsFarmCache);
+        populateFarmFilterDropdowns();
+        applyFarmFilters();
+      } catch (err) {
+        console.warn("loadAccountFarm error:", err);
+      }
+    }
+
+    const loadAccounts = loadAccountFarm;
+
+    function updateFarmKpiCounters(accounts) {
+      const total = accounts.length;
+      const live = accounts.filter(a => a.healthStatus === 'live' || a.status === 'active').length;
+      const checkpoint = accounts.filter(a => a.healthStatus === 'checkpoint' || a.status === 'checkpoint').length;
+      const expired = accounts.filter(a => a.healthStatus === 'expired' || a.healthStatus === 'locked' || a.status === 'expired' || a.status === 'logged_out').length;
+
+      const elTotal = document.getElementById('farmStatTotal');
+      const elLive = document.getElementById('farmStatLive');
+      const elCp = document.getElementById('farmStatCheckpoint');
+      const elExp = document.getElementById('farmStatExpired');
+      const navBadge = document.getElementById('navAccountsBadge');
+
+      if (elTotal) animateValue(elTotal, parseInt(elTotal.textContent) || 0, total, 300);
+      if (elLive) animateValue(elLive, parseInt(elLive.textContent) || 0, live, 300);
+      if (elCp) animateValue(elCp, parseInt(elCp.textContent) || 0, checkpoint, 300);
+      if (elExp) animateValue(elExp, parseInt(elExp.textContent) || 0, expired, 300);
+      if (navBadge) navBadge.textContent = total;
+    }
+
+    function populateFarmFilterDropdowns() {
+      const filterProj = document.getElementById('filterFarmProject');
+      if (filterProj) {
+        const cur = filterProj.value || 'all';
+        filterProj.innerHTML = '<option value="all">📁 Tất cả Project</option>' +
+          _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+        filterProj.value = cur;
+      }
+
+      const filterWorker = document.getElementById('filterFarmWorker');
+      if (filterWorker) {
+        const cur = filterWorker.value || 'all';
+        filterWorker.innerHTML = '<option value="all">🖥️ Tất cả Worker Nodes</option>' +
+          '<option value="unassigned">⚠️ Chưa gán Node</option>' +
+          _workersFarmCache.map(w => `<option value="${escapeHtml(w.id)}">🖥️ ${escapeHtml(w.name || w.id)} [${(w.status || 'offline').toUpperCase()}]</option>`).join('');
+        filterWorker.value = cur;
+      }
+
+      const addProj = document.getElementById('addAccProject');
+      if (addProj) {
+        addProj.innerHTML = '<option value="all">🌐 Toàn bộ (all)</option>' +
+          _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+      }
+      const addWorker = document.getElementById('addAccWorker');
+      if (addWorker) {
+        addWorker.innerHTML = '<option value="">⚠️ Chưa gán Node (Để trống)</option>' +
+          _workersFarmCache.map(w => `<option value="${escapeHtml(w.id)}">🖥️ ${escapeHtml(w.name || w.id)} (${w.status})</option>`).join('');
+      }
+
+      const editProj = document.getElementById('editAccProject');
+      if (editProj) {
+        editProj.innerHTML = '<option value="all">🌐 Toàn bộ (all)</option>' +
+          _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+      }
+      const editWorker = document.getElementById('editAccWorker');
+      if (editWorker) {
+        editWorker.innerHTML = '<option value="">⚠️ Chưa gán Node (Hủy gán)</option>' +
+          _workersFarmCache.map(w => `<option value="${escapeHtml(w.id)}">🖥️ ${escapeHtml(w.name || w.id)} (${w.status})</option>`).join('');
+      }
+    }
+
+    function debouncedFilterFarm() {
+      if (_farmSearchDebounceTimer) clearTimeout(_farmSearchDebounceTimer);
+      _farmSearchDebounceTimer = setTimeout(() => {
+        applyFarmFilters();
+      }, 250);
+    }
+
+    function resetFarmFilters() {
+      const searchEl = document.getElementById('filterFarmSearch');
+      const typeEl = document.getElementById('filterFarmType');
+      const projEl = document.getElementById('filterFarmProject');
+      const workerEl = document.getElementById('filterFarmWorker');
+      const healthEl = document.getElementById('filterFarmHealth');
+
+      if (searchEl) searchEl.value = '';
+      if (typeEl) typeEl.value = 'all';
+      if (projEl) projEl.value = 'all';
+      if (workerEl) workerEl.value = 'all';
+      if (healthEl) healthEl.value = 'all';
+
+      applyFarmFilters();
+    }
+
+    function applyFarmFilters() {
+      const search = (document.getElementById('filterFarmSearch')?.value || '').toLowerCase().trim();
+      const type = document.getElementById('filterFarmType')?.value || 'all';
+      const project = document.getElementById('filterFarmProject')?.value || 'all';
+      const worker = document.getElementById('filterFarmWorker')?.value || 'all';
+      const health = document.getElementById('filterFarmHealth')?.value || 'all';
+
+      const filtered = _accountsFarmCache.filter(acc => {
+        if (search) {
+          const matchName = (acc.name || '').toLowerCase().includes(search);
+          const matchTarget = (acc.targetId || '').toLowerCase().includes(search);
+          const matchId = (acc.id || '').toLowerCase().includes(search);
+          if (!matchName && !matchTarget && !matchId) return false;
+        }
+
+        if (type !== 'all') {
+          const accType = (acc.type || 'profile').toLowerCase();
+          if (type === 'profile' && accType !== 'profile' && accType !== 'user') return false;
+          if (type === 'page' && accType !== 'page') return false;
+          if (type === 'group' && accType !== 'group') return false;
+        }
+
+        if (project !== 'all') {
+          if ((acc.projectKey || 'all') !== project) return false;
+        }
+
+        if (worker !== 'all') {
+          if (worker === 'unassigned') {
+            if (acc.workerId && acc.workerId.trim() !== '') return false;
+          } else {
+            if (acc.workerId !== worker) return false;
+          }
+        }
+
+        if (health !== 'all') {
+          const hStatus = (acc.healthStatus || 'live').toLowerCase();
+          if (health === 'live' && hStatus !== 'live' && hStatus !== 'healthy') return false;
+          if (health === 'checkpoint' && hStatus !== 'checkpoint') return false;
+          if (health === 'expired' && hStatus !== 'expired' && hStatus !== 'logged_out') return false;
+          if (health === 'locked' && hStatus !== 'locked' && hStatus !== 'quarantine') return false;
+        }
+
+        return true;
       });
 
-      if (res.ok) {
-        showToast('✅ Đã thêm tài khoản thành công!', 'success');
-        document.getElementById('accName').value = '';
-        document.getElementById('accTargetId').value = '';
-        document.getElementById('accToken').value = '';
-        loadAccounts();
+      const badgeEl = document.getElementById('farmTableTotalBadge');
+      if (badgeEl) badgeEl.textContent = `${filtered.length} / ${_accountsFarmCache.length} tài khoản`;
+
+      renderAccountFarmTable(filtered);
+    }
+
+    function renderAccountFarmTable(accounts) {
+      const tbody = document.getElementById('accountFarmTableBody');
+      if (!tbody) return;
+
+      if (!accounts || accounts.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding:48px; color:var(--text-dim);">
+              <div style="font-size:32px; margin-bottom:8px;">🌾</div>
+              <div style="font-size:15px; font-weight:700; color:#fff;">Không tìm thấy tài khoản nào phù hợp</div>
+              <div style="font-size:12px; margin-top:4px;">Thử điều chỉnh bộ lọc hoặc bấm "Thêm Tài Khoản Mới" để nạp tài khoản vào Farm.</div>
+              <button class="btn btn-xs btn-primary" style="margin-top:14px; background:linear-gradient(135deg,#10b981,#059669);" onclick="openAddAccountModal()">
+                ➕ Thêm Tài Khoản Mới
+              </button>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = accounts.map(a => {
+        const type = (a.type || 'profile').toLowerCase();
+        let classBadgeHtml = '';
+        if (type === 'page') {
+          classBadgeHtml = `<span class="class-badge class-page">🚩 Fanpage</span>`;
+        } else if (type === 'group') {
+          classBadgeHtml = `<span class="class-badge class-group">👨‍👩‍👧‍👦 Group</span>`;
+        } else {
+          classBadgeHtml = `<span class="class-badge class-profile">👤 Profile</span>`;
+        }
+
+        const hStatus = (a.healthStatus || (a.status === 'active' ? 'live' : a.status) || 'live').toLowerCase();
+        let healthBadgeHtml = '';
+        if (hStatus === 'live' || hStatus === 'healthy' || hStatus === 'ok') {
+          healthBadgeHtml = `<span class="status-pill status-live"><span class="status-dot-pulse"></span>Live</span>`;
+        } else if (hStatus === 'checkpoint') {
+          healthBadgeHtml = `<span class="status-pill status-checkpoint"><span class="status-dot-pulse"></span>Checkpoint</span>`;
+        } else if (hStatus === 'expired' || hStatus === 'logged_out') {
+          healthBadgeHtml = `<span class="status-pill status-expired"><span class="status-dot-pulse"></span>Expired</span>`;
+        } else {
+          healthBadgeHtml = `<span class="status-pill status-quarantine"><span class="status-dot-pulse"></span>Quarantine</span>`;
+        }
+
+        let workerHtml = `<span style="color:var(--text-muted); font-size:12px; font-style:italic;">⚠️ Chưa gán Node</span>`;
+        if (a.workerId) {
+          const matchedWorker = _workersFarmCache.find(w => w.id === a.workerId);
+          const wName = matchedWorker ? (matchedWorker.name || matchedWorker.id) : a.workerId;
+          const wStatus = matchedWorker ? (matchedWorker.status || 'offline') : 'unknown';
+          const dotColor = wStatus === 'online' ? '#10b981' : (wStatus === 'busy' ? '#3b82f6' : '#94a3b8');
+          workerHtml = `
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:8px; height:8px; border-radius:50%; background:${dotColor}; box-shadow:0 0 6px ${dotColor};"></span>
+              <strong style="color:#fff; font-size:12px;">${escapeHtml(wName)}</strong>
+            </div>
+          `;
+        }
+
+        const projKey = a.projectKey || 'all';
+        const projectBadge = projKey === 'all'
+          ? `<span class="badge" style="background:rgba(255,255,255,0.06); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1);">🌐 all</span>`
+          : `<span class="badge" style="background:rgba(139,92,246,0.2); color:#a78bfa; border:1px solid rgba(139,92,246,0.35);">📁 ${escapeHtml(projKey)}</span>`;
+
+        const targetId = a.targetId || a.id;
+        const fbUrl = `https://www.facebook.com/${encodeURIComponent(targetId)}`;
+        const lastTime = a.lastActionAt || a.updatedAt || a.createdAt;
+        const relativeTimeStr = lastTime ? timeAgo(lastTime) : 'Chưa có';
+
+        return `
+          <tr data-acc-id="${escapeHtml(a.id)}">
+            <td>
+              <div class="target-id-snippet">
+                <span>${escapeHtml(targetId)}</span>
+                <button type="button" class="btn-icon" style="padding:2px 4px; font-size:10px;" onclick="copyToClipboard('${escapeHtml(targetId)}', 'Target ID')" title="Sao chép Target ID">📋</button>
+                <a href="${fbUrl}" target="_blank" rel="noopener" style="color:#38bdf8; text-decoration:none; font-size:11px;" title="Mở trang trên Facebook">🔗</a>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:700; color:#fff; font-size:14px;">${escapeHtml(a.name || 'Tài khoản')}</div>
+              <div style="font-size:11px; color:var(--text-muted);">Mã: ${escapeHtml(a.id)}</div>
+            </td>
+            <td>${classBadgeHtml}</td>
+            <td>${projectBadge}</td>
+            <td>${workerHtml}</td>
+            <td>
+              ${healthBadgeHtml}
+              <div style="font-size:10px; color:var(--text-muted); margin-top:3px;">
+                Cookie: <span style="color:${a.cookieStatus === 'valid' ? '#34d399' : '#f87171'};">${a.cookieStatus || 'valid'}</span>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:12px; color:#fff;">${relativeTimeStr}</div>
+              <div style="font-size:10px; color:var(--text-muted);">
+                ${a.dailyPostCount || 0} bài • ${a.dailyActionCount || 0} tác vụ
+              </div>
+            </td>
+            <td style="text-align:right;">
+              <div style="display:inline-flex; gap:6px; align-items:center;">
+                <button type="button" class="btn btn-xs" style="background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.35); font-weight:700;" onclick="openHealthCheckModal('${escapeHtml(a.id)}')">
+                  ⚡ Health
+                </button>
+                <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.2); color:#a78bfa; border:1px solid rgba(99,102,241,0.4);" onclick="openEditAccountModal('${escapeHtml(a.id)}')">
+                  ✏️ Sửa
+                </button>
+                <button type="button" class="btn btn-xs btn-danger" onclick="deleteAccount('${escapeHtml(a.id)}')">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openAddAccountModal() {
+      const modal = document.getElementById('addAccountModal');
+      if (!modal) return;
+      const form = document.getElementById('formAddAccountModal');
+      if (form) form.reset();
+      populateFarmFilterDropdowns();
+      modal.style.display = 'flex';
+    }
+
+    function closeAddAccountModal() {
+      const modal = document.getElementById('addAccountModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitAddAccountModal(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('addAccName')?.value.trim() || document.getElementById('accName')?.value.trim();
+      const type = document.getElementById('addAccType')?.value || document.getElementById('accType')?.value || 'profile';
+      const targetId = document.getElementById('addAccTargetId')?.value.trim() || document.getElementById('accTargetId')?.value.trim();
+      const projectKey = document.getElementById('addAccProject')?.value || 'all';
+      const workerId = document.getElementById('addAccWorker')?.value || null;
+      const accessToken = document.getElementById('addAccToken')?.value.trim() || document.getElementById('accToken')?.value.trim();
+
+      if (!name || !accessToken) {
+        showToast('⚠️ Vui lòng nhập Tên tài khoản và Access Token!', 'error');
+        return;
+      }
+
+      try {
+        const payload = {
+          name,
+          type,
+          targetId: targetId || undefined,
+          projectKey: projectKey || 'all',
+          workerId: workerId || undefined,
+          accessToken
+        };
+
+        const res = await fetch(`${API_BASE}/api/accounts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ Đã thêm tài khoản "${name}" thành công!`, 'success');
+          closeAddAccountModal();
+          await loadAccountFarm();
+        } else {
+          showToast(`❌ Lỗi thêm tài khoản: ${data.detail || data.error || 'Thao tác thất bại'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+      }
+    }
+
+    const handleAddAccount = submitAddAccountModal;
+
+    function openEditAccountModal(accountId) {
+      const acc = _accountsFarmCache.find(a => a.id === accountId);
+      if (!acc) {
+        showToast('⚠️ Không tìm thấy tài khoản để sửa!', 'error');
+        return;
+      }
+
+      _activeEditAccountId = accountId;
+      populateFarmFilterDropdowns();
+
+      document.getElementById('editAccInternalId').value = acc.id;
+      document.getElementById('editAccDisplayTargetId').textContent = acc.targetId || acc.id;
+      document.getElementById('editAccName').value = acc.name || '';
+      document.getElementById('editAccProject').value = acc.projectKey || 'all';
+      document.getElementById('editAccWorker').value = acc.workerId || '';
+      document.getElementById('editAccHealthStatus').value = acc.healthStatus || 'live';
+      document.getElementById('editAccCookieStatus').value = acc.cookieStatus || 'valid';
+      document.getElementById('editAccToken').value = '';
+
+      const modal = document.getElementById('editAccountModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeEditAccountModal() {
+      const modal = document.getElementById('editAccountModal');
+      if (modal) modal.style.display = 'none';
+      _activeEditAccountId = null;
+    }
+
+    async function submitEditAccountModal(e) {
+      if (e) e.preventDefault();
+      if (!_activeEditAccountId) return;
+
+      const name = document.getElementById('editAccName').value.trim();
+      const projectKey = document.getElementById('editAccProject').value;
+      const workerId = document.getElementById('editAccWorker').value;
+      const healthStatus = document.getElementById('editAccHealthStatus').value;
+      const cookieStatus = document.getElementById('editAccCookieStatus').value;
+      const accessToken = document.getElementById('editAccToken').value.trim();
+
+      const payload = {
+        name,
+        projectKey,
+        workerId: workerId ? workerId : "",
+        healthStatus,
+        cookieStatus
+      };
+
+      if (accessToken) {
+        payload.accessToken = accessToken;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/accounts/${_activeEditAccountId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ Đã cập nhật & điều chuyển tài khoản thành công!`, 'success');
+          closeEditAccountModal();
+          await loadAccountFarm();
+        } else {
+          showToast(`❌ Cập nhật thất bại: ${data.detail || data.error}`, 'error');
+        }
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+      }
+    }
+
+    function openHealthCheckModal(accountId) {
+      const acc = _accountsFarmCache.find(a => a.id === accountId);
+      if (!acc) return;
+
+      _activeHealthAccountId = accountId;
+      document.getElementById('healthAccName').textContent = acc.name || 'Tài khoản';
+      document.getElementById('healthAccTargetId').textContent = acc.targetId || acc.id;
+      document.getElementById('healthAccCurStatus').textContent = (acc.healthStatus || 'live').toUpperCase();
+
+      const modal = document.getElementById('healthCheckModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeHealthCheckModal() {
+      const modal = document.getElementById('healthCheckModal');
+      if (modal) modal.style.display = 'none';
+      _activeHealthAccountId = null;
+    }
+
+    async function triggerAccountHealth(targetStatus, message) {
+      if (!_activeHealthAccountId) return;
+      const accId = _activeHealthAccountId;
+
+      showToast(`⚡ Đang áp dụng trạng thái [${targetStatus.toUpperCase()}]...`, 'info');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/accounts/${accId}/health`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            healthStatus: targetStatus,
+            checkpointType: 'manual_admin',
+            message: message || `Manual trigger set to ${targetStatus}`
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ Đã cập nhật sức khỏe tài khoản thành [${targetStatus.toUpperCase()}]!`, 'success');
+          closeHealthCheckModal();
+          await loadAccountFarm();
+        } else {
+          showToast(`❌ Lỗi cập nhật: ${data.detail || data.error}`, 'error');
+        }
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
       }
     }
 
     async function deleteAccount(id) {
-      if(!confirm('Xóa tài khoản này?')) return;
-      await fetch(`${API_BASE}/api/accounts/${id}`, { method: 'DELETE' });
-      showToast('🗑️ Đã xóa tài khoản!', 'success');
-      loadAccounts();
-    }
+      const acc = _accountsFarmCache.find(a => a.id === id);
+      const name = acc ? acc.name : id;
+      if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản "${name}" khỏi Farm?`)) return;
 
-    async function loadLogs() {
       try {
-        const logsRes = await fetch(`${API_BASE}/api/logs`).catch(() => null);
-        const container = document.getElementById('logsList');
-        
-        if (logsRes && logsRes.ok) {
-          const logsData = await logsRes.json();
-          renderLogs(logsData.logs || []);
+        const res = await fetch(`${API_BASE}/api/accounts/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`🗑️ Đã xóa tài khoản "${name}"!`, 'success');
+          await loadAccountFarm();
+        } else {
+          showToast(`❌ Lỗi xóa tài khoản: ${data.detail || data.error}`, 'error');
         }
-      } catch (e) {}
+      } catch (err) {
+        showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+      }
     }
 
-    function renderLogs(logs) {
-      const container = document.getElementById('logsList');
-      if (logs.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-dim);">Chưa có nhật ký hoạt động nào.</div>';
+    // =========================================================================
+    // REALTIME KPI ANALYTICS OVERVIEW
+    // =========================================================================
+    async function loadKpiMetrics() {
+      try {
+        const [wRes, aRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/workers`),
+          fetch(`${API_BASE}/api/accounts`)
+        ]);
+
+        if (wRes.status === 'fulfilled' && wRes.value.ok) {
+          const wData = await wRes.value.json();
+          _allWorkersCache = wData.workers || [];
+        }
+
+        if (aRes.status === 'fulfilled' && aRes.value.ok) {
+          const aData = await aRes.value.json();
+          _allAccountsCache = aData.accounts || [];
+        }
+
+        // --- Metric 1: Worker Nodes ---
+        const totalWorkers = _allWorkersCache.length;
+        const nowMs = Date.now();
+        const onlineWorkers = _allWorkersCache.filter(w => {
+          const isRecent = (nowMs - (w.lastSeen || 0)) <= 45000;
+          return (w.status === 'online' || w.status === 'busy' || w.status === 'idle') && isRecent;
+        }).length;
+        const busyWorkers = _allWorkersCache.filter(w => w.status === 'busy' || w.currentTaskId).length;
+        const workerPct = totalWorkers > 0 ? Math.round((onlineWorkers / totalWorkers) * 100) : 0;
+
+        const elWorkers = document.getElementById('kpiWorkerNodes');
+        if (elWorkers) elWorkers.textContent = `${onlineWorkers} / ${totalWorkers}`;
+        const elWorkerPct = document.getElementById('kpiWorkerPercent');
+        if (elWorkerPct) elWorkerPct.textContent = `${workerPct}% Online`;
+        const elWorkerSub = document.getElementById('kpiWorkerSubtext');
+        if (elWorkerSub) elWorkerSub.textContent = `${busyWorkers} node đang thực thi tác vụ`;
+
+        // --- Metric 2: Account Farm Vitality ---
+        const totalAccounts = _allAccountsCache.length;
+        const liveAccounts = _allAccountsCache.filter(a => {
+          const s = (a.status || '').toLowerCase();
+          const hs = (a.healthStatus || '').toLowerCase();
+          return (s === 'active' || hs === 'live' || hs === 'healthy') && s !== 'checkpoint' && s !== 'expired';
+        }).length;
+        const vitalityPct = totalAccounts > 0 ? Math.round((liveAccounts / totalAccounts) * 100) : 100;
+
+        const elVitality = document.getElementById('kpiAccountVitality');
+        if (elVitality) {
+          elVitality.textContent = `${vitalityPct}%`;
+          elVitality.style.color = vitalityPct >= 85 ? '#34d399' : (vitalityPct >= 60 ? '#fbbf24' : '#f87171');
+        }
+        const elLive = document.getElementById('kpiLiveAccounts');
+        if (elLive) elLive.textContent = liveAccounts;
+        const elTotalAcc = document.getElementById('kpiTotalAccounts');
+        if (elTotalAcc) elTotalAcc.textContent = totalAccounts;
+        const elBar = document.getElementById('kpiVitalityBar');
+        if (elBar) {
+          elBar.style.width = `${vitalityPct}%`;
+          elBar.style.background = vitalityPct >= 85 ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#f59e0b,#ef4444)';
+        }
+
+        // --- Metric 3: 24h Queue Throughput ---
+        const oneDayAgo = nowMs - (24 * 60 * 60 * 1000);
+        const recentTasks = _allTasksCache.filter(t => (t.createdAt || t.scheduledTime || 0) >= oneDayAgo);
+        const throughputTotal = recentTasks.length;
+        const completedTasks = recentTasks.filter(t => t.status === 'completed').length;
+        const failedTasks = recentTasks.filter(t => t.status === 'failed').length;
+        const finishedCount = completedTasks + failedTasks;
+        const successRate = finishedCount > 0 ? Math.round((completedTasks / finishedCount) * 100) : 100;
+
+        const elThroughput = document.getElementById('kpiQueueThroughput');
+        if (elThroughput) elThroughput.textContent = `${throughputTotal} Tasks`;
+        const elSuccessRate = document.getElementById('kpiSuccessRate');
+        if (elSuccessRate) elSuccessRate.textContent = `${successRate}% Đạt`;
+        const elCompleted = document.getElementById('kpiCompletedCount');
+        if (elCompleted) elCompleted.textContent = completedTasks;
+        const elFailed = document.getElementById('kpiFailedCount');
+        if (elFailed) elFailed.textContent = failedTasks;
+
+        // --- Metric 4: Active Warm-up Sessions ---
+        const activeWarmups = _allTasksCache.filter(t => 
+          t.type === 'warmup' && (t.status === 'running' || t.status === 'assigned')
+        ).length;
+        const elWarmup = document.getElementById('kpiActiveWarmup');
+        if (elWarmup) elWarmup.textContent = `${activeWarmups} Sessions`;
+
+        populateWorkerFilters();
+      } catch (e) {
+        console.warn("loadKpiMetrics warning:", e);
+      }
+    }
+
+    // =========================================================================
+    // DISTRIBUTED TASK QUEUE ENGINE
+    // =========================================================================
+    async function loadTasks(forceRefresh = false) {
+      try {
+        const selectedProj = document.getElementById('globalProjectSelect')?.value || 'all';
+        let queryUrl = `${API_BASE}/api/tasks?limit=200`;
+        if (selectedProj !== 'all') {
+          queryUrl += `&projectKey=${encodeURIComponent(selectedProj)}`;
+        }
+
+        const res = await fetch(queryUrl);
+        if (!res.ok) return;
+        const data = await res.json();
+        const tasks = data.tasks || [];
+
+        const newHash = JSON.stringify(tasks.map(t => ({ id: t.id, status: t.status, retry: t.retryCount, lease: t.leaseExpiresAt })));
+        if (!forceRefresh && newHash === _lastTasksHash) {
+          updateLeaseCountdownsInDom();
+          return;
+        }
+        _lastTasksHash = newHash;
+        _allTasksCache = tasks;
+
+        const pendingCount = tasks.filter(t => t.status === 'pending' || t.status === 'assigned' || t.status === 'running').length;
+        const navBadge = document.getElementById('navQueueBadge');
+        if (navBadge) navBadge.textContent = pendingCount;
+
+        updateTaskFilterCounters(tasks);
+        applyTaskFilters();
+      } catch (e) {
+        console.warn("loadTasks error:", e);
+      }
+    }
+
+    function updateTaskFilterCounters(tasks) {
+      const getCount = st => st === 'all' ? tasks.length : tasks.filter(t => t.status === st).length;
+      ['All', 'Pending', 'Assigned', 'Running', 'Completed', 'Failed', 'Cancelled'].forEach(key => {
+        const el = document.getElementById(`countFilter${key}`);
+        if (el) el.textContent = getCount(key.toLowerCase());
+      });
+    }
+
+    function setTaskStatusFilter(status, btn) {
+      _currentTaskStatusFilter = status;
+      document.querySelectorAll('[data-task-status]').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      applyTaskFilters();
+    }
+
+    function applyTaskFilters() {
+      const statusFilter = _currentTaskStatusFilter;
+      const typeFilter = document.getElementById('taskTypeFilter')?.value || 'all';
+      const workerFilter = document.getElementById('taskWorkerFilter')?.value || 'all';
+      const query = (document.getElementById('taskSearchInput')?.value || '').toLowerCase().trim();
+
+      let filtered = _allTasksCache;
+
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(t => t.status === statusFilter);
+      }
+      if (typeFilter !== 'all') {
+        filtered = filtered.filter(t => t.type === typeFilter);
+      }
+      if (workerFilter !== 'all') {
+        filtered = filtered.filter(t => t.workerId === workerFilter);
+      }
+      if (query) {
+        filtered = filtered.filter(t => {
+          const matchId = (t.id || '').toLowerCase().includes(query);
+          const matchAccount = (t.accountId || '').toLowerCase().includes(query);
+          const matchWorker = (t.workerId || '').toLowerCase().includes(query);
+          const payloadStr = JSON.stringify(t.payload || '').toLowerCase();
+          return matchId || matchAccount || matchWorker || payloadStr.includes(query);
+        });
+      }
+
+      renderTaskQueueTable(filtered);
+    }
+
+    function renderTaskQueueTable(tasks) {
+      const tbody = document.getElementById('taskQueueTableBody');
+      if (!tbody) return;
+
+      const showingCount = document.getElementById('lblTasksShowingCount');
+      if (showingCount) showingCount.textContent = tasks.length;
+      const totalCount = document.getElementById('lblTasksTotalCount');
+      if (totalCount) totalCount.textContent = _allTasksCache.length;
+
+      if (tasks.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align:center; padding:36px; color:var(--text-dim);">
+              Không có nhiệm vụ nào phù hợp với bộ lọc hiện tại.
+            </td>
+          </tr>
+        `;
         return;
       }
 
-      const actionLabels = {
-        CREATE_POST: { label: 'TẠO BÀI', color: '#60a5fa' },
-        UPDATE_POST: { label: 'TIẾN ĐỘ', color: '#fbbf24' },
-        TRIGGER_POST_NOW: { label: 'ĐĂNG NGAY', color: '#a78bfa' },
-        DELETE_POST: { label: 'XÓA BÀI', color: '#f87171' }
-      };
+      tbody.innerHTML = tasks.map(t => {
+        const safeId = escapeHtml(t.id || '');
+        const shortId = safeId.length > 14 ? safeId.substring(0, 14) + '…' : safeId;
+        
+        let statusClass = `task-status-${t.status || 'pending'}`;
+        let statusIcon = '';
+        if (t.status === 'running') statusIcon = '<span class="pulse-spinner" style="width:10px; height:10px;"></span>';
+        else if (t.status === 'completed') statusIcon = '✅';
+        else if (t.status === 'failed') statusIcon = '❌';
+        else if (t.status === 'cancelled') statusIcon = '🚫';
+        else if (t.status === 'assigned') statusIcon = '🎯';
+        else statusIcon = '⏳';
+
+        const statusBadge = `
+          <span class="task-status-pill ${statusClass}">
+            ${statusIcon} ${escapeHtml((t.status || 'pending').toUpperCase())}
+          </span>
+        `;
+
+        const typeBadges = {
+          post: '<span class="task-type-badge task-type-post">📝 Đăng bài</span>',
+          seed: '<span class="task-type-badge task-type-seed">💬 Seeding</span>',
+          warmup: '<span class="task-type-badge task-type-warmup">🔥 Nuôi nick</span>',
+          reply_comment: '<span class="task-type-badge task-type-reply_comment">🤖 Trả lời</span>'
+        };
+        const typeBadge = typeBadges[t.type] || `<span class="task-type-badge">${escapeHtml(t.type || 'post')}</span>`;
+
+        const targetDisplay = t.accountId ? `<span style="font-family:monospace; color:#38bdf8;">${escapeHtml(t.accountId)}</span>` : '<span style="color:var(--text-dim);">Auto Account</span>';
+        const workerDisplay = t.workerId ? `<span class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa;">🖥️ ${escapeHtml(t.workerId)}</span>` : '<span style="color:var(--text-dim);">Tự động / Any</span>';
+
+        const retryCount = t.retryCount || 0;
+        const maxRetries = t.maxRetries || 3;
+        const retryColor = retryCount > 0 ? '#f87171' : 'var(--text-dim)';
+        const retriesHtml = `<span style="color:${retryColor}; font-weight:700;">${retryCount}</span> / <span style="color:var(--text-dim);">${maxRetries}</span>`;
+
+        const leaseHtml = computeLeaseBadgeHtml(t);
+        const timeDisplay = t.createdAt ? timeAgo(t.createdAt) : '-';
+
+        let actionsHtml = `<div style="display:flex; align-items:center; justify-content:center; gap:6px;">`;
+        actionsHtml += `<button class="btn btn-xs" style="background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); padding:4px 8px;" onclick="openTaskDetailModal('${safeId}')" title="Chi tiết payload & kết quả">🔍 Xem</button>`;
+
+        if (t.status === 'pending' || t.status === 'assigned' || t.status === 'running') {
+          actionsHtml += `<button class="btn btn-xs" style="background:rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); padding:4px 8px;" onclick="triggerCancelTask('${safeId}')" title="Hủy nhiệm vụ ngay">🚫 Hủy</button>`;
+        }
+        actionsHtml += `</div>`;
+
+        return `
+          <tr id="task-row-${safeId}">
+            <td>
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-family:'JetBrains Mono', Consolas, monospace; font-size:12px; font-weight:700; color:#e2e8f0;" title="${safeId}">${shortId}</span>
+                <button class="copy-id-btn" onclick="copyToClipboard('${safeId}', 'Task ID')" title="Sao chép ID">📋</button>
+              </div>
+            </td>
+            <td>${typeBadge}</td>
+            <td>${targetDisplay}</td>
+            <td>${workerDisplay}</td>
+            <td>${statusBadge}</td>
+            <td>${retriesHtml}</td>
+            <td><div class="lease-cell" data-task-id="${safeId}" data-lease-expires="${t.leaseExpiresAt || 0}" data-status="${t.status || ''}">${leaseHtml}</div></td>
+            <td style="color:var(--text-dim); font-size:12px;" title="${t.createdAt ? new Date(t.createdAt).toLocaleString() : ''}">${timeDisplay}</td>
+            <td>${actionsHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function computeLeaseBadgeHtml(task) {
+      if (task.status === 'completed') return `<span style="color:var(--text-dim);">— Hoàn tất</span>`;
+      if (task.status === 'cancelled') return `<span style="color:var(--text-dim);">— Đã hủy</span>`;
+      if (task.status === 'failed') return `<span style="color:var(--text-dim);">— Thất bại</span>`;
+      if (task.status === 'pending') return `<span class="badge" style="background:rgba(245,158,11,0.1); color:#fbbf24; font-size:11px;">⏳ Chờ gán</span>`;
+
+      if (!task.leaseExpiresAt) return `<span style="color:var(--text-dim);">N/A</span>`;
+
+      const nowMs = Date.now();
+      const diffSec = Math.round((task.leaseExpiresAt - nowMs) / 1000);
+
+      if (diffSec <= 0) {
+        return `<span class="lease-badge lease-expired">⚠️ Hết hạn (0s)</span>`;
+      } else if (diffSec <= 15) {
+        return `<span class="lease-badge lease-amber">⏱️ Còn ${diffSec}s</span>`;
+      } else {
+        return `<span class="lease-badge lease-green">⏱️ Còn ${diffSec}s</span>`;
+      }
+    }
+
+    function updateLeaseCountdownsInDom() {
+      const cells = document.querySelectorAll('.lease-cell');
+      const nowMs = Date.now();
+
+      cells.forEach(cell => {
+        const status = cell.getAttribute('data-status');
+        if (status !== 'assigned' && status !== 'running') return;
+
+        const leaseExpires = parseInt(cell.getAttribute('data-lease-expires') || '0', 10);
+        if (!leaseExpires) return;
+
+        const diffSec = Math.round((leaseExpires - nowMs) / 1000);
+        if (diffSec <= 0) {
+          cell.innerHTML = `<span class="lease-badge lease-expired">⚠️ Hết hạn (0s)</span>`;
+        } else if (diffSec <= 15) {
+          cell.innerHTML = `<span class="lease-badge lease-amber">⏱️ Còn ${diffSec}s</span>`;
+        } else {
+          cell.innerHTML = `<span class="lease-badge lease-green">⏱️ Còn ${diffSec}s</span>`;
+        }
+      });
+    }
+
+    async function triggerCancelTask(taskId) {
+      if (!confirm(`Bạn có chắc chắn muốn hủy nhiệm vụ "${taskId}" không?`)) {
+        return;
+      }
+
+      showToast(`Đang gửi yêu cầu hủy nhiệm vụ ${taskId}...`, 'info');
+
+      try {
+        let res = await fetch(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!res.ok && res.status === 404) {
+          res = await fetch(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'failed',
+              error: 'Nhiệm vụ bị hủy thủ công bởi Quản trị viên (Admin UI)'
+            })
+          });
+        }
+
+        if (res.ok) {
+          showToast(`Đã hủy nhiệm vụ "${taskId}" thành công!`, 'success');
+          const task = _allTasksCache.find(t => t.id === taskId);
+          if (task) {
+            task.status = 'cancelled';
+            task.leaseExpiresAt = null;
+            applyTaskFilters();
+          }
+          loadTasks(true);
+          loadKpiMetrics();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(`Không thể hủy nhiệm vụ: ${err.detail || err.message || 'Lỗi server'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`Lỗi kết nối khi hủy nhiệm vụ: ${e.message}`, 'error');
+      }
+    }
+
+    function openCreateTaskModal() {
+      const modal = document.getElementById('modalCreateTask');
+      if (!modal) return;
+
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 1);
+      const localIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+      const schedInput = document.getElementById('modalTaskScheduledTime');
+      if (schedInput) schedInput.value = localIso;
+
+      populateModalAccounts();
+      populateModalWorkers();
+      populateModalProjects();
+
+      const typeEl = document.getElementById('modalTaskType');
+      if (typeEl) typeEl.value = 'post';
+      onModalTaskTypeChange();
+
+      modal.style.display = 'flex';
+    }
+
+    function closeCreateTaskModal() {
+      const modal = document.getElementById('modalCreateTask');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function onModalTaskTypeChange() {
+      const type = document.getElementById('modalTaskType')?.value || 'post';
+      const secPost = document.getElementById('payloadSectionPost');
+      const secWarmup = document.getElementById('payloadSectionWarmup');
+      const secSeed = document.getElementById('payloadSectionSeed');
+      const secReply = document.getElementById('payloadSectionReply');
+
+      if (secPost) secPost.style.display = type === 'post' ? 'flex' : 'none';
+      if (secWarmup) secWarmup.style.display = type === 'warmup' ? 'flex' : 'none';
+      if (secSeed) secSeed.style.display = type === 'seed' ? 'flex' : 'none';
+      if (secReply) secReply.style.display = type === 'reply_comment' ? 'flex' : 'none';
+    }
+
+    function toggleAdvancedJson() {
+      const section = document.getElementById('rawJsonSection');
+      if (!section) return;
+      const isHidden = section.style.display === 'none';
+      section.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        const payload = buildPayloadFromForm();
+        const rawJsonEl = document.getElementById('modalRawPayloadJson');
+        if (rawJsonEl) rawJsonEl.value = JSON.stringify(payload, null, 2);
+      }
+    }
+
+    function buildPayloadFromForm() {
+      const type = document.getElementById('modalTaskType')?.value || 'post';
+      const rawJson = document.getElementById('modalRawPayloadJson')?.value?.trim();
+
+      if (rawJson && document.getElementById('rawJsonSection')?.style.display !== 'none') {
+        try { return JSON.parse(rawJson); } catch (e) {}
+      }
+
+      let payload = {};
+      if (type === 'post') {
+        const mediaStr = document.getElementById('modalPostMediaUrls')?.value.trim() || '';
+        const mediaUrls = mediaStr ? mediaStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const seedingStr = document.getElementById('modalPostSeeding')?.value.trim() || '';
+        const seedingComments = seedingStr ? seedingStr.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+        payload = {
+          content: document.getElementById('modalPostContent')?.value.trim() || '',
+          mediaUrls: mediaUrls,
+          autoReactType: document.getElementById('modalPostAutoReact')?.value || 'none',
+          seedingComments: seedingComments
+        };
+      } else if (type === 'warmup') {
+        payload = {
+          warmupConfig: {
+            durationSeconds: parseInt(document.getElementById('modalWarmupDuration')?.value, 10) || 180,
+            maxReactions: parseInt(document.getElementById('modalWarmupMaxReactions')?.value, 10) || 5,
+            enableComments: document.getElementById('modalWarmupEnableComments')?.checked || false
+          }
+        };
+      } else if (type === 'seed') {
+        const seedCommentsStr = document.getElementById('modalSeedComments')?.value.trim() || '';
+        payload = {
+          targetUrl: document.getElementById('modalSeedTargetUrl')?.value.trim() || '',
+          comments: seedCommentsStr ? seedCommentsStr.split('\n').map(s => s.trim()).filter(Boolean) : []
+        };
+      } else if (type === 'reply_comment') {
+        payload = {
+          targetCommentId: document.getElementById('modalReplyCommentId')?.value.trim() || '',
+          replyText: document.getElementById('modalReplyText')?.value.trim() || ''
+        };
+      }
+      return payload;
+    }
+
+    async function handleCreateTaskSubmit(event) {
+      if (event) event.preventDefault();
+      const btn = document.getElementById('btnSubmitTask');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="pulse-spinner" style="width:12px; height:12px; margin-right:6px;"></span> Đang tạo...`;
+      }
+
+      try {
+        const type = document.getElementById('modalTaskType')?.value || 'post';
+        const projectKey = document.getElementById('modalTaskProjectKey')?.value || 'all';
+        const accountId = document.getElementById('modalTaskAccountId')?.value || null;
+        const workerId = document.getElementById('modalTaskWorkerId')?.value || null;
+        const priority = parseInt(document.getElementById('modalTaskPriority')?.value, 10) || 0;
+        const maxRetries = parseInt(document.getElementById('modalTaskMaxRetries')?.value, 10) || 3;
+        const schedInput = document.getElementById('modalTaskScheduledTime')?.value;
+        const scheduledTime = schedInput ? new Date(schedInput).getTime() : Date.now();
+        const payload = buildPayloadFromForm();
+
+        const requestBody = {
+          taskType: type,
+          projectKey: projectKey,
+          accountId: accountId,
+          workerId: workerId,
+          priority: priority,
+          maxRetries: maxRetries,
+          scheduledTime: scheduledTime,
+          payload: payload
+        };
+
+        const res = await fetch(`${API_BASE}/api/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          showToast(`Tạo nhiệm vụ ${result.task?.id || ''} thành công!`, 'success');
+          closeCreateTaskModal();
+          const form = document.getElementById('formCreateTask');
+          if (form) form.reset();
+          loadTasks(true);
+          loadKpiMetrics();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(`Không thể tạo nhiệm vụ: ${err.detail || err.message || 'Lỗi server'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`Lỗi tạo nhiệm vụ: ${e.message}`, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `🚀 Đưa Vào Hàng Đợi (Enqueue Task)`;
+        }
+      }
+    }
+
+    function openTaskDetailModal(taskId) {
+      const task = _allTasksCache.find(t => t.id === taskId);
+      if (!task) {
+        showToast('⚠️ Không tìm thấy thông tin task', 'error');
+        return;
+      }
+      const modal = document.getElementById('modalTaskDetail');
+      if (!modal) return;
+
+      document.getElementById('detailTaskTitle').textContent = `Chi Tiết Nhiệm Vụ #${task.id}`;
+      document.getElementById('detailTaskSubtitle').textContent = `Task ID: ${task.id} • Tạo lúc: ${task.createdAt ? new Date(task.createdAt).toLocaleString() : 'N/A'}`;
+      document.getElementById('detailTaskStatus').textContent = (task.status || 'pending').toUpperCase();
+      document.getElementById('detailTaskType').textContent = (task.type || 'post').toUpperCase();
+      document.getElementById('detailTaskWorker').textContent = task.workerId || 'Chưa gán (None)';
+      document.getElementById('detailTaskAccount').textContent = task.accountId || 'Tự động (Auto)';
+      document.getElementById('detailTaskRetries').textContent = `${task.retryCount || 0} / ${task.maxRetries || 3}`;
+      
+      const leaseSec = task.leaseExpiresAt ? Math.round((task.leaseExpiresAt - Date.now()) / 1000) : null;
+      document.getElementById('detailTaskLease').textContent = leaseSec !== null ? (leaseSec > 0 ? `${leaseSec}s` : 'Hết hạn') : 'N/A';
+
+      const errBanner = document.getElementById('detailErrorBanner');
+      const errText = document.getElementById('detailErrorText');
+      if (task.lastError) {
+        errBanner.style.display = 'block';
+        errText.textContent = task.lastError;
+      } else {
+        errBanner.style.display = 'none';
+      }
+
+      document.getElementById('detailPayloadJson').textContent = JSON.stringify(task.payload || {}, null, 2);
+      document.getElementById('detailResultJson').textContent = JSON.stringify(task.result || task.resultData || {}, null, 2);
+
+      const cancelSlot = document.getElementById('detailActionCancelSlot');
+      if (task.status === 'pending' || task.status === 'assigned' || task.status === 'running') {
+        cancelSlot.innerHTML = `<button class="btn btn-xs btn-danger" onclick="triggerCancelTask('${task.id}'); closeTaskDetailModal();">🚫 Hủy Nhiệm Vụ Này</button>`;
+      } else {
+        cancelSlot.innerHTML = '';
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeTaskDetailModal() {
+      const modal = document.getElementById('modalTaskDetail');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function populateModalAccounts() {
+      const sel = document.getElementById('modalTaskAccountId');
+      if (!sel) return;
+      const cur = sel.value || '';
+      sel.innerHTML = '<option value="">-- Tự Động Chọn Account / Mặc định --</option>' +
+        _allAccountsCache.map(a => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name || a.id)} (${escapeHtml(a.targetId || a.id)})</option>`).join('');
+      sel.value = cur;
+    }
+
+    function populateModalWorkers() {
+      const sel = document.getElementById('modalTaskWorkerId');
+      if (!sel) return;
+      const cur = sel.value || '';
+      sel.innerHTML = '<option value="">-- Phân bổ Tự Động (Any Worker) --</option>' +
+        _allWorkersCache.map(w => `<option value="${escapeHtml(w.id)}">${escapeHtml(w.name || w.id)} (${w.status})</option>`).join('');
+      sel.value = cur;
+    }
+
+    function populateModalProjects() {
+      const sel = document.getElementById('modalTaskProjectKey');
+      if (!sel) return;
+      const cur = sel.value || 'all';
+      sel.innerHTML = '<option value="all">📁 Tất cả Projects (all)</option>' +
+        _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+      sel.value = cur;
+    }
+
+    function populateWorkerFilters() {
+      const sel = document.getElementById('taskWorkerFilter');
+      if (sel) {
+        const cur = sel.value || 'all';
+        sel.innerHTML = '<option value="all">🖥️ Tất cả Worker Nodes</option>' +
+          _allWorkersCache.map(w => `<option value="${escapeHtml(w.id)}">🖥️ ${escapeHtml(w.name || w.id)} (${w.status})</option>`).join('');
+        sel.value = cur;
+      }
+    }
+
+    function initTaskQueueListeners() {
+      const typeSel = document.getElementById('modalTaskType');
+      if (typeSel) typeSel.addEventListener('change', onModalTaskTypeChange);
+      const taskSearch = document.getElementById('taskSearchInput');
+      if (taskSearch) taskSearch.addEventListener('input', applyTaskFilters);
+      const taskType = document.getElementById('taskTypeFilter');
+      if (taskType) taskType.addEventListener('change', applyTaskFilters);
+      const taskWorker = document.getElementById('taskWorkerFilter');
+      if (taskWorker) taskWorker.addEventListener('change', applyTaskFilters);
+    }
+
+    // =========================================================================
+    // LIVE ACTIVITY LOG STREAM (Level & Entity Filtering, Auto-scroll)
+    // =========================================================================
+    async function loadLogs(force = false) {
+      try {
+        const res = await fetch(`${API_BASE}/api/logs?limit=250`);
+        if (!res.ok) return;
+        const data = await res.json();
+        _allLogsCache = data.logs || [];
+        applyLogFilters();
+      } catch (e) {
+        console.warn("loadLogs error:", e);
+      }
+    }
+
+    function setLogLevelFilter(level, btn) {
+      _currentLogLevelFilter = level;
+      document.querySelectorAll('[data-log-level]').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      applyLogFilters();
+    }
+
+    function toggleLogAutoScroll() {
+      _logAutoScroll = !_logAutoScroll;
+      const lbl = document.getElementById('lblLogAutoScroll');
+      if (lbl) {
+        lbl.textContent = _logAutoScroll ? 'BẬT' : 'TẮT';
+        lbl.style.color = _logAutoScroll ? '#34d399' : '#f87171';
+      }
+    }
+
+    function applyLogFilters() {
+      const levelFilter = _currentLogLevelFilter;
+      const entityFilter = document.getElementById('logEntityFilter')?.value || 'all';
+      const query = (document.getElementById('logSearchInput')?.value || '').toLowerCase().trim();
+
+      let filtered = _allLogsCache;
+
+      if (levelFilter !== 'all') {
+        filtered = filtered.filter(l => classifyLogLevel(l) === levelFilter);
+      }
+
+      if (entityFilter !== 'all') {
+        filtered = filtered.filter(l => classifyLogEntity(l) === entityFilter);
+      }
+
+      if (query) {
+        filtered = filtered.filter(l => {
+          const matchAction = (l.action || '').toLowerCase().includes(query);
+          const matchDetails = JSON.stringify(l.details || '').toLowerCase().includes(query);
+          return matchAction || matchDetails;
+        });
+      }
+
+      renderEnhancedLogs(filtered);
+    }
+
+    function classifyLogLevel(log) {
+      const act = (log.action || '').toUpperCase();
+      const detStr = JSON.stringify(log.details || '').toUpperCase();
+
+      if (act.includes('ERROR') || act.includes('FAIL') || act.includes('CHECKPOINT') || detStr.includes('"ERROR"') || detStr.includes('FAILED')) {
+        return 'error';
+      }
+      if (act.includes('CANCEL') || act.includes('WARN') || act.includes('EXPIRE') || act.includes('TIMEOUT') || act.includes('PAUSE')) {
+        return 'warning';
+      }
+      return 'info';
+    }
+
+    function classifyLogEntity(log) {
+      const act = (log.action || '').toUpperCase();
+      if (act.includes('TASK') || act.includes('POLL') || act.includes('CLAIM')) return 'task';
+      if (act.includes('WORKER') || act.includes('HEARTBEAT') || act.includes('NODE')) return 'worker';
+      if (act.includes('ACCOUNT') || act.includes('COOKIE') || act.includes('CHECKPOINT')) return 'account';
+      if (act.includes('POST') || act.includes('SEED')) return 'post';
+      return 'task';
+    }
+
+    function renderEnhancedLogs(logs) {
+      const container = document.getElementById('logsList');
+      if (!container) return;
+
+      const countEl = document.getElementById('lblLogFilteredCount');
+      if (countEl) countEl.textContent = logs.length;
+      const totalEl = document.getElementById('lblLogTotalCount');
+      if (totalEl) totalEl.textContent = _allLogsCache.length;
+
+      if (logs.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-dim);">Không có sự kiện nào khớp bộ lọc.</div>`;
+        return;
+      }
 
       container.innerHTML = logs.map(l => {
-        const act = actionLabels[l.action] || { label: l.action, color: '#94a3b8' };
-        let timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString('vi-VN') : '';
-        
+        const level = classifyLogLevel(l);
+        const entity = classifyLogEntity(l);
+        const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString('vi-VN') : '';
+
+        let levelBadgeHtml = '';
+        if (level === 'error') {
+          levelBadgeHtml = `<span class="log-level-badge log-level-error">ERROR</span>`;
+        } else if (level === 'warning') {
+          levelBadgeHtml = `<span class="log-level-badge log-level-warning">WARN</span>`;
+        } else {
+          levelBadgeHtml = `<span class="log-level-badge log-level-info">INFO</span>`;
+        }
+
+        const entityBadgeHtml = `<span class="log-entity-badge">[${entity.toUpperCase()}]</span>`;
+
         let detailsHtml = '';
-        if (l.details && l.details.updates) {
-          const u = l.details.updates;
-          if (u.progressStep) detailsHtml += `<span style="color:#e2e8f0;">${escapeHtml(u.progressStep)}</span> `;
-          if (u.status) detailsHtml += `<span style="color:${u.status==='completed'?'#4ade80':(u.status==='failed'?'#f87171':'#fbbf24')};">[${u.status.toUpperCase()}]</span> `;
-          if (u.lastError) detailsHtml += `<span style="color:#f87171;">⚠️ ${escapeHtml(u.lastError)}</span>`;
-        } else if (l.details) {
-          detailsHtml = `<span style="color:#cbd5e1;">${escapeHtml(JSON.stringify(l.details))}</span>`;
+        if (l.details) {
+          if (typeof l.details === 'string') {
+            detailsHtml = escapeHtml(l.details);
+          } else {
+            const d = l.details;
+            const parts = [];
+            if (d.taskId) parts.push(`<span style="color:#818cf8;">taskId: ${escapeHtml(d.taskId)}</span>`);
+            if (d.workerId) parts.push(`<span style="color:#a78bfa;">worker: ${escapeHtml(d.workerId)}</span>`);
+            if (d.status) parts.push(`<span style="color:#34d399;">status: ${escapeHtml(d.status)}</span>`);
+            if (d.error) parts.push(`<span style="color:#f87171; font-weight:700;">error: ${escapeHtml(d.error)}</span>`);
+            if (d.updates && d.updates.progressStep) parts.push(`<span style="color:#e2e8f0;">${escapeHtml(d.updates.progressStep)}</span>`);
+            if (parts.length > 0) {
+              detailsHtml = parts.join(' · ');
+            } else {
+              detailsHtml = escapeHtml(JSON.stringify(d));
+            }
+          }
         }
 
         return `
-        <div style="margin-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:8px; font-size:12px;">
-          <span style="color:var(--text-dim); margin-right:8px;">[${timeStr}]</span>
-          <span style="color:${act.color}; font-weight:700; margin-right:8px;">${act.label}</span>
-          <span>${detailsHtml}</span>
-        </div>
-      `}).join('');
+          <div style="margin-bottom:6px; border-bottom:1px dashed rgba(255,255,255,0.06); padding-bottom:6px; line-height:1.6; font-size:12px;">
+            <span style="color:var(--text-dim); margin-right:6px;">[${timeStr}]</span>
+            ${levelBadgeHtml}
+            ${entityBadgeHtml}
+            <span style="font-weight:700; color:#f8fafc; margin:0 6px;">${escapeHtml(l.action)}</span>
+            <span style="color:#cbd5e1;">${detailsHtml}</span>
+          </div>
+        `;
+      }).join('');
+
+      if (_logAutoScroll) {
+        const stream = document.getElementById('logsStreamContainer');
+        if (stream) stream.scrollTop = 0;
+      }
     }
 
     function showToast(msg, type = 'info') {
@@ -2835,6 +5639,8 @@
         <button class="btn btn-xs btn-primary" onclick="document.getElementById('debugErrorModal').style.display='none'">Đóng</button>
       </div>
     </div>
+  </div>
+
   <!-- Add Seeding Comments Modal -->
   <div class="modal-overlay" id="addSeedingModal">
     <div class="modal-content" style="max-width:580px;">
@@ -2858,6 +5664,11 @@
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
           <button class="btn btn-secondary" onclick="closeAddSeedingModal()">Hủy Bỏ</button>
           <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800;" onclick="submitAddSeedingModal()">⚡ Gửi & Đăng Seeding Ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Project Manager Modal -->
   <div class="modal-overlay" id="projectManagerModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
     <div class="modal-panel" style="background:#0f172a; border:1px solid #8b5cf6; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
@@ -2888,6 +5699,452 @@
 
       <div style="display:flex; justify-content:flex-end; margin-top:8px;">
         <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('projectManagerModal').style.display='none'">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Worker Account Assignment Modal (Milestone 4) -->
+  <div class="modal-overlay" id="workerAssignModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #6366f1; border-radius:24px; width:92%; max-width:760px; padding:28px; color:#fff; box-shadow:0 30px 70px rgba(0,0,0,0.85); display:flex; flex-direction:column; gap:18px; max-height:90vh;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(99,102,241,0.4);">👤</div>
+          <div>
+            <h3 style="margin:0; font-size:19px; font-weight:800; color:#fff;">Phân Bổ Tài Khoản Facebook Cho Worker</h3>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+              Worker: <span id="assignModalWorkerName" style="color:#60a5fa; font-weight:700;">Node-01</span>
+              &bull; ID: <code id="assignModalWorkerId" style="color:#a78bfa; font-size:11px;">node_123</code>
+              &bull; Project: <span id="assignModalProjectKey" class="badge" style="padding:2px 8px; font-size:11px;">taikhoan1</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeWorkerAssignModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <!-- Mode & Filters -->
+      <div style="display:flex; flex-direction:column; gap:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="font-size:13px; font-weight:700; color:#cbd5e1;">Phương thức phân bổ:</div>
+          <div style="display:flex; gap:16px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#fff;">
+              <input type="radio" name="assignModeRadio" value="replace" checked style="accent-color:#6366f1;">
+              Ghi đè (Thay thế toàn bộ)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#cbd5e1;">
+              <input type="radio" name="assignModeRadio" value="append" style="accent-color:#6366f1;">
+              Bổ sung thêm (Append)
+            </label>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="assignAccountSearchInput" class="form-control" placeholder="🔍 Lọc nick theo tên hoặc Target ID..." oninput="filterAssignAccountsModal(this.value)" style="flex:1;">
+          <button type="button" class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#fff;" onclick="quickSelectModalAccounts('all')">✓ Chọn Hết</button>
+          <button type="button" class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#fff;" onclick="quickSelectModalAccounts('none')">✕ Bỏ Chọn</button>
+          <button type="button" class="btn btn-xs" style="background:rgba(16,185,129,0.2); color:#34d399;" onclick="quickSelectModalAccounts('live')">🟢 Chỉ Nick Live</button>
+        </div>
+      </div>
+
+      <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:flex; justify-content:space-between;">
+        <span>DANH SÁCH TÀI KHOẢN FACEBOOK</span>
+        <span id="assignModalSelectionSummary" style="color:#60a5fa;">Đã chọn: 0 / 0 nick</span>
+      </div>
+
+      <div id="assignAccountsList" style="flex:1; overflow-y:auto; max-height:360px; display:flex; flex-direction:column; gap:8px; padding-right:6px;">
+        <div style="text-align:center; padding:30px; color:var(--text-dim);">Đang tải tài khoản...</div>
+      </div>
+
+      <div id="assignCollisionNotice" style="display:none; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:10px 14px; font-size:12px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
+        <span>⚠️</span>
+        <span id="assignCollisionText">Một số nick đang thuộc quyền quản lý của node khác. Khi lưu, quyền quản trị sẽ tự động chuyển sang node này.</span>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
+        <button type="button" class="btn btn-secondary" onclick="closeWorkerAssignModal()">Hủy Bỏ</button>
+        <button type="button" id="btnSubmitWorkerAssign" class="btn btn-primary" style="background:linear-gradient(135deg,#3b82f6,#6366f1); font-weight:800; padding:12px 28px;" onclick="submitWorkerAssignment()">
+          💾 Lưu Phân Bổ Tài Khoản
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Facebook Account Farm (Milestone 4) -->
+  <div class="modal-overlay" id="addAccountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #10b981; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <h3 style="margin:0; font-size:18px; color:#34d399; display:flex; align-items:center; gap:8px;">
+          ➕ Thêm Tài Khoản Vào Farm (Account Registration)
+        </h3>
+        <button onclick="closeAddAccountModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="formAddAccountModal" onsubmit="submitAddAccountModal(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="form-group">
+          <label>Tên Tài Khoản / Trang (*):</label>
+          <input type="text" id="addAccName" class="form-control" placeholder="Ví dụ: Nguyễn Văn A (Profile) hoặc Shop Hoa Tươi" required>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Phân Loại Đối Tượng (*):</label>
+            <select id="addAccType" class="form-control">
+              <option value="profile">👤 Trang Cá Nhân (Profile)</option>
+              <option value="page">🚩 Fanpage</option>
+              <option value="group">👨‍👩‍👧‍👦 Nhóm (Group)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Facebook Target ID:</label>
+            <input type="text" id="addAccTargetId" class="form-control" placeholder="1000... (Tùy chọn)">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Gán Cho Project (*):</label>
+            <select id="addAccProject" class="form-control">
+              <option value="all">🌐 Toàn bộ (all)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Gán Cho Worker Node:</label>
+            <select id="addAccWorker" class="form-control">
+              <option value="">⚠️ Chưa gán Node (Để trống)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Access Token (EAAAAU...) (*):</label>
+          <textarea id="addAccToken" class="form-control" rows="3" placeholder="Nhập Facebook Access Token..." required></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAddAccountModal()">Hủy Bỏ</button>
+          <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800;">
+            💾 Lưu Vào Farm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit & Reassign Account Farm (Milestone 4) -->
+  <div class="modal-overlay" id="editAccountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #8b5cf6; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <h3 style="margin:0; font-size:18px; color:#c084fc; display:flex; align-items:center; gap:8px;">
+          ✏️ Chỉnh Sửa & Điều Chuyển Tài Khoản
+        </h3>
+        <button onclick="closeEditAccountModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="formEditAccountModal" onsubmit="submitEditAccountModal(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <input type="hidden" id="editAccInternalId">
+
+        <div style="background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:10px; font-size:12px; color:var(--text-muted);">
+          Target ID: <strong id="editAccDisplayTargetId" style="color:#38bdf8; font-family:monospace;">-</strong>
+        </div>
+
+        <div class="form-group">
+          <label>Tên Hiển Thị:</label>
+          <input type="text" id="editAccName" class="form-control" required>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Chuyển Giao Project:</label>
+            <select id="editAccProject" class="form-control">
+              <option value="all">🌐 Toàn bộ (all)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Chuyển Giao Worker Node:</label>
+            <select id="editAccWorker" class="form-control">
+              <option value="">⚠️ Chưa gán Node (Hủy gán)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Trạng Thái Sức Khỏe (Health):</label>
+            <select id="editAccHealthStatus" class="form-control">
+              <option value="live">🟢 Live / Khỏe mạnh</option>
+              <option value="checkpoint">🟡 Checkpoint</option>
+              <option value="expired">🔴 Expired (Hết hạn)</option>
+              <option value="locked">🟣 Locked / Quarantine</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Trạng Thái Cookie:</label>
+            <select id="editAccCookieStatus" class="form-control">
+              <option value="valid">🟢 Valid (Hợp lệ)</option>
+              <option value="invalid">🔴 Invalid (Không hợp lệ)</option>
+              <option value="expired">🟡 Expired (Hết hạn)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Làm Mới Access Token (Để trống nếu không đổi):</label>
+          <textarea id="editAccToken" class="form-control" rows="2" placeholder="EAAAAU..."></textarea>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditAccountModal()">Hủy Bỏ</button>
+          <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800;">
+            💾 Cập Nhật Thay Đổi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Manual Health Check & Quarantine (Milestone 4) -->
+  <div class="modal-overlay" id="healthCheckModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #f59e0b; border-radius:20px; width:90%; max-width:540px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <h3 style="margin:0; font-size:18px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
+          ⚡ Kiểm Tra & Thiết Lập Sức Khỏe Tài Khoản
+        </h3>
+        <button onclick="closeHealthCheckModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; font-size:13px;">
+        <div>Tài khoản: <strong id="healthAccName" style="color:#fff;">-</strong></div>
+        <div style="margin-top:4px;">Target ID: <code id="healthAccTargetId" style="color:#38bdf8;">-</code></div>
+        <div style="margin-top:4px;">Trạng thái hiện tại: <span id="healthAccCurStatus" class="badge">-</span></div>
+      </div>
+
+      <div style="font-size:13px; color:var(--text-dim);">
+        Chọn trạng thái chẩn đoán để cập nhật ngay vào cơ sở dữ liệu. Khi chuyển sang <strong>Checkpoint/Expired/Locked</strong>, hệ thống tự động cách ly (Quarantine) các tác vụ đang gán để bảo vệ tài khoản khỏi bị checkpoint nặng.
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button type="button" class="btn btn-xs" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('live', 'Admin xác nhận nick Live hoạt động bình thường')">
+          🟢 Xác Nhận Live (Khỏe Mạnh)
+        </button>
+        <button type="button" class="btn btn-xs" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('checkpoint', 'Phát hiện dính Checkpoint xác minh')">
+          🟡 Đánh Dấu Checkpoint
+        </button>
+        <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('expired', 'Phiên đăng nhập Facebook hết hạn')">
+          🔴 Báo Hết Hạn Token
+        </button>
+        <button type="button" class="btn btn-xs" style="background:rgba(168,85,247,0.2); color:#e879f9; border:1px solid rgba(168,85,247,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('locked', 'Kích hoạt cách ly khẩn cấp (Quarantine lock)')">
+          🟣 Cách Ly Khẩn Cấp (Quarantine)
+        </button>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeHealthCheckModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create Distributed Task (Milestone 4) -->
+  <div class="modal-overlay" id="modalCreateTask" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #6366f1; border-radius:20px; width:92%; max-width:680px; max-height:90vh; overflow-y:auto; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:18px;">✨</div>
+          <div>
+            <h3 style="font-size:17px; font-weight:800; color:#fff; margin:0;">Tạo Task Phân Tán Mới (Create Distributed Task)</h3>
+            <div style="font-size:11px; color:var(--text-muted);">Phát lệnh trực tiếp vào Queue để Extension Worker tự động nhận & thực thi</div>
+          </div>
+        </div>
+        <button onclick="closeCreateTaskModal()" style="background:transparent; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <form id="formCreateTask" onsubmit="handleCreateTaskSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label>Loại Nhiệm Vụ (*):</label>
+            <select id="modalTaskType" class="form-control" onchange="onModalTaskTypeChange()" required>
+              <option value="post">📝 Đăng Bài (post)</option>
+              <option value="seed">💬 Seeding Comment (seed)</option>
+              <option value="warmup">🔥 Tương Tác Nuôi Nick (warmup)</option>
+              <option value="reply_comment">🤖 Tự Động Trả Lời (reply_comment)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Project Key (*):</label>
+            <select id="modalTaskProjectKey" class="form-control" required>
+              <option value="all">🌐 Tất cả Projects (all)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+          <div class="form-group">
+            <label>Tài Khoản Chỉ Định:</label>
+            <select id="modalTaskAccountId" class="form-control">
+              <option value="">-- Tự Động Chọn Tài Khoản Live --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Worker Node Chỉ Định:</label>
+            <select id="modalTaskWorkerId" class="form-control">
+              <option value="">-- Bất Kỳ Worker Node Khả Dụng --</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:14px;">
+          <div class="form-group">
+            <label>Ưu Tiên (Priority):</label>
+            <select id="modalTaskPriority" class="form-control">
+              <option value="0">0 (Bình thường)</option>
+              <option value="10">10 (Ưu tiên cao)</option>
+              <option value="50">50 (Khẩn cấp)</option>
+              <option value="100">100 (Ngay lập tức)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Thử Lại Tối Đa:</label>
+            <input type="number" id="modalTaskMaxRetries" class="form-control" value="3" min="0" max="10" required>
+          </div>
+          <div class="form-group">
+            <label>Thời Gian Chạy:</label>
+            <input type="datetime-local" id="modalTaskScheduledTime" class="form-control">
+          </div>
+        </div>
+
+        <!-- Post Payload Section -->
+        <div id="payloadSectionPost" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:10px;">
+          <label style="font-size:12px; font-weight:800; color:#818cf8;">📝 CẤU HÌNH ĐĂNG BÀI (POST PAYLOAD)</label>
+          <div class="form-group">
+            <label>Nội Dung Bài Đăng (Hỗ trợ Spintax {A|B|C}):</label>
+            <textarea id="modalPostContent" class="form-control" rows="3" placeholder="Nhập nội dung bài viết... {Chào bạn|Hello|Hi}"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Đường Dẫn Media (Ảnh / Video URL):</label>
+            <input type="text" id="modalPostMediaUrls" class="form-control" placeholder="/uploads/img_123.jpg (phân cách bằng dấu phẩy)">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label>Auto-React Sau Khi Đăng:</label>
+              <select id="modalPostAutoReact" class="form-control">
+                <option value="NONE">NONE (Không thả cảm xúc)</option>
+                <option value="LIKE">LIKE (Thích)</option>
+                <option value="LOVE">LOVE (Yêu thích)</option>
+                <option value="HAHA">HAHA (Cười)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Seeding Comment Tự Động (1 comment / dòng):</label>
+              <textarea id="modalPostSeeding" class="form-control" rows="2" placeholder="Tuyệt vời quá!&#10;Inbox em với ạ"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warmup Payload Section -->
+        <div id="payloadSectionWarmup" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
+          <label style="font-size:12px; font-weight:800; color:#fbbf24;">🔥 CẤU HÌNH NUÔI NICK & TƯƠNG TÁC (WARM-UP PAYLOAD)</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label>Thời Gian Nuôi Nick (Giây):</label>
+              <input type="number" id="modalWarmupDuration" class="form-control" value="180" min="30" max="1800">
+            </div>
+            <div class="form-group">
+              <label>Số Cảm Xúc Tối Đa (Reactions):</label>
+              <input type="number" id="modalWarmupMaxReactions" class="form-control" value="5" min="1" max="30">
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+            <input type="checkbox" id="modalWarmupEnableComments" style="width:16px; height:16px; cursor:pointer;">
+            <label for="modalWarmupEnableComments" style="font-size:12px; cursor:pointer; color:#e2e8f0;">Bật tính năng thả bình luận ngẫu nhiên trong phiên nuôi nick</label>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted);">Mô phỏng cuộn chuột Bézier, ngắt nghỉ micro-pauses (800-2200ms) và tỉ lệ Like 60%, Love 25%.</div>
+        </div>
+
+        <!-- Seed Payload Section -->
+        <div id="payloadSectionSeed" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
+          <label style="font-size:12px; font-weight:800; color:#34d399;">💬 CẤU HÌNH SEEDING BÌNH LUẬN (SEED PAYLOAD)</label>
+          <div class="form-group">
+            <label>Đường Dẫn Bài Viết Hoặc Post ID Mục Tiêu (*):</label>
+            <input type="text" id="modalSeedTargetUrl" class="form-control" placeholder="https://www.facebook.com/... hoặc ID bài viết">
+          </div>
+          <div class="form-group">
+            <label>Danh Sách Bình Luận (Mỗi dòng 1 bình luận, hỗ trợ Spintax):</label>
+            <textarea id="modalSeedComments" class="form-control" rows="3" placeholder="Sản phẩm rất tốt {ạ|nha|!}&#10;Tư vấn cho mình với"></textarea>
+          </div>
+        </div>
+
+        <!-- Reply Payload Section -->
+        <div id="payloadSectionReply" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
+          <label style="font-size:12px; font-weight:800; color:#f472b6;">🤖 CẤU HÌNH TRẢ LỜI BÌNH LUẬN (REPLY COMMENT PAYLOAD)</label>
+          <div class="form-group">
+            <label>Target Comment ID (*):</label>
+            <input type="text" id="modalReplyCommentId" class="form-control" placeholder="ID bình luận cần trả lời...">
+          </div>
+          <div class="form-group">
+            <label>Nội Dung Trả Lời (Spintax):</label>
+            <textarea id="modalReplyText" class="form-control" rows="2" placeholder="Dạ chào bạn, mình đã inbox bạn rồi nhé!"></textarea>
+          </div>
+        </div>
+
+        <!-- Advanced JSON Toggle -->
+        <div style="margin-top:4px;">
+          <button type="button" class="btn btn-xs" style="background:transparent; color:var(--text-dim); text-decoration:underline; padding:0;" onclick="toggleAdvancedJson()">
+            🛠️ Xem / Tùy chỉnh Raw JSON Payload
+          </button>
+          <div id="rawJsonSection" style="display:none; margin-top:8px;">
+            <textarea id="modalRawPayloadJson" class="form-control" rows="4" style="font-family:monospace; font-size:12px;" placeholder="{}"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
+          <button type="button" class="btn btn-secondary" onclick="closeCreateTaskModal()">Đóng</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitTask" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); font-weight:800; padding:10px 24px;">
+            🚀 Đưa Vào Hàng Đợi (Enqueue Task)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Task Detail & Payload Inspection (Milestone 4) -->
+  <div class="modal-overlay" id="modalTaskDetail" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #3b82f6; border-radius:20px; width:90%; max-width:720px; max-height:85vh; overflow-y:auto; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#3b82f6,#2563eb); display:flex; align-items:center; justify-content:center; font-size:18px;">🔍</div>
+          <div>
+            <h3 style="font-size:17px; font-weight:800; color:#fff; margin:0;" id="detailTaskTitle">Chi Tiết Nhiệm Vụ</h3>
+            <div style="font-size:11px; color:var(--text-muted);" id="detailTaskSubtitle">Task ID: -</div>
+          </div>
+        </div>
+        <button onclick="closeTaskDetailModal()" style="background:transparent; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; background:rgba(0,0,0,0.3); padding:12px; border-radius:12px; font-size:12px;">
+        <div><span style="color:var(--text-muted);">Trạng thái:</span> <span id="detailTaskStatus" style="font-weight:700;">-</span></div>
+        <div><span style="color:var(--text-muted);">Loại task:</span> <span id="detailTaskType" style="font-weight:700;">-</span></div>
+        <div><span style="color:var(--text-muted);">Worker gán:</span> <span id="detailTaskWorker" style="font-weight:700;">-</span></div>
+        <div><span style="color:var(--text-muted);">Tài khoản:</span> <span id="detailTaskAccount" style="font-weight:700;">-</span></div>
+        <div><span style="color:var(--text-muted);">Số lần retry:</span> <span id="detailTaskRetries" style="font-weight:700;">-</span></div>
+        <div><span style="color:var(--text-muted);">Hạn thuê lease:</span> <span id="detailTaskLease" style="font-weight:700;">-</span></div>
+      </div>
+
+      <div id="detailErrorBanner" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; padding:10px 14px; color:#fca5a5; font-size:12px;">
+        <strong>⚠️ Lỗi Thực Thi (Last Error):</strong>
+        <div id="detailErrorText" style="margin-top:4px; font-family:monospace;"></div>
+      </div>
+
+      <div>
+        <div style="font-size:12px; font-weight:700; color:#818cf8; margin-bottom:6px;">📦 Dữ Liệu Payload:</div>
+        <pre id="detailPayloadJson" style="background:#070b12; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; font-size:11px; max-height:160px; overflow-y:auto; color:#a5f3fc;"></pre>
+      </div>
+
+      <div>
+        <div style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:6px;">🎯 Kết Quả Trả Về (Result Data):</div>
+        <pre id="detailResultJson" style="background:#070b12; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; font-size:11px; max-height:160px; overflow-y:auto; color:#bbf7d0;"></pre>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
+        <div id="detailActionCancelSlot"></div>
+        <button class="btn btn-secondary" onclick="closeTaskDetailModal()">Đóng</button>
       </div>
     </div>
   </div>

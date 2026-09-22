@@ -11,7 +11,7 @@
     }
 
     body {
-      width: 360px;
+      width: 380px;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: #12141a;
       color: #e0e0e0;
@@ -30,8 +30,8 @@
     }
 
     .header img {
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
     }
 
     .header h1 {
@@ -55,11 +55,12 @@
 
     .header .version {
       font-size: 10px;
-      color: #555;
-      background: #1e2230;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
       padding: 2px 8px;
       border-radius: 10px;
-      border: 1px solid #2a2f3d;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-weight: 700;
     }
 
     .stats-bar {
@@ -77,7 +78,7 @@
     }
 
     .stat-value {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 800;
       color: #3b82f6;
       line-height: 1;
@@ -105,8 +106,8 @@
     .status-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
+      gap: 8px;
+      padding: 8px 12px;
       background: #1a1d25;
       border-radius: 8px;
       border: 1px solid #22262e;
@@ -145,20 +146,13 @@
     }
 
     @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.3;
-      }
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
 
     .status-icon {
-      font-size: 14px;
-      width: 20px;
+      font-size: 13px;
+      width: 18px;
       text-align: center;
       flex-shrink: 0;
     }
@@ -172,12 +166,82 @@
 
     .status-value {
       font-size: 10px;
-      color: #777;
+      color: #888;
       text-align: right;
-      max-width: 140px;
+      max-width: 160px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .toggle-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .toggle-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toggle-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+    }
+
+    .toggle-desc {
+      font-size: 9px;
+      color: #6ee7b7;
+      opacity: 0.8;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: #10b981;
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(16px);
     }
 
     .btn-row {
@@ -188,7 +252,7 @@
 
     .btn {
       flex: 1;
-      padding: 9px 8px;
+      padding: 8px;
       border: none;
       border-radius: 8px;
       font-size: 11px;
@@ -211,16 +275,6 @@
       transform: translateY(-1px);
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #fff;
-    }
-
-    .btn-success:hover {
-      background: linear-gradient(135deg, #16a34a, #15803d);
-      transform: translateY(-1px);
-    }
-
     .btn-warning {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: #fff;
@@ -231,86 +285,10 @@
       transform: translateY(-1px);
     }
 
-    .btn-secondary {
-      background: #1e2230;
-      color: #aaa;
-      border: 1px solid #2a2f3d;
-    }
-
-    .btn-secondary:hover {
-      background: #252a3a;
-      border-color: #3a3f4d;
-      color: #ccc;
-    }
-
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
     .btn-full {
       width: 100%;
       margin-bottom: 6px;
-    }
-
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      background: #1a1d25;
-      border-radius: 8px;
-      border: 1px solid #22262e;
-      margin-bottom: 10px;
-    }
-
-    .toggle-row .toggle-label {
-      font-size: 11px;
-      color: #aaa;
-      flex: 1;
-    }
-
-    .toggle-switch {
-      position: relative;
-      width: 36px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .toggle-slider {
-      position: absolute;
-      inset: 0;
-      background: #333;
-      border-radius: 20px;
-      transition: 0.2s;
-    }
-
-    .toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      left: 2px;
-      bottom: 2px;
-      background: #888;
-      border-radius: 50%;
-      transition: 0.2s;
-    }
-
-    .toggle-switch input:checked+.toggle-slider {
-      background: #22c55e;
-    }
-
-    .toggle-switch input:checked+.toggle-slider::before {
-      transform: translateX(16px);
-      background: #fff;
+      padding: 9px;
     }
 
     .result-box {
@@ -327,19 +305,9 @@
       margin-bottom: 8px;
     }
 
-    .result-box.show {
-      display: block;
-    }
-
-    .result-box.success {
-      border-color: #22c55e33;
-      color: #22c55e;
-    }
-
-    .result-box.error {
-      border-color: #ef444433;
-      color: #ef4444;
-    }
+    .result-box.show { display: block; }
+    .result-box.success { border-color: #22c55e33; color: #22c55e; }
+    .result-box.error { border-color: #ef444433; color: #ef4444; }
 
     .footer {
       text-align: center;
@@ -353,18 +321,18 @@
 <body>
   <div class="header">
     <img src="icon48.png" alt="icon">
-    <h1><a href="#" id="headTitle">FB Auto Post & Schedule</a></h1>
-    <span class="version">v7.0.0</span>
+    <h1><a href="#" id="headTitle">FB Auto Post Worker</a></h1>
+    <span class="version">v7.1.0</span>
   </div>
 
   <div class="stats-bar">
     <div class="stat-item">
       <div class="stat-value" id="statTokens">0</div>
-      <div class="stat-label">Tasks</div>
+      <div class="stat-label">Tasks Executed</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="statStatus" style="font-size:14px;">—</div>
-      <div class="stat-label">Python Service</div>
+      <div class="stat-value" id="statStatus" style="font-size:13px;">—</div>
+      <div class="stat-label">Node Status</div>
     </div>
     <div class="stat-item">
       <div class="stat-value" id="statLast" style="font-size:11px;color:#777;">—</div>
@@ -377,7 +345,7 @@
       <div class="status-row">
         <div class="status-dot dot-loading" id="dotBridge"></div>
         <span class="status-icon">🔗</span>
-        <span class="status-label">Python Backend Bridge</span>
+        <span class="status-label">C2 Server Bridge</span>
         <span class="status-value" id="valBridge">Checking...</span>
       </div>
       <div class="status-row">
@@ -386,6 +354,28 @@
         <span class="status-label">Facebook Session</span>
         <span class="status-value" id="valTab">Checking...</span>
       </div>
+      <div class="status-row">
+        <span class="status-icon">🖥️</span>
+        <span class="status-label">Worker Node ID</span>
+        <span class="status-value" id="valWorkerId" style="color:#60a5fa;">—</span>
+      </div>
+      <div class="status-row">
+        <span class="status-icon">📁</span>
+        <span class="status-label">Project Key</span>
+        <span class="status-value" id="valProjectKey" style="color:#f59e0b;">taikhoan1</span>
+      </div>
+    </div>
+
+    <!-- Warm-up Auto-Engagement Toggle (R3) -->
+    <div class="toggle-section">
+      <div class="toggle-info">
+        <span class="toggle-title">⚡ Nuôi Nick Tự Động (Warm-up R3)</span>
+        <span class="toggle-desc">Cuộn Newsfeed Bézier & thả cảm xúc</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="warmupToggle">
+        <span class="toggle-slider"></span>
+      </label>
     </div>
 
     <div class="btn-row">
@@ -393,12 +383,12 @@
       <button class="btn btn-warning" id="btnRefresh">🔄 Làm Mới</button>
     </div>
 
-    <button class="btn btn-primary btn-full" id="btnOpenDashboard" style="margin-top: 6px; background: linear-gradient(135deg, #10b981, #059669);">📅 Quản Lý Lịch Đăng FB</button>
-    <button class="btn btn-success btn-full" id="btnExtractToken" style="margin-top: 6px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🔑 Tự Động Lấy Access Token FB</button>
+    <button class="btn btn-primary btn-full" id="btnOpenDashboard" style="margin-top: 4px; background: linear-gradient(135deg, #10b981, #059669);">📅 Quản Lý Lịch Đăng FB</button>
+    <button class="btn btn-success btn-full" id="btnExtractToken" style="margin-top: 4px; background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🔑 Tự Động Lấy Access Token FB</button>
 
     <div class="result-box" id="resultBox"></div>
 
-    <div class="footer">FB Auto Post Extension — Python Engine Powered</div>
+    <div class="footer">FB Auto Post & Schedule — Distributed Node v7.1.0</div>
   </div>
 
   <script src="popup.js"></script>

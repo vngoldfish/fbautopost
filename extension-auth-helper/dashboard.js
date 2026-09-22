@@ -35,7 +35,10 @@ resolveApiBase();
 
 function getApiHeaders(extra = {}) {
   const h = { ...extra };
-  if (_apiTokenCache) h["X-Sync-Token"] = _apiTokenCache;
+  if (_apiTokenCache) {
+    h["X-Sync-Token"] = _apiTokenCache;
+    h["Authorization"] = `Bearer ${_apiTokenCache}`;
+  }
   if (_projectKeyCache) h["X-Project-Key"] = _projectKeyCache;
   return h;
 }
