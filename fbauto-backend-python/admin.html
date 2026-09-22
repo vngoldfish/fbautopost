@@ -673,18 +673,30 @@
         </div>
       </div>
 
-      <div class="nav-tabs">
-        <button class="nav-tab-btn active" data-tab="tabPosts">
-          📅 Lên Lịch & Đang Chờ 
-          <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
-        </button>
-        <button class="nav-tab-btn" data-tab="tabCompleted">
-          ✅ Đã Đăng 
-          <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">0</span>
-        </button>
-        <button class="nav-tab-btn" data-tab="tabAccounts">👤 Tài Khoản</button>
-        <button class="nav-tab-btn" data-tab="tabSettings">⚙️ Cài Đặt</button>
-        <button class="nav-tab-btn" data-tab="tabLogs">📊 Logs</button>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div class="nav-tabs">
+          <button class="nav-tab-btn active" data-tab="tabPosts">
+            📅 Lên Lịch & Đang Chờ 
+            <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tabCompleted">
+            ✅ Đã Đăng 
+            <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">0</span>
+          </button>
+          <button class="nav-tab-btn" data-tab="tabAccounts">👤 Tài Khoản</button>
+          <button class="nav-tab-btn" data-tab="tabSettings">⚙️ Cài Đặt</button>
+          <button class="nav-tab-btn" data-tab="tabLogs">📊 Logs</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(139,92,246,0.4); padding:6px 14px; border-radius:14px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
+          <span style="font-size:12px; font-weight:800; color:#c084fc;">📁 Project:</span>
+          <select id="globalProjectSelect" style="background:transparent; border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; outline:none;" onchange="handleGlobalProjectChange()">
+            <option value="all" style="background:#0f172a;">🌐 Tất Cả Projects (All)</option>
+          </select>
+          <button type="button" class="btn btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); color:#fff; font-weight:800; padding:6px 12px; border-radius:10px; margin-left:4px;" onclick="openProjectManagerModal()">
+            ⚙️ Quản Lý
+          </button>
+        </div>
       </div>
     </header>
 
@@ -786,6 +798,19 @@
             <select id="postAutoReactType" style="display:none;"><option value="NONE" selected>NONE</option></select>
             <input type="hidden" id="postAccessToken" value="">
             <input type="hidden" id="postRepeat" value="0">
+
+            <!-- 0. Chọn Project / Tài khoản -->
+            <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.5); background: rgba(15,23,42,0.85); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <label for="postProjectKey" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:18px;">📁</span> Gán Cho Extension / Project (Tài Khoản):
+              </label>
+              <select id="postProjectKey" class="form-control" style="background:rgba(10,12,16,0.8); border:1px solid rgba(139,92,246,0.4); color:#fff; font-weight:700; padding:10px 14px; border-radius:10px;">
+                <option value="all">🌐 Tất Cả Extension (Mặc định)</option>
+                <option value="taikhoan1">👤 Tài Khoản 1 (taikhoan1)</option>
+                <option value="taikhoan2">👤 Tài Khoản 2 (taikhoan2)</option>
+              </select>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Bài viết sẽ chỉ được quét và đăng bởi Extension gán mã Project tương ứng.</div>
+            </div>
 
             <!-- 1. Nội dung bài đăng -->
             <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
@@ -1063,6 +1088,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       initTabs();
       setDefaultDateTime();
+      loadProjects();
       loadPosts();
       loadAccounts();
       loadLogs();
@@ -1125,8 +1151,109 @@
     }
 
     let _allPostsCache = [];
+    let _allProjectsCache = [];
     let _lastPostsHash = "";
     let _searchTimeout = null;
+
+    async function loadProjects() {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`);
+        if (!res.ok) return;
+        const data = await res.json();
+        _allProjectsCache = data.projects || [];
+
+        const globalSel = document.getElementById('globalProjectSelect');
+        if (globalSel) {
+          const cur = globalSel.value || 'all';
+          globalSel.innerHTML = '<option value="all" style="background:#0f172a;">🌐 Tất Cả Projects (All)</option>' +
+            _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}" style="background:#0f172a;">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+          globalSel.value = cur;
+        }
+
+        const postSel = document.getElementById('postProjectKey');
+        if (postSel) {
+          const cur = postSel.value || 'all';
+          postSel.innerHTML = '<option value="all">🌐 Tất Cả Extension (Mặc định)</option>' +
+            _allProjectsCache.map(p => `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`).join('');
+          postSel.value = cur;
+        }
+
+        const listEl = document.getElementById('projectManagerList');
+        if (listEl) {
+          if (_allProjectsCache.length === 0) {
+            listEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:16px;">Chưa có project nào.</div>';
+          } else {
+            listEl.innerHTML = _allProjectsCache.map(p => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
+                <div>
+                  <div style="font-weight:700; color:#fff;">📁 ${escapeHtml(p.name)} <span style="font-size:11px; color:#a78bfa;">(${escapeHtml(p.id)})</span></div>
+                  <div style="font-size:11px; color:var(--text-dim);">${escapeHtml(p.description || 'Workspace Extension')}</div>
+                </div>
+                <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);" onclick="deleteProjectItem('${escapeHtml(p.id)}')">🗑️ Xóa</button>
+              </div>
+            `).join('');
+          }
+        }
+      } catch(e) {}
+    }
+
+    function handleGlobalProjectChange() {
+      _lastPostsHash = "";
+      loadPosts();
+    }
+
+    function openProjectManagerModal() {
+      const modal = document.getElementById('projectManagerModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        loadProjects();
+      }
+    }
+
+    async function submitNewProject() {
+      const idEl = document.getElementById('newProjectId');
+      const nameEl = document.getElementById('newProjectName');
+      const id = idEl ? idEl.value.trim() : '';
+      const name = nameEl ? nameEl.value.trim() : '';
+
+      if (!id) {
+        showToast('⚠️ Vui lòng nhập Mã project (ví dụ: taikhoan1)', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name: name || id, description: 'Tài khoản Extension' })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ ${data.message || 'Thêm project thành công'}`);
+          if (idEl) idEl.value = '';
+          if (nameEl) nameEl.value = '';
+          loadProjects();
+        } else {
+          showToast(`❌ ${data.error || 'Lỗi thêm project'}`, 'error');
+        }
+      } catch(e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
+    }
+
+    async function deleteProjectItem(id) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa project '${id}'?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('🗑️ Đã xóa project');
+          loadProjects();
+        } else {
+          showToast(`❌ ${data.error}`, 'error');
+        }
+      } catch(e) {}
+    }
 
     function debouncedSearch() {
       if (_searchTimeout) clearTimeout(_searchTimeout);
@@ -1151,7 +1278,9 @@
 
     async function loadPosts() {
       try {
-        const res = await fetch(`${API_BASE}/api/posts`);
+        const selectedProj = document.getElementById('globalProjectSelect')?.value || 'all';
+        const queryUrl = selectedProj !== 'all' ? `${API_BASE}/api/posts?projectKey=${selectedProj}` : `${API_BASE}/api/posts`;
+        const res = await fetch(queryUrl);
         if (!res.ok) return;
         const data = await res.json();
         
@@ -1247,6 +1376,7 @@
         <div class="list-card" data-id="${safeId}" data-status="${p.status || ''}" data-step="${escapeHtml(p.progressStep || '')}" style="border-color: ${borderColor}; ${p.status === 'in_progress' ? 'box-shadow: 0 0 20px rgba(59,130,246,0.2);' : ''}">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span class="badge" style="background:rgba(139,92,246,0.25); color:#a78bfa; border:1px solid rgba(139,92,246,0.4);">📁 ${escapeHtml(p.projectKey || 'all')}</span>
               <span class="badge" style="background:rgba(99,102,241,0.2); color:#818cf8;">${getTypeBadge(p.postType)}</span>
               <span class="badge" style="background:rgba(236,72,153,0.2); color:#f472b6;">${p.targetType === 'page' ? '🚩 Fanpage' : (p.targetType === 'group' ? '👨‍👩‍👧‍👦 Group' : '👤 Profile')}</span>
               ${p.source === 'api' ? '<span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);">⚡ External API</span>' : ''}
@@ -1422,6 +1552,7 @@
       submitBtn.innerHTML = '<div class="pulse-spinner" style="display:inline-block; margin-right:8px;"></div> ĐANG XỬ LÝ...';
       submitBtn.disabled = true;
 
+      const projectKey = document.getElementById('postProjectKey')?.value || 'all';
       const postType = document.getElementById('postType').value || 'post';
       const content = document.getElementById('postContent').value.trim();
       const mediaUrl = document.getElementById('postMediaUrl').value.trim();
@@ -1447,7 +1578,7 @@
       }
 
       const postData = {
-        postType, content, mediaUrl, targetType, targetId, seedingComments, autoReplyComments, autoReactType, accessToken, scheduledTime, repeatIntervalMinutes, source: 'web_admin'
+        projectKey, postType, content, mediaUrl, targetType, targetId, seedingComments, autoReplyComments, autoReactType, accessToken, scheduledTime, repeatIntervalMinutes, source: 'web_admin'
       };
 
       if (_adminMediaData) {
@@ -2696,7 +2827,34 @@
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
           <button class="btn btn-secondary" onclick="closeAddSeedingModal()">Hủy Bỏ</button>
           <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800;" onclick="submitAddSeedingModal()">⚡ Gửi & Đăng Seeding Ngay</button>
+  <!-- Project Manager Modal -->
+  <div class="modal-overlay" id="projectManagerModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
+    <div class="modal-panel" style="background:#0f172a; border:1px solid #8b5cf6; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
+        <h3 style="margin:0; font-size:18px; color:#c084fc; display:flex; align-items:center; gap:8px;">
+          ⚙️ Quản Lý Projects / Mã Tài Khoản Extension
+        </h3>
+        <button onclick="document.getElementById('projectManagerModal').style.display='none'" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px; background:rgba(0,0,0,0.3); padding:16px; border-radius:14px; border:1px solid rgba(139,92,246,0.3);">
+        <div style="font-size:13px; font-weight:800; color:#fff;">➕ Tạo Project Mới:</div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="newProjectId" class="form-control" placeholder="Mã project (ví dụ: taikhoan1, taikhoan2)" style="flex:1;">
+          <input type="text" id="newProjectName" class="form-control" placeholder="Tên hiển thị (ví dụ: Tài khoản Shop 1)" style="flex:1;">
         </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button type="button" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800;" onclick="submitNewProject()">➕ Thêm Project Mới</button>
+        </div>
+      </div>
+
+      <div style="font-size:13px; font-weight:800; color:#fff; margin-top:4px;">📋 Danh Sách Projects Đang Hoạt Động:</div>
+      <div id="projectManagerList" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+        <!-- Project Items Rendered Here -->
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('projectManagerModal').style.display='none'">Đóng</button>
       </div>
     </div>
   </div>
