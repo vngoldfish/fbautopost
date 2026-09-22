@@ -1189,7 +1189,10 @@
                   <div style="font-weight:700; color:#fff;">📁 ${escapeHtml(p.name)} <span style="font-size:11px; color:#a78bfa;">(${escapeHtml(p.id)})</span></div>
                   <div style="font-size:11px; color:var(--text-dim);">${escapeHtml(p.description || 'Workspace Extension')}</div>
                 </div>
-                <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);" onclick="deleteProjectItem('${escapeHtml(p.id)}')">🗑️ Xóa</button>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; border:1px solid rgba(99,102,241,0.4);" onclick="editProjectItem('${escapeHtml(p.id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.description || '')}')">✏️ Sửa</button>
+                  <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);" onclick="deleteProjectItem('${escapeHtml(p.id)}')">🗑️ Xóa</button>
+                </div>
               </div>
             `).join('');
           }
@@ -1210,11 +1213,37 @@
       }
     }
 
+    function editProjectItem(id, name, description) {
+      const idEl = document.getElementById('newProjectId');
+      const nameEl = document.getElementById('newProjectName');
+      const descEl = document.getElementById('newProjectDesc');
+      const btnEl = document.getElementById('btnSubmitProject');
+
+      if (idEl) { idEl.value = id; idEl.disabled = true; }
+      if (nameEl) nameEl.value = name || id;
+      if (descEl) descEl.value = description || '';
+      if (btnEl) btnEl.innerText = '💾 Cập Nhật Project';
+    }
+
+    function resetProjectForm() {
+      const idEl = document.getElementById('newProjectId');
+      const nameEl = document.getElementById('newProjectName');
+      const descEl = document.getElementById('newProjectDesc');
+      const btnEl = document.getElementById('btnSubmitProject');
+
+      if (idEl) { idEl.value = ''; idEl.disabled = false; }
+      if (nameEl) nameEl.value = '';
+      if (descEl) descEl.value = '';
+      if (btnEl) btnEl.innerText = '➕ Thêm / Cập Nhật Project';
+    }
+
     async function submitNewProject() {
       const idEl = document.getElementById('newProjectId');
       const nameEl = document.getElementById('newProjectName');
+      const descEl = document.getElementById('newProjectDesc');
       const id = idEl ? idEl.value.trim() : '';
       const name = nameEl ? nameEl.value.trim() : '';
+      const description = descEl ? descEl.value.trim() : '';
 
       if (!id) {
         showToast('⚠️ Vui lòng nhập Mã project (ví dụ: taikhoan1)', 'error');
@@ -1225,16 +1254,15 @@
         const res = await fetch(`${API_BASE}/api/projects`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, name: name || id, description: 'Tài khoản Extension' })
+          body: JSON.stringify({ id, name: name || id, description: description || 'Tài khoản Extension' })
         });
         const data = await res.json();
         if (res.ok) {
-          showToast(`✅ ${data.message || 'Thêm project thành công'}`);
-          if (idEl) idEl.value = '';
-          if (nameEl) nameEl.value = '';
+          showToast(`✅ ${data.message || 'Thao tác thành công'}`);
+          resetProjectForm();
           loadProjects();
         } else {
-          showToast(`❌ ${data.error || 'Lỗi thêm project'}`, 'error');
+          showToast(`❌ ${data.error || 'Lỗi xử lý project'}`, 'error');
         }
       } catch(e) {
         showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
@@ -1247,12 +1275,15 @@
         const res = await fetch(`${API_BASE}/api/projects/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (res.ok) {
-          showToast('🗑️ Đã xóa project');
+          showToast(`🗑️ ${data.message || 'Đã xóa project'}`);
+          resetProjectForm();
           loadProjects();
         } else {
-          showToast(`❌ ${data.error}`, 'error');
+          showToast(`❌ ${data.error || 'Lỗi xóa project'}`, 'error');
         }
-      } catch(e) {}
+      } catch(e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
     }
 
     function debouncedSearch() {
@@ -2838,13 +2869,15 @@
       </div>
 
       <div style="display:flex; flex-direction:column; gap:12px; background:rgba(0,0,0,0.3); padding:16px; border-radius:14px; border:1px solid rgba(139,92,246,0.3);">
-        <div style="font-size:13px; font-weight:800; color:#fff;">➕ Tạo Project Mới:</div>
-        <div style="display:flex; gap:10px;">
-          <input type="text" id="newProjectId" class="form-control" placeholder="Mã project (ví dụ: taikhoan1, taikhoan2)" style="flex:1;">
-          <input type="text" id="newProjectName" class="form-control" placeholder="Tên hiển thị (ví dụ: Tài khoản Shop 1)" style="flex:1;">
+        <div style="font-size:13px; font-weight:800; color:#fff;">➕ Thêm Hoặc Sửa Project:</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="text" id="newProjectId" class="form-control" placeholder="Mã project (ví dụ: taikhoan1, taikhoan2)" style="flex:1; min-width:180px;">
+          <input type="text" id="newProjectName" class="form-control" placeholder="Tên hiển thị (ví dụ: Tài khoản Shop A)" style="flex:1; min-width:180px;">
         </div>
-        <div style="display:flex; justify-content:flex-end;">
-          <button type="button" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800;" onclick="submitNewProject()">➕ Thêm Project Mới</button>
+        <input type="text" id="newProjectDesc" class="form-control" placeholder="Mô tả / Ghi chú (ví dụ: Extension chạy Chrome trên máy 1)">
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn btn-secondary btn-xs" onclick="resetProjectForm()">🔄 Xóa Form</button>
+          <button type="button" id="btnSubmitProject" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800;" onclick="submitNewProject()">➕ Thêm / Cập Nhật Project</button>
         </div>
       </div>
 
