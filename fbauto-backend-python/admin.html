@@ -1318,46 +1318,17 @@
       <!-- Vertical Sidebar Nav Tabs -->
       <nav class="sidebar-nav-tabs nav-tabs">
         <button class="nav-tab-btn active" data-tab="tabCreatePost">
-          <span>📝 Đăng Bài Mới</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabPendingPosts">
-          <span>⏳ Danh Sách Đang Chờ</span>
-          <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.25); color:#fbbf24;">0</span>
+          <span>📝 Đăng Bài & Up Ảnh</span>
         </button>
 
         <button class="nav-tab-btn" data-tab="tabCompleted">
-          <span>✅ Bài Đã Đăng</span>
+          <span>📋 Quản Lý Bài Đăng</span>
           <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.25); color:#34d399;">0</span>
         </button>
 
         <button class="nav-tab-btn" data-tab="tabProjects">
           <span>📁 Quản Lý Projects</span>
           <span id="navProjectsBadge" class="badge" style="background:rgba(139,92,246,0.25); color:#c084fc;">0</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabAccounts">
-          <span>👥 Nông Trại Facebook</span>
-          <span id="navAccountsBadge" class="badge" style="background:rgba(59,130,246,0.25); color:#60a5fa;">0</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabWorkers">
-          <span>🖥️ Worker Nodes</span>
-          <span id="navWorkersBadge" class="badge" style="background:rgba(99,102,241,0.25); color:#a78bfa;">0</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabQueue" id="navTabQueue">
-          <span>⚡ Hàng Đợi Tasks</span>
-          <span id="navQueueBadge" class="badge" style="background:rgba(245,158,11,0.25); color:#fbbf24;">0</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabLogs" id="navTabLogs">
-          <span>📊 KPI & Live Logs</span>
-          <span id="navLogsBadge" class="badge" style="background:rgba(16,185,129,0.25); color:#34d399;">LIVE</span>
-        </button>
-
-        <button class="nav-tab-btn" data-tab="tabSettings">
-          <span>⚙️ Cài Đặt Hệ Thống</span>
         </button>
       </nav>
 
@@ -1373,110 +1344,19 @@
 
     <!-- Main Content Area -->
     <main class="app-main-content">
-
-
-
-    <!-- Enterprise Realtime KPI Analytics Overview (Milestone 4) -->
-    <div class="stats-overview-grid" id="kpiOverviewGrid" style="margin-bottom: 20px;">
-      <!-- Card 1: Worker Nodes -->
-      <div class="stat-card" id="cardKpiWorkers">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(37,99,235,0.35)); color:#60a5fa; border:1px solid rgba(59,130,246,0.3);">🖥️</div>
-        <div class="stat-info" style="flex:1;">
-          <div class="stat-label">WORKER NODES (MÁY/TRÌNH DUYỆT)</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div class="stat-value" id="kpiWorkerNodes">0 / 0</div>
-            <span class="badge" id="kpiWorkerStatusBadge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; padding:2px 8px;">
-              <span class="status-dot-pulse status-dot-online" style="margin-right:4px;"></span>
-              <span id="kpiWorkerPercent">0% Online</span>
-            </span>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="kpiWorkerSubtext">0 node đang thực thi tác vụ</div>
-        </div>
+      
+      <!-- Hidden compatibility element references for JS -->
+      <div style="display:none;" id="kpiOverviewGrid">
+        <div id="statTotalPosts">0</div>
+        <div id="statPendingPosts">0</div>
+        <div id="statCompletedPosts">0</div>
+        <div id="statSeedingCount">0</div>
+        <div id="navPendingBadge">0</div>
+        <div id="navWorkersBadge">0</div>
+        <div id="navQueueBadge">0</div>
+        <div id="navAccountsBadge">0</div>
+        <div id="navLogsBadge">0</div>
       </div>
-
-      <!-- Card 2: Account Farm Vitality -->
-      <div class="stat-card" id="cardKpiAccounts">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(5,150,105,0.35)); color:#34d399; border:1px solid rgba(16,185,129,0.3);">🛡️</div>
-        <div class="stat-info" style="flex:1;">
-          <div class="stat-label">SỨC KHỎE DÀN TÀI KHOẢN (FARM)</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div class="stat-value" id="kpiAccountVitality" style="color:#34d399;">100%</div>
-            <span class="badge" id="kpiAccountCountsBadge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:11px; padding:2px 8px;">
-              <span id="kpiLiveAccounts">0</span> Live / <span id="kpiTotalAccounts">0</span> Tổng
-            </span>
-          </div>
-          <!-- Mini Vitality Bar -->
-          <div class="vitality-bar-bg" style="width:100%; height:4px; background:rgba(239,68,68,0.3); border-radius:2px; margin-top:6px; overflow:hidden;">
-            <div id="kpiVitalityBar" style="width:100%; height:100%; background:linear-gradient(90deg,#10b981,#34d399); transition:width 0.5s ease;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: 24h Queue Throughput -->
-      <div class="stat-card" id="cardKpiThroughput">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(124,58,237,0.35)); color:#c084fc; border:1px solid rgba(139,92,246,0.3);">⚡</div>
-        <div class="stat-info" style="flex:1;">
-          <div class="stat-label">NĂNG SUẤT HÀNG ĐỢI (24H)</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div class="stat-value" id="kpiQueueThroughput">0 Tasks</div>
-            <span class="badge" id="kpiSuccessRateBadge" style="background:rgba(16,185,129,0.2); color:#34d399; font-size:11px; padding:2px 8px;">
-              <span id="kpiSuccessRate">100% Đạt</span>
-            </span>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="kpiThroughputBreakdown">
-            ✅ <span id="kpiCompletedCount" style="color:#34d399; font-weight:700;">0</span> hoàn tất · ❌ <span id="kpiFailedCount" style="color:#f87171; font-weight:700;">0</span> lỗi
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 4: Active Warm-up Sessions -->
-      <div class="stat-card" id="cardKpiWarmup">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.35)); color:#fbbf24; border:1px solid rgba(245,158,11,0.3);">🔥</div>
-        <div class="stat-info" style="flex:1;">
-          <div class="stat-label">PHIÊN NUÔI NICK TỰ ĐỘNG</div>
-          <div style="display:flex; align-items:baseline; gap:8px;">
-            <div class="stat-value" id="kpiActiveWarmup" style="color:#fbbf24;">0 Sessions</div>
-            <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-size:11px; padding:2px 8px;">
-              <span class="pulse-spinner" style="display:inline-block; width:8px; height:8px; margin-right:4px;"></span>
-              Đang chạy
-            </span>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Tự động lướt Newsfeed & React Bézier</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Post System Summary Counters -->
-    <div class="stats-overview-grid" style="margin-bottom: 20px;">
-      <div class="stat-card">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(37,99,235,0.3)); color:#60a5fa; border:1px solid rgba(59,130,246,0.2);">📝</div>
-        <div class="stat-info">
-          <div class="stat-label">TỔNG BÀI HỆ THỐNG</div>
-          <div class="stat-value" id="statTotalPosts">0</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(217,119,6,0.3)); color:#fbbf24; border:1px solid rgba(245,158,11,0.2);">⏳</div>
-        <div class="stat-info">
-          <div class="stat-label">BÀI ĐANG CHỜ ĐĂNG</div>
-          <div class="stat-value" id="statPendingPosts" style="color:#fbbf24;">0</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.3)); color:#34d399; border:1px solid rgba(16,185,129,0.2);">✅</div>
-        <div class="stat-info">
-          <div class="stat-label">ĐÃ ĐĂNG THÀNH CÔNG</div>
-          <div class="stat-value" id="statCompletedPosts" style="color:#34d399;">0</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.3)); color:#c084fc; border:1px solid rgba(139,92,246,0.2);">💬</div>
-        <div class="stat-info">
-          <div class="stat-label">BÌNH LUẬN SEEDING</div>
-          <div class="stat-value" id="statSeedingCount" style="color:#c084fc;">0</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Tab 1: Trang Tạo Bài Đăng Mới -->
     <div class="tab-content active" id="tabCreatePost">
@@ -1678,10 +1558,10 @@
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);">
           <div style="display:flex; align-items:center; gap:12px;">
-            <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 15px rgba(16,185,129,0.4);">✅</div>
+            <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 15px rgba(16,185,129,0.4);">📋</div>
             <div>
-              <div style="font-size:18px; font-weight:800; color:#fff;">Quản Lý Bài Đã Đăng</div>
-              <div style="font-size:12px; color:var(--text-muted);">Theo dõi các bài đăng đã xuất bản thành công trên Facebook</div>
+              <div style="font-size:18px; font-weight:800; color:#fff;">Quản Lý Danh Sách Bài Đăng & Seeding</div>
+              <div style="font-size:12px; color:var(--text-muted);">Theo dõi bài viết, tạo mới seeding comment và link trực tiếp Facebook</div>
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -1695,12 +1575,12 @@
         </div>
 
         <div style="display:flex; gap:16px; margin-bottom:16px; margin-top:16px; align-items:center;">
-          <input type="text" id="searchCompleted" class="form-control" style="flex:1;" placeholder="🔍 Tìm kiếm bài viết..." oninput="debouncedSearch()">
+          <input type="text" id="searchCompleted" class="form-control" style="flex:1;" placeholder="🔍 Tìm kiếm bài viết theo nội dung, ID..." oninput="debouncedSearch()">
           <select id="filterStatus" class="form-control" style="width:240px;" onchange="renderPosts(_allPostsCache)">
-            <option value="completed" selected>✅ Đã đăng thành công</option>
-            <option value="all">🌐 Tất cả bài viết</option>
+            <option value="all" selected>🌐 Tất cả bài viết</option>
+            <option value="completed">✅ Đã đăng thành công</option>
+            <option value="pending">⏳ Đang chờ đăng</option>
             <option value="failed">❌ Bị lỗi / thất bại</option>
-            <option value="pending">⏳ Đang chờ</option>
           </select>
         </div>
 
@@ -1710,7 +1590,9 @@
       </div>
     </div>
 
-    <!-- Tab 3: Account Farm Operations Center (Milestone 4) -->
+    <!-- Extra tabs hidden for clean minimal UI -->
+    <div style="display:none !important;" id="hiddenExtraTabsWrapper">
+    <!-- Tab: Account Farm -->
     <div class="tab-content" id="tabAccounts">
       <div class="farm-container">
 
@@ -2248,6 +2130,7 @@
         </form>
       </div>
     </div>
+    </div> <!-- /hiddenExtraTabsWrapper -->
   </main>
 </div>
 
