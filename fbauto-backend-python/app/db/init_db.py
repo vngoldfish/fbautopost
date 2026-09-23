@@ -242,6 +242,13 @@ def migrate_projects(conn: sqlite3.Connection):
             "description": "Dự án / Extension 1",
             "createdAt": int(time.time() * 1000)
         }
+    if "dulich" not in project_map:
+        project_map["dulich"] = {
+            "id": "dulich",
+            "name": "Dự Án Du Lịch & Tour",
+            "description": "Quản lý bài đăng & Seeding tour du lịch, khách sạn, vé máy bay",
+            "createdAt": int(time.time() * 1000)
+        }
 
     now_ms = int(time.time() * 1000)
     for p in project_map.values():
@@ -415,6 +422,52 @@ def migrate_posts(conn: sqlite3.Connection):
             now_ms
         ))
         migrated_count += 1
+
+    # Ensure sample travel posts exist for project 'dulich'
+    existing_dulich = conn.execute("SELECT count(*) FROM posts WHERE project_key = 'dulich'").fetchone()[0]
+    if existing_dulich == 0:
+        sample_travel_posts = [
+            (
+                "post_dulich_pending_1", "dulich", "post",
+                "🏖️ COMBO DU LỊCH PHÚ QUỐC 3N2Đ - KHÁCH SẠN 4 SAO VÀ VÉ MÁY BAY KHỨ HỒI!\n\nTrọn gói chỉ từ {3.990.000đ|4.250.000đ}/khách. Bao gồm:\n• Vé máy bay khứ hồi Vietjet/VietnamAirlines\n• 2 đêm nghỉ dưỡng tại Resort 4* sát biển\n• Buffet sáng phong phú mỗi ngày\n• Xe đưa đón sân bay 2 chiều\n\n👉 Inbox ngay để nhận ưu đãi giữ chỗ hè 2026!",
+                "profile", "", "", "", "", "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800", None,
+                json.dumps(["Combo này còn chỗ cho 2 người đi ngày 15 không shop?", "Tư vấn cho mình với ạ", "Giá đã bao gồm thuế phí chưa shop ơi?"], ensure_ascii=False),
+                json.dumps(["Dạ chào bạn, shop đã inbox thông tin chi tiết cho bạn rồi nhé! ❤️"], ensure_ascii=False),
+                "LOVE", json.dumps({"likes": 12, "comments": 3, "shares": 1}),
+                now_ms + 1800000, 0, "admin_seed", "pending", 0, 3, None, None, None, None, None, None, json.dumps([]), None, None, None, now_ms, now_ms
+            ),
+            (
+                "post_dulich_pending_2", "dulich", "post",
+                "⛰️ TOP 10 ĐIỂM CHECK-IN ĐÀ LẠT {MỚI NHẤT|CỰC CHẤT} NĂM 2026!\n\nNếu bạn đang lên kế hoạch đi Đà Lạt tuần này, đừng bỏ qua 5 quán cafe view mây ngàn và đồi chè tuyệt đẹp sau đây...\n\n📸 Lưu lại bài viết để đi cùng hội bạn thân nhé!",
+                "profile", "", "", "", "", "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800", None,
+                json.dumps(["Đẹp quá admin ơi!", "Lưu lại tháng sau đi liền mới được", "Quán cafe thứ 3 tên gì vậy ạ?"], ensure_ascii=False),
+                json.dumps([]),
+                "LIKE", json.dumps({"likes": 45, "comments": 5, "shares": 12}),
+                now_ms + 3600000, 0, "admin_seed", "pending", 0, 3, None, None, None, None, None, None, json.dumps([]), None, None, None, now_ms, now_ms
+            ),
+            (
+                "post_dulich_completed_1", "dulich", "post",
+                "🚢 TOUR DU THUYỀN HẠ LONG 5 SAO 2N1Đ CLASSIC - TỰ DO THƯỞNG NGOẠN KỲ QUAN TỰ NHIÊN THẾ GIỚI!\n\nTrải nghiệm chèo thuyền Kayak, tiệc Sunset Party trên Sundeck và thưởng thức hải sản cao cấp.",
+                "page", "", "", "", "", "https://images.unsplash.com/photo-1528127269322-539801943592?w=800", None,
+                json.dumps(["Chuyến đi tuyệt vời lắm shop ơi", "Dịch vụ 5 sao rất chu đáo"], ensure_ascii=False),
+                json.dumps(["Cảm ơn bạn đã tin tưởng dịch vụ của shop ạ! ❤️"], ensure_ascii=False),
+                "LOVE", json.dumps({"likes": 88, "comments": 14, "shares": 20}),
+                now_ms - 86400000, 0, "admin_seed", "completed", 0, 3, None, "✓ Đã đăng hoàn tất via Direct GraphQL Engine", now_ms - 86400000, "CometUFIFeedbackReactMutation", "fb_dulich_101", "https://facebook.com/101", json.dumps([]), None, None, None, now_ms - 86400000, now_ms
+            )
+        ]
+        for p in sample_travel_posts:
+            conn.execute("""
+                INSERT OR REPLACE INTO posts (
+                    id, project_key, post_type, content, target_type, target_url,
+                    target_id, actor_id, access_token, media_url, media_path,
+                    seeding_comments, auto_reply_comments, auto_react_type,
+                    metrics, scheduled_time, repeat_interval_minutes, source,
+                    status, retry_count, max_retries, last_error, progress_step,
+                    executed_at, execution_method, fb_post_id, fb_post_url,
+                    comments, only_action, target_comment_id, last_reply_status,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, p)
 
     conn.commit()
     print(f"[*] Posts migrated: {migrated_count}")

@@ -26,6 +26,7 @@ if sys.platform.startswith("win"):
         pass
 
 # Add project root to sys.path
+os.environ["TESTING"] = "true"
 PROJECT_ROOT = Path(__file__).resolve().parent
 BACKEND_DIR = PROJECT_ROOT / "fbauto-backend-python"
 

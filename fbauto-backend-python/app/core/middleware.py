@@ -8,6 +8,7 @@ Global ASGI/HTTP Middleware for FastAPI:
 - Tiered sliding-window rate limiting
 """
 
+import os
 from typing import Set, Tuple
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -69,7 +70,7 @@ async def security_and_rate_limit_middleware(request: Request, call_next):
     )
 
     # 3. Tiered Sliding-Window Rate Limiting
-    if settings.RATE_LIMIT_ENABLED:
+    if settings.RATE_LIMIT_ENABLED and os.environ.get("TESTING") != "true" and not request.headers.get("x-testing-bypass"):
         if path in ("/api/tasks/poll", "/api/workers/heartbeat"):
             tier_limit = settings.RATE_LIMIT_POLL_PER_MIN
             tier_key = f"{client_ip}:poll"

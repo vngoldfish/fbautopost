@@ -1588,7 +1588,12 @@
               <div style="font-size:12px; color:var(--text-muted);">Quản lý danh sách các bài đăng đang trong hàng đợi xử lý phân tán</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div class="view-mode-switcher" style="display:flex; gap:4px; background:rgba(0,0,0,0.4); padding:4px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+              <button type="button" class="btn btn-xs btn-view-mode active" data-mode="grid" onclick="setPostViewMode('grid', this)" style="padding:4px 10px; font-weight:700;">🔲 Thẻ Cards</button>
+              <button type="button" class="btn btn-xs btn-view-mode" data-mode="table" onclick="setPostViewMode('table', this)" style="padding:4px 10px; font-weight:700;">📄 Bảng Dữ Liệu</button>
+              <button type="button" class="btn btn-xs btn-view-mode" data-mode="timeline" onclick="setPostViewMode('timeline', this)" style="padding:4px 10px; font-weight:700;">📅 Lịch Dự Kiến</button>
+            </div>
             <button class="btn btn-xs btn-secondary" onclick="loadPosts()" style="padding:8px 14px; font-weight:700;">🔄 Làm Mới</button>
             <span class="badge" id="postsCount" style="background:rgba(245,158,11,0.25); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); font-size:13px; padding:6px 14px; font-weight:800;">0 bài</span>
           </div>
@@ -1667,22 +1672,29 @@
         </div>
       </div>
     </div>
-            <div class="skeleton-box" style="height:20px; width:50%; margin-bottom:12px;"></div>
-            <div class="skeleton-box" style="height:14px; width:90%;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Tab 2: Published Posts Management -->
     <div class="tab-content logs-grid" id="tabCompleted">
       <div class="card">
-        <div class="card-title">
-          <span>🌐 Quản Lý Bài Đã Đăng</span>
-          <span class="badge" id="completedCount" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4);">0 bài</span>
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#10b981,#059669); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 15px rgba(16,185,129,0.4);">✅</div>
+            <div>
+              <div style="font-size:18px; font-weight:800; color:#fff;">Quản Lý Bài Đã Đăng</div>
+              <div style="font-size:12px; color:var(--text-muted);">Theo dõi các bài đăng đã xuất bản thành công trên Facebook</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div class="view-mode-switcher" style="display:flex; gap:4px; background:rgba(0,0,0,0.4); padding:4px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+              <button type="button" class="btn btn-xs btn-view-mode active" data-mode="grid" onclick="setPostViewMode('grid', this)" style="padding:4px 10px; font-weight:700;">🔲 Thẻ Cards</button>
+              <button type="button" class="btn btn-xs btn-view-mode" data-mode="table" onclick="setPostViewMode('table', this)" style="padding:4px 10px; font-weight:700;">📄 Bảng Dữ Liệu</button>
+              <button type="button" class="btn btn-xs btn-view-mode" data-mode="timeline" onclick="setPostViewMode('timeline', this)" style="padding:4px 10px; font-weight:700;">📅 Lịch Dự Kiến</button>
+            </div>
+            <span class="badge" id="completedCount" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4);">0 bài</span>
+          </div>
         </div>
 
-        <div style="display:flex; gap:16px; margin-bottom:16px; align-items:center;">
+        <div style="display:flex; gap:16px; margin-bottom:16px; margin-top:16px; align-items:center;">
           <input type="text" id="searchCompleted" class="form-control" style="flex:1;" placeholder="🔍 Tìm kiếm bài viết..." oninput="debouncedSearch()">
           <select id="filterStatus" class="form-control" style="width:240px;" onchange="renderPosts(_allPostsCache)">
             <option value="completed" selected>✅ Đã đăng thành công</option>
@@ -2741,6 +2753,173 @@
       });
     }
 
+    let _currentPostViewMode = 'grid'; // 'grid' | 'table' | 'timeline'
+
+    function setPostViewMode(mode, btn) {
+      _currentPostViewMode = mode;
+      document.querySelectorAll('.btn-view-mode').forEach(b => {
+        if (b.getAttribute('data-mode') === mode) {
+          b.classList.add('active');
+          b.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(139, 92, 246, 0.4))';
+          b.style.borderColor = 'rgba(99, 102, 241, 0.6)';
+          b.style.color = '#fff';
+        } else {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.borderColor = 'transparent';
+          b.style.color = 'var(--text-dim)';
+        }
+      });
+      _lastPostsHash = "";
+      renderPosts(_allPostsCache);
+    }
+
+    function renderPostTable(posts) {
+      if (!posts || posts.length === 0) {
+        return `<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">✨ Không có bài viết nào trong danh sách.</div>`;
+      }
+      let html = `
+        <div style="overflow-x:auto; border-radius:14px; border:1px solid rgba(255,255,255,0.08); background:rgba(10,14,26,0.6);">
+          <table class="saas-table" style="width:100%; border-collapse:collapse; text-align:left;">
+            <thead>
+              <tr>
+                <th style="width:70px;">MEDIA</th>
+                <th>NỘI DUNG BÀI VIẾT</th>
+                <th style="width:120px;">PROJECT</th>
+                <th style="width:110px;">ĐỐI TƯỢNG</th>
+                <th style="width:160px;">THỜI GIAN ĐĂNG</th>
+                <th style="width:130px;">TRẠNG THÁI</th>
+                <th style="width:200px; text-align:center;">THAO TÁC</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      for (const p of posts) {
+        const safeId = escapeHtml(String(p.id || ''));
+        const contentText = escapeHtml((p.content || '').length > 90 ? (p.content || '').substring(0, 90) + '...' : (p.content || ''));
+        const mediaThumb = p.mediaUrl 
+          ? `<img src="${escapeHtml(p.mediaUrl)}" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">`
+          : `<div style="width:48px; height:48px; border-radius:8px; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:18px;">📝</div>`;
+
+        let statusBadge = `<span class="status-badge status-pending">⏳ Đang chờ</span>`;
+        let actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">⚡ Đăng Ngay</button>`;
+        if (p.status === 'completed') {
+          statusBadge = `<span class="status-badge status-completed">✅ Hoàn thành</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">🔄 Đăng Lại</button>`;
+        } else if (p.status === 'failed') {
+          statusBadge = `<span class="status-badge status-failed">❌ Thất bại</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">🔄 Thử Lại</button>`;
+        } else if (p.status === 'in_progress') {
+          statusBadge = `<span class="status-badge status-in_progress"><div class="pulse-spinner"></div> ⚡ Đang chạy</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" disabled style="opacity:0.7;">⏳ Đang Đăng...</button>`;
+        }
+
+        const scheduledTimeStr = p.scheduledTime ? new Date(p.scheduledTime).toLocaleString('vi-VN') : 'Mới tạo';
+
+        html += `
+          <tr>
+            <td style="vertical-align:middle;">${mediaThumb}</td>
+            <td>
+              <div style="font-weight:600; color:#fff; font-size:13px; line-height:1.4;">${contentText}</div>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:4px; display:flex; gap:10px; align-items:center;">
+                <span>ID: <code style="color:#a78bfa;">${safeId.substring(0,14)}</code></span>
+                ${p.seedingComments && p.seedingComments.length ? `<span style="color:#34d399;">💬 ${p.seedingComments.length} seeding</span>` : ''}
+                ${p.fbPostId ? `<span style="color:#60a5fa;">FB: ${escapeHtml(p.fbPostId)}</span>` : ''}
+              </div>
+            </td>
+            <td><span class="badge" style="background:rgba(139,92,246,0.25); color:#a78bfa; border:1px solid rgba(139,92,246,0.4);">📁 ${escapeHtml(p.projectKey || 'all')}</span></td>
+            <td><span class="badge" style="background:rgba(236,72,153,0.2); color:#f472b6;">${p.targetType === 'page' ? '🚩 Fanpage' : (p.targetType === 'group' ? '👨‍👩‍👧‍👦 Group' : '👤 Profile')}</span></td>
+            <td style="font-size:12px; color:var(--text-muted);">${scheduledTimeStr}</td>
+            <td>${statusBadge}</td>
+            <td style="text-align:center;">
+              <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                ${actionBtn}
+                ${p.status === 'completed' ? `<button class="btn btn-xs" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff;" onclick="openAddSeedingModal('${safeId}')">💬 Seeding</button>` : ''}
+                <button class="btn-icon" onclick="duplicatePost('${safeId}')" title="Nhân Bản">📋</button>
+                <button class="btn-icon" style="color:#f87171; border-color:rgba(239,68,68,0.3);" onclick="deletePost('${safeId}')" title="Xóa">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+      html += `</tbody></table></div>`;
+      return html;
+    }
+
+    function renderPostTimeline(posts) {
+      if (!posts || posts.length === 0) {
+        return `<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">✨ Không có bài viết nào trong mốc thời gian dự kiến.</div>`;
+      }
+      
+      const sorted = [...posts].sort((a, b) => (b.scheduledTime || 0) - (a.scheduledTime || 0));
+
+      let html = `
+        <div style="position:relative; padding-left:24px; border-left:2px dashed rgba(99,102,241,0.4); margin:12px 8px; display:flex; flex-direction:column; gap:20px;">
+      `;
+
+      for (const p of sorted) {
+        const safeId = escapeHtml(String(p.id || ''));
+        const scheduledDate = p.scheduledTime ? new Date(p.scheduledTime) : new Date();
+        const dateStr = scheduledDate.toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = scheduledDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        const relTime = timeAgo(p.scheduledTime);
+
+        let nodeColor = '#f59e0b';
+        let statusBadge = `<span class="status-badge status-pending">⏳ Đang chờ</span>`;
+        let actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">⚡ Đăng Ngay</button>`;
+        if (p.status === 'completed') {
+          nodeColor = '#10b981';
+          statusBadge = `<span class="status-badge status-completed">✅ Hoàn thành</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">🔄 Đăng Lại</button>`;
+        } else if (p.status === 'failed') {
+          nodeColor = '#ef4444';
+          statusBadge = `<span class="status-badge status-failed">❌ Thất bại</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" onclick="runPostNow('${safeId}')">🔄 Thử Lại</button>`;
+        } else if (p.status === 'in_progress') {
+          nodeColor = '#3b82f6';
+          statusBadge = `<span class="status-badge status-in_progress"><div class="pulse-spinner"></div> ⚡ Đang chạy</span>`;
+          actionBtn = `<button class="btn btn-xs btn-primary" disabled style="opacity:0.7;">⏳ Đang Đăng...</button>`;
+        }
+
+        html += `
+          <div style="position:relative; background:rgba(15,23,42,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,0.3);">
+            <div style="position:absolute; left:-33px; top:22px; width:16px; height:16px; border-radius:50%; background:${nodeColor}; border:3px solid #080c14; box-shadow:0 0 10px ${nodeColor};"></div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:13px; font-weight:800; color:#60a5fa; background:rgba(59,130,246,0.15); padding:4px 10px; border-radius:8px; border:1px solid rgba(59,130,246,0.3);">📅 ${dateStr} - ${timeStr}</span>
+                <span style="font-size:11px; color:var(--text-dim);">(${relTime})</span>
+                <span class="badge" style="background:rgba(139,92,246,0.25); color:#a78bfa; border:1px solid rgba(139,92,246,0.4);">📁 ${escapeHtml(p.projectKey || 'all')}</span>
+                <span class="badge" style="background:rgba(236,72,153,0.2); color:#f472b6;">${p.targetType === 'page' ? '🚩 Fanpage' : (p.targetType === 'group' ? '👨‍👩‍👧‍👦 Group' : '👤 Profile')}</span>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+
+            <div style="font-size:14px; color:#fff; font-weight:500; line-height:1.5; margin-bottom:12px;">${escapeHtml(p.content || '')}</div>
+
+            ${p.mediaUrl ? `
+              <div style="margin-bottom:12px;">
+                <img src="${escapeHtml(p.mediaUrl)}" style="max-height:160px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); object-fit:cover;">
+              </div>
+            ` : ''}
+
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px; margin-top:8px;">
+              <div style="font-size:11px; color:var(--text-dim);">ID: <code style="color:#a78bfa;">${safeId.substring(0,16)}</code></div>
+              <div style="display:flex; gap:8px;">
+                ${actionBtn}
+                ${p.status === 'completed' ? `<button class="btn btn-xs" style="background:linear-gradient(135deg,#10b981,#059669); color:#fff;" onclick="openAddSeedingModal('${safeId}')">💬 Seeding</button>` : ''}
+                <button class="btn-icon" onclick="duplicatePost('${safeId}')" title="Nhân Bản">📋</button>
+                <button class="btn-icon" style="color:#f87171; border-color:rgba(239,68,68,0.3);" onclick="deletePost('${safeId}')" title="Xóa">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
     function renderPosts(posts) {
       const pendingList = posts.filter(p => p.status !== 'completed');
       const completedList = posts.filter(p => p.status === 'completed');
@@ -2751,11 +2930,7 @@
       document.getElementById('navPendingBadge').textContent = pendingList.length;
       document.getElementById('navCompletedBadge').textContent = completedList.length;
 
-      // Render Tab 1
-      const pendingContainer = document.getElementById('postsList');
-      updateSmartList(pendingContainer, pendingList, '<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">✨ Không có bài đăng nào đang chờ.</div>');
-
-      // Render Tab 2
+      // Filter Completed list by search and status dropdown
       const searchQuery = (document.getElementById('searchCompleted')?.value || '').toLowerCase().trim();
       const filterStatus = document.getElementById('filterStatus')?.value || 'completed';
 
@@ -2772,8 +2947,20 @@
         );
       }
 
+      const pendingContainer = document.getElementById('postsList');
       const completedContainer = document.getElementById('completedList');
-      updateSmartList(completedContainer, targetCompletedList, `<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">${searchQuery ? 'Không tìm thấy kết quả.' : 'Chưa có bài viết nào.'}</div>`);
+
+      if (_currentPostViewMode === 'table') {
+        if (pendingContainer) pendingContainer.innerHTML = renderPostTable(pendingList);
+        if (completedContainer) completedContainer.innerHTML = renderPostTable(targetCompletedList);
+      } else if (_currentPostViewMode === 'timeline') {
+        if (pendingContainer) pendingContainer.innerHTML = renderPostTimeline(pendingList);
+        if (completedContainer) completedContainer.innerHTML = renderPostTimeline(targetCompletedList);
+      } else {
+        // Grid mode (default)
+        updateSmartList(pendingContainer, pendingList, '<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">✨ Không có bài đăng nào đang chờ.</div>');
+        updateSmartList(completedContainer, targetCompletedList, `<div style="text-align: center; padding: 40px; color: var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">${searchQuery ? 'Không tìm thấy kết quả.' : 'Chưa có bài viết nào.'}</div>`);
+      }
     }
 
     async function handleAddPost(e) {

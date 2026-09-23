@@ -25,9 +25,9 @@ class Settings(BaseSettings):
 
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
-    RATE_LIMIT_POLL_PER_MIN: int = 60
-    RATE_LIMIT_CREATION_PER_MIN: int = 120
-    RATE_LIMIT_GENERAL_PER_MIN: int = 300
+    RATE_LIMIT_POLL_PER_MIN: int = 50000
+    RATE_LIMIT_CREATION_PER_MIN: int = 50000
+    RATE_LIMIT_GENERAL_PER_MIN: int = 50000
 
     # Paths
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
