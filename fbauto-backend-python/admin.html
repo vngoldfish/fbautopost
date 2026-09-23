@@ -163,8 +163,21 @@
       display: block !important;
     }
     .tab-content.active.posts-grid,
-    .tab-content.active.accounts-grid {
+    .tab-content.active.accounts-grid,
+    .tab-content.active.projects-grid {
       display: grid !important;
+    }
+
+    .projects-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .projects-grid {
+        grid-template-columns: 380px 1fr;
+        align-items: start;
+      }
     }
 
     /* Base Modal Overlay Fallback */
@@ -1240,16 +1253,23 @@
 
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <div class="nav-tabs">
-          <button class="nav-tab-btn active" data-tab="tabPosts">
-            📅 Lên Lịch & Đang Chờ 
+          <button class="nav-tab-btn active" data-tab="tabCreatePost">
+            📝 Đăng Bài Mới
+          </button>
+          <button class="nav-tab-btn" data-tab="tabPendingPosts">
+            ⏳ Danh Sách Đang Chờ 
             <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
           </button>
           <button class="nav-tab-btn" data-tab="tabCompleted">
             ✅ Đã Đăng 
             <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">0</span>
           </button>
+          <button class="nav-tab-btn" data-tab="tabProjects">
+            📁 Quản Lý Projects
+            <span id="navProjectsBadge" class="badge" style="background:rgba(139,92,246,0.2); color:#c084fc; margin-left:4px;">0</span>
+          </button>
           <button class="nav-tab-btn" data-tab="tabAccounts">
-            👥 Quản Lý Nông Trại Facebook
+            👥 Nông Trại Facebook
             <span id="navAccountsBadge" class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; margin-left:4px;">0</span>
           </button>
           <button class="nav-tab-btn" data-tab="tabWorkers">
@@ -1383,121 +1403,195 @@
       </div>
     </div>
 
-    <!-- Tab 1: Posts Management -->
-    <div class="tab-content posts-grid active" id="tabPosts">
-      <!-- Post Creation Glass Panel (Sticky on Desktop) -->
-      <div class="sticky-sidebar">
-        <div class="card" style="border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);">
-          <div class="card-title" style="padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08);">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 6px 20px rgba(99,102,241,0.4);">✨</div>
-              <div>
-                <div style="font-size:18px; font-weight:800; color:#fff; letter-spacing:-0.2px;">Lên Lịch Bài Đăng</div>
-                <div style="font-size:12px; color:var(--text-muted); font-weight:500;">Tự động đăng ngầm qua GraphQL</div>
-              </div>
+    <!-- Tab 1: Trang Tạo Bài Đăng Mới -->
+    <div class="tab-content active" id="tabCreatePost">
+      <div class="card" style="max-width:920px; margin:0 auto; border: 1px solid rgba(99, 102, 241, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);">
+        <div class="card-title" style="padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(99,102,241,0.4);">📝</div>
+            <div>
+              <div style="font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.2px;">Trang Đăng Bài Viết Mới</div>
+              <div style="font-size:12px; color:var(--text-muted); font-weight:500;">Soạn thảo bài đăng, nạp media và thiết lập seeding tự động ngầm qua Direct GraphQL Engine</div>
             </div>
-            <span class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa; border:1px solid rgba(99,102,241,0.4);">⚡ DIRECT API</span>
+          </div>
+          <span class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa; border:1px solid rgba(99,102,241,0.4); font-size:12px; padding:6px 12px;">⚡ DIRECT GRAPHQL API</span>
+        </div>
+
+        <form id="formPost" onsubmit="return false;" style="display:flex; flex-direction:column; gap:16px; margin-top:12px;">
+          <!-- Hidden compatibility fields -->
+          <select id="postType" style="display:none;"><option value="post" selected>post</option></select>
+          <select id="postTargetType" style="display:none;"><option value="profile" selected>profile</option></select>
+          <input type="hidden" id="postTargetId" value="">
+          <input type="hidden" id="postScheduledTime" value="">
+          <input type="hidden" id="postAutoReplyText" value="">
+          <select id="postAutoReactType" style="display:none;"><option value="NONE" selected>NONE</option></select>
+          <input type="hidden" id="postAccessToken" value="">
+          <input type="hidden" id="postRepeat" value="0">
+
+          <!-- 0. Chọn Project / Tài khoản -->
+          <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.5); background: rgba(15,23,42,0.85); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <label for="postProjectKey" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="font-size:18px;">📁</span> Gán Cho Extension / Project (Tài Khoản):
+            </label>
+            <select id="postProjectKey" class="form-control" style="background:rgba(10,12,16,0.8); border:1px solid rgba(139,92,246,0.4); color:#fff; font-weight:700; padding:10px 14px; border-radius:10px;">
+              <option value="all">🌐 Tất Cả Extension (Mặc định)</option>
+              <option value="taikhoan1">👤 Tài Khoản 1 (taikhoan1)</option>
+              <option value="taikhoan2">👤 Tài Khoản 2 (taikhoan2)</option>
+            </select>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Bài viết sẽ chỉ được quét và đăng bởi Extension gán mã Project tương ứng.</div>
           </div>
 
-          <form id="formPost" onsubmit="return false;" style="display:flex; flex-direction:column; gap:16px; margin-top:8px;">
-            <!-- Hidden compatibility fields -->
-            <select id="postType" style="display:none;"><option value="post" selected>post</option></select>
-            <select id="postTargetType" style="display:none;"><option value="profile" selected>profile</option></select>
-            <input type="hidden" id="postTargetId" value="">
-            <input type="hidden" id="postScheduledTime" value="">
-            <input type="hidden" id="postAutoReplyText" value="">
-            <select id="postAutoReactType" style="display:none;"><option value="NONE" selected>NONE</option></select>
-            <input type="hidden" id="postAccessToken" value="">
-            <input type="hidden" id="postRepeat" value="0">
+          <!-- 1. Nội dung bài đăng -->
+          <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <label for="postContent" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="font-size:18px;">📝</span> 1. Nội Dung Bài Đăng (Hỗ trợ Spintax {A|B|C}):
+            </label>
+            <textarea id="postContent" class="form-control" rows="5" placeholder="Nhập nội dung bài viết, caption hoặc mô tả sản phẩm ở đây..." oninput="updateCharCount(this)"></textarea>
+            <div class="char-count" id="contentCharCount" style="margin-top:4px; font-size:11px; color:var(--text-dim);">0 ký tự</div>
+          </div>
 
-            <!-- 0. Chọn Project / Tài khoản -->
-            <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.5); background: rgba(15,23,42,0.85); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-              <label for="postProjectKey" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <span style="font-size:18px;">📁</span> Gán Cho Extension / Project (Tài Khoản):
-              </label>
-              <select id="postProjectKey" class="form-control" style="background:rgba(10,12,16,0.8); border:1px solid rgba(139,92,246,0.4); color:#fff; font-weight:700; padding:10px 14px; border-radius:10px;">
-                <option value="all">🌐 Tất Cả Extension (Mặc định)</option>
-                <option value="taikhoan1">👤 Tài Khoản 1 (taikhoan1)</option>
-                <option value="taikhoan2">👤 Tài Khoản 2 (taikhoan2)</option>
-              </select>
-              <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Bài viết sẽ chỉ được quét và đăng bởi Extension gán mã Project tương ứng.</div>
-            </div>
+          <!-- 2. Tệp hình ảnh / Video (Link URL hoặc nút Chọn File) -->
+          <div class="sub-panel" style="border: 1px solid rgba(59,130,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="font-size:18px;">🖼️</span> 2. Tệp Hình Ảnh / Media:
+            </label>
 
-            <!-- 1. Nội dung bài đăng -->
-            <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-              <label for="postContent" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <span style="font-size:18px;">📝</span> 1. Nội Dung Bài Đăng:
-              </label>
-              <textarea id="postContent" class="form-control" rows="4" placeholder="Nhập nội dung bài viết, caption hoặc mô tả sản phẩm ở đây..." oninput="updateCharCount(this)"></textarea>
-              <div class="char-count" id="contentCharCount" style="margin-top:4px; font-size:11px; color:var(--text-dim);">0 ký tự</div>
-            </div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Link URL Direct -->
+              <div>
+                <label style="font-size:12px; color:var(--text-dim); margin-bottom:4px; display:block;">Dán Đường Dẫn Link Media Direct (https://...):</label>
+                <input type="url" id="postMediaUrl" class="form-control" placeholder="🔗 Link URL Hình Ảnh / Video trực tiếp (Ví dụ: https://.../image.jpg)">
+              </div>
 
-            <!-- 2. Tệp hình ảnh / Video (Link URL hoặc nút Chọn File) -->
-            <div class="sub-panel" style="border: 1px solid rgba(59,130,246,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-              <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                <span style="font-size:18px;">🖼️</span> 2. Tệp Hình Ảnh / Media:
-              </label>
+              <div style="text-align:center; font-size:12px; color:var(--text-dim); font-weight:800;">— HOẶC NÚT LỰA CHỌN FILE LÊN BÀI —</div>
 
-              <div style="display:flex; flex-direction:column; gap:12px;">
-                <!-- Link URL Direct -->
-                <div>
-                  <label style="font-size:12px; color:var(--text-dim); margin-bottom:4px; display:block;">Dán Đường Dẫn Link Media Direct (https://...):</label>
-                  <input type="url" id="postMediaUrl" class="form-control" placeholder="🔗 Link URL Hình Ảnh / Video trực tiếp (Ví dụ: https://.../image.jpg)">
-                </div>
-
-                <div style="text-align:center; font-size:12px; color:var(--text-dim); font-weight:800;">— HOẶC NÚT LỰA CHỌN FILE LÊN BÀI —</div>
-
-                <!-- File Picker Button & Dropzone -->
-                <div id="mediaDropZone" class="dropzone" onclick="document.getElementById('mediaFileInput').click()" style="padding:16px; border:2px dashed rgba(59,130,246,0.5); border-radius:14px; text-align:center; cursor:pointer; background:rgba(0,0,0,0.3); transition:all 0.3s;">
-                  <div id="mediaPreview" style="display:none; width:100%; max-height:180px; overflow:hidden; border-radius:12px; margin-bottom:8px;"></div>
-                  <div id="mediaDropText">
-                    <div class="btn btn-primary" style="padding:10px 24px; border-radius:12px; font-size:14px; font-weight:800; display:inline-flex; align-items:center; gap:8px; pointer-events:none; background:linear-gradient(135deg,#3b82f6,#2563eb);">
-                      📁 📁 NÚT LỰA CHỌN FILE
-                    </div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Bấm để chọn file ảnh/video từ máy tính hoặc kéo thả trực tiếp</div>
+              <!-- File Picker Button & Dropzone -->
+              <div id="mediaDropZone" class="dropzone" onclick="document.getElementById('mediaFileInput').click()" style="padding:16px; border:2px dashed rgba(59,130,246,0.5); border-radius:14px; text-align:center; cursor:pointer; background:rgba(0,0,0,0.3); transition:all 0.3s;">
+                <div id="mediaPreview" style="display:none; width:100%; max-height:180px; overflow:hidden; border-radius:12px; margin-bottom:8px;"></div>
+                <div id="mediaDropText">
+                  <div class="btn btn-primary" style="padding:10px 24px; border-radius:12px; font-size:14px; font-weight:800; display:inline-flex; align-items:center; gap:8px; pointer-events:none; background:linear-gradient(135deg,#3b82f6,#2563eb);">
+                    📁 NÚT LỰA CHỌN FILE
                   </div>
-                  <input type="file" id="mediaFileInput" accept="image/*,video/*" style="display:none;" onchange="handleAdminMediaFile(this.files[0])">
+                  <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">Bấm để chọn file ảnh/video từ máy tính hoặc kéo thả trực tiếp</div>
                 </div>
+                <input type="file" id="mediaFileInput" accept="image/*,video/*" style="display:none;" onchange="handleAdminMediaFile(this.files[0])">
+              </div>
 
-                <div id="mediaFileInfo" style="display:none; padding:10px 14px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); border-radius:10px; align-items:center; justify-content:space-between;">
-                  <span id="mediaFileName" style="font-size:13px; color:#60a5fa; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:75%;"></span>
-                  <button type="button" class="btn-danger btn-xs" onclick="clearAdminMedia()" style="padding:4px 10px;">✕ Xóa File</button>
-                </div>
+              <div id="mediaFileInfo" style="display:none; padding:10px 14px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.4); border-radius:10px; align-items:center; justify-content:space-between;">
+                <span id="mediaFileName" style="font-size:13px; color:#60a5fa; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:75%;"></span>
+                <button type="button" class="btn-danger btn-xs" onclick="clearAdminMedia()" style="padding:4px 10px;">✕ Xóa File</button>
               </div>
             </div>
+          </div>
 
-            <!-- 3. Bình luận Seeding tự động (Mỗi câu 1 dòng) -->
-            <div class="sub-panel" style="border: 1px solid rgba(16,185,129,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
-                  <span style="font-size:18px;">💬</span> 3. Bình Luận Seeding Tự Động (Mỗi câu 1 dòng):
-                </label>
-                <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; font-weight:700;" onclick="insertSeedingPreset()">✨ Nạp Mẫu Seeding</button>
-              </div>
-              <textarea id="postSeedingComments" class="form-control" rows="4" placeholder="💬 Nhập các câu bình luận seeding tự động ngầm...&#10;Ví dụ:&#10;Sản phẩm này đẹp quá shop ơi!&#10;Cho em xin giá bộ này với ạ&#10;Shop ship hàng nhanh lắm nha"></textarea>
+          <!-- 3. Bình luận Seeding tự động (Mỗi câu 1 dòng) -->
+          <div class="sub-panel" style="border: 1px solid rgba(16,185,129,0.4); background: rgba(15,23,42,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <label style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">💬</span> 3. Bình Luận Seeding Tự Động (Mỗi câu 1 dòng):
+              </label>
+              <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; font-weight:700;" onclick="insertSeedingPreset()">✨ Nạp Mẫu Seeding</button>
             </div>
+            <textarea id="postSeedingComments" class="form-control" rows="4" placeholder="💬 Nhập các câu bình luận seeding tự động ngầm...&#10;Ví dụ:&#10;Sản phẩm này đẹp quá shop ơi!&#10;Cho em xin giá bộ này với ạ&#10;Shop ship hàng nhanh lắm nha"></textarea>
+          </div>
 
-            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px; padding:18px; font-size:16px; font-weight:800; border-radius:18px; letter-spacing:0.5px; background:linear-gradient(135deg,#10b981,#059669); box-shadow: 0 8px 25px rgba(16,185,129,0.35);">
-              🚀 PHÁT LỆNH ĐĂNG BÀI & SEEDING NGAY
-            </button>
-          </form>
-        </div>
+          <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px; padding:18px; font-size:16px; font-weight:800; border-radius:18px; letter-spacing:0.5px; background:linear-gradient(135deg,#10b981,#059669); box-shadow: 0 8px 25px rgba(16,185,129,0.35);">
+            🚀 PHÁT LỆNH ĐĂNG BÀI & SEEDING NGAY
+          </button>
+        </form>
       </div>
+    </div>
 
+    <!-- Tab 2: Trang Danh Sách Bài Đăng Đang Chờ -->
+    <div class="tab-content" id="tabPendingPosts">
       <div class="card">
-        <div class="card-title">
-          <span>📋 Danh Sách Đang Chờ</span>
-          <span class="badge" id="postsCount">0 bài</span>
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#d97706); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 15px rgba(245,158,11,0.4);">⏳</div>
+            <div>
+              <div style="font-size:18px; font-weight:800; color:#fff;">Trang Danh Sách Bài Đăng Đang Chờ Lên Lịch</div>
+              <div style="font-size:12px; color:var(--text-muted);">Quản lý danh sách các bài đăng đang trong hàng đợi xử lý phân tán</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="btn btn-xs btn-secondary" onclick="loadPosts()" style="padding:8px 14px; font-weight:700;">🔄 Làm Mới</button>
+            <span class="badge" id="postsCount" style="background:rgba(245,158,11,0.25); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); font-size:13px; padding:6px 14px; font-weight:800;">0 bài</span>
+          </div>
         </div>
 
-        <div class="item-list" id="postsList">
+        <div class="item-list" id="postsList" style="margin-top:16px;">
           <!-- Skeleton Loading -->
           <div class="list-card skeleton-card">
             <div class="skeleton-box" style="height:20px; width:40%; margin-bottom:12px;"></div>
             <div class="skeleton-box" style="height:14px; width:100%; margin-bottom:8px;"></div>
             <div class="skeleton-box" style="height:14px; width:80%;"></div>
           </div>
-          <div class="list-card skeleton-card">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Trang Quản Lý Projects -->
+    <div class="tab-content projects-grid" id="tabProjects">
+      <!-- Left Column: Create / Edit Project Form -->
+      <div>
+        <div class="card" style="border: 1px solid rgba(139,92,246,0.4); box-shadow: 0 20px 48px rgba(0,0,0,0.4);">
+          <div class="card-title" style="padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; justify-content:center; font-size:18px;">📁</div>
+              <div>
+                <div style="font-size:17px; font-weight:800; color:#fff;">Quản Lý Project / Workspace</div>
+                <div style="font-size:11px; color:var(--text-muted);">Tạo mới hoặc cập nhật thông tin mã Project Extension</div>
+              </div>
+            </div>
+          </div>
+
+          <form id="formProjectTab" onsubmit="event.preventDefault(); submitNewProject();" style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+            <div class="form-group">
+              <label style="font-size:13px; font-weight:700; color:#fff;">Mã Project Key (* Ví dụ: taikhoan1, taikhoan2):</label>
+              <input type="text" id="newProjectId" class="form-control" placeholder="taikhoan1" required style="background:rgba(10,12,16,0.8); color:#fff; font-weight:700;">
+              <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Mã này được gán trực tiếp vào Extension để nhận bài riêng.</div>
+            </div>
+
+            <div class="form-group">
+              <label style="font-size:13px; font-weight:700; color:#fff;">Tên Hiển Thị Project (*):</label>
+              <input type="text" id="newProjectName" class="form-control" placeholder="Project Nông Trại 1" required style="background:rgba(10,12,16,0.8); color:#fff;">
+            </div>
+
+            <div class="form-group">
+              <label style="font-size:13px; font-weight:700; color:#fff;">Mô Tả Project / Ghi Chú:</label>
+              <textarea id="newProjectDesc" class="form-control" rows="3" placeholder="Ghi chú mục đích dự án, máy/trình duyệt vận hành..."></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="resetProjectForm()">🔄 Xóa Form</button>
+              <button type="submit" id="btnSubmitProject" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800; padding:10px 18px;">
+                💾 Lưu Project
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Project List -->
+      <div>
+        <div class="card">
+          <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#c084fc,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:18px;">📋</div>
+              <div>
+                <div style="font-size:17px; font-weight:800; color:#fff;">Danh Sách Projects Đang Vận Hành</div>
+                <div style="font-size:11px; color:var(--text-muted);">Tất cả các workspaces dự án đã khai báo</div>
+              </div>
+            </div>
+            <span class="badge" id="navProjectsBadge" style="background:rgba(139,92,246,0.25); color:#c084fc; border:1px solid rgba(139,92,246,0.4); font-size:12px; padding:6px 12px; font-weight:800;">0 projects</span>
+          </div>
+
+          <div id="projectManagerList" style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+            <!-- Project Items Rendered Here -->
+          </div>
+        </div>
+      </div>
+    </div>
             <div class="skeleton-box" style="height:20px; width:50%; margin-bottom:12px;"></div>
             <div class="skeleton-box" style="height:14px; width:90%;"></div>
           </div>
@@ -2155,7 +2249,9 @@
             loadTasks(true);
           } else if (targetTabId === 'tabLogs') {
             loadLogs(true);
-          } else if (targetTabId === 'tabCompleted' || targetTabId === 'tabPosts') {
+          } else if (targetTabId === 'tabProjects') {
+            loadProjects();
+          } else if (targetTabId === 'tabPendingPosts' || targetTabId === 'tabCompleted' || targetTabId === 'tabCreatePost') {
             loadPosts();
           }
         });
@@ -2209,19 +2305,22 @@
           postSel.value = cur;
         }
 
+        const projBadge = document.getElementById('navProjectsBadge');
+        if (projBadge) projBadge.textContent = `${_allProjectsCache.length} projects`;
+
         const listEl = document.getElementById('projectManagerList');
         if (listEl) {
           if (_allProjectsCache.length === 0) {
             listEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:16px;">Chưa có project nào.</div>';
           } else {
             listEl.innerHTML = _allProjectsCache.map(p => `
-              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
                 <div>
-                  <div style="font-weight:700; color:#fff;">📁 ${escapeHtml(p.name)} <span style="font-size:11px; color:#a78bfa;">(${escapeHtml(p.id)})</span></div>
-                  <div style="font-size:11px; color:var(--text-dim);">${escapeHtml(p.description || 'Workspace Extension')}</div>
+                  <div style="font-weight:700; color:#fff; font-size:14px;">📁 ${escapeHtml(p.name)} <span style="font-size:11px; color:#a78bfa;">(${escapeHtml(p.id)})</span></div>
+                  <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">${escapeHtml(p.description || 'Workspace Extension')}</div>
                 </div>
                 <div style="display:flex; gap:6px;">
-                  <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; border:1px solid rgba(99,102,241,0.4);" onclick="editProjectItem('${escapeHtml(p.id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.description || '')}')">✏️ Sửa</button>
+                  <button type="button" class="btn btn-xs" style="background:rgba(99,102,241,0.25); color:#a78bfa; border:1px solid rgba(99,102,241,0.4);" onclick="editProjectItem('${escapeHtml(p.id)}', '${escapeHtml(p.name)}', '${escapeHtml(p.description || '')}')">✏️ Sửa Project</button>
                   <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4);" onclick="deleteProjectItem('${escapeHtml(p.id)}')">🗑️ Xóa</button>
                 </div>
               </div>
@@ -2237,11 +2336,8 @@
     }
 
     function openProjectManagerModal() {
-      const modal = document.getElementById('projectManagerModal');
-      if (modal) {
-        modal.style.display = 'flex';
-        loadProjects();
-      }
+      const btn = document.querySelector('[data-tab="tabProjects"]');
+      if (btn) btn.click();
     }
 
     function editProjectItem(id, name, description) {
@@ -2668,6 +2764,8 @@
           } else {
             loadPosts();
           }
+          const pendingTabBtn = document.querySelector('[data-tab="tabPendingPosts"]');
+          if (pendingTabBtn) pendingTabBtn.click();
         } else {
           showToast(`❌ Lỗi: ${data.error || 'Không thể lưu'}`, 'error');
         }

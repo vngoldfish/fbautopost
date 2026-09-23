@@ -163,8 +163,8 @@ def test_admin_console_html_structure():
 
     content = admin_path.read_text(encoding="utf-8")
 
-    # 1. All 7 Tabs present in navigation
-    tabs = ["tabPosts", "tabCompleted", "tabAccounts", "tabWorkers", "tabQueue", "tabLogs", "tabSettings"]
+    # All Tabs present in navigation (including separated Create Post, Pending Posts, and Projects tabs)
+    tabs = ["tabCreatePost", "tabPendingPosts", "tabCompleted", "tabProjects", "tabAccounts", "tabWorkers", "tabQueue", "tabLogs", "tabSettings"]
     for t in tabs:
         assert f'data-tab="{t}"' in content, f"Nav tab button data-tab='{t}' must exist"
         assert f'id="{t}"' in content, f"Tab container id='{t}' must exist"
