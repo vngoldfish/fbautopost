@@ -41,8 +41,8 @@
       background-attachment: fixed;
       color: var(--text-main);
       min-height: 100vh;
-      padding: 20px;
-      display: flex; flex-direction: column; align-items: center;
+      margin: 0;
+      padding: 0;
     }
 
     /* Scrollbar Styling */
@@ -51,13 +51,134 @@
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 
-    .app-container { width: 100%; max-width: 1380px; }
-
-    /* Top System Status Bar */
-    .status-bar {
+    /* App Wrapper Layout */
+    .app-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
     }
 
-    /* Top Navigation Header */
+    /* Sidebar Navigation */
+    .app-sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: rgba(12, 17, 29, 0.92);
+      backdrop-filter: blur(24px);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 20px 16px;
+      z-index: 100;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-brand .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    }
+
+    .sidebar-brand .brand-title h1 {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sidebar-brand .brand-title p {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .sidebar-project-box {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+
+    .sidebar-nav-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-nav-tabs .nav-tab-btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dim);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .sidebar-nav-tabs .nav-tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    .sidebar-nav-tabs .nav-tab-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.25));
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .sidebar-footer {
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: auto;
+    }
+
+    /* Main Area Container */
+    .app-main-content {
+      flex: 1;
+      padding: 28px 36px;
+      max-width: 1440px;
+      width: 100%;
+      min-width: 0;
+    }
+
     @keyframes spinPulse {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -67,67 +188,6 @@
       border-top-color: #fbbf24; border-radius: 50%;
       animation: spinPulse 0.8s linear infinite;
     }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-card);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 16px 28px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-    }
-
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .brand-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-    }
-
-    .brand-title h1 {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ffffff, #cbd5e1);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-title p {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-      margin-top: 2px;
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 6px;
-      border-radius: 14px;
-      border: 1px solid var(--border-color);
-    }
-
-    .nav-tab-btn {
-      padding: 10px 20px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
       color: var(--text-muted);
       background: transparent;
       border: none;
@@ -1230,20 +1290,11 @@
   </style>
 </head>
 <body>
-  <div class="app-container">
-    <div class="status-bar">
-      <div class="status-item">
-        <div class="status-dot"></div>
-        <span>System Online - Port 19823</span>
-      </div>
-      <div class="status-item">
-        <span id="lastSyncTime">Last sync: Just now</span>
-      </div>
-    </div>
-
-    <!-- Navigation Header -->
-    <header class="header-nav">
-      <div class="brand-section">
+  <div class="app-wrapper">
+    <!-- Left Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <!-- Sidebar Brand Header -->
+      <div class="sidebar-brand">
         <div class="brand-logo">🚀</div>
         <div class="brand-title">
           <h1>fbAUTO Workspace</h1>
@@ -1251,53 +1302,77 @@
         </div>
       </div>
 
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <div class="nav-tabs">
-          <button class="nav-tab-btn active" data-tab="tabCreatePost">
-            📝 Đăng Bài Mới
-          </button>
-          <button class="nav-tab-btn" data-tab="tabPendingPosts">
-            ⏳ Danh Sách Đang Chờ 
-            <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabCompleted">
-            ✅ Đã Đăng 
-            <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabProjects">
-            📁 Quản Lý Projects
-            <span id="navProjectsBadge" class="badge" style="background:rgba(139,92,246,0.2); color:#c084fc; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabAccounts">
-            👥 Nông Trại Facebook
-            <span id="navAccountsBadge" class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabWorkers">
-            🖥️ Worker Nodes
-            <span id="navWorkersBadge" class="badge" style="background:rgba(99,102,241,0.2); color:#a78bfa; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabQueue" id="navTabQueue">
-            ⚡ Hàng Đợi Tasks
-            <span id="navQueueBadge" class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; margin-left:4px;">0</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabLogs" id="navTabLogs">
-            📊 KPI & Live Logs
-            <span id="navLogsBadge" class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; margin-left:4px;">LIVE</span>
-          </button>
-          <button class="nav-tab-btn" data-tab="tabSettings">⚙️ Cài Đặt</button>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:8px; background:rgba(15,23,42,0.85); border:1px solid rgba(139,92,246,0.4); padding:6px 14px; border-radius:14px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-          <span style="font-size:12px; font-weight:800; color:#c084fc;">📁 Project:</span>
-          <select id="globalProjectSelect" style="background:transparent; border:none; color:#fff; font-size:13px; font-weight:700; cursor:pointer; outline:none;" onchange="handleGlobalProjectChange()">
-            <option value="all" style="background:#0f172a;">🌐 Tất Cả Projects (All)</option>
-          </select>
-          <button type="button" class="btn btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); color:#fff; font-weight:800; padding:6px 12px; border-radius:10px; margin-left:4px;" onclick="openProjectManagerModal()">
+      <!-- Sidebar Project Selector Box -->
+      <div class="sidebar-project-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:11px; font-weight:800; color:#c084fc; letter-spacing:0.5px;">📁 PROJECT WORKSPACE</span>
+          <button type="button" class="btn btn-xs" style="background:rgba(139,92,246,0.25); color:#a78bfa; font-weight:800; padding:2px 8px; border-radius:6px;" onclick="openProjectManagerModal()">
             ⚙️ Quản Lý
           </button>
         </div>
+        <select id="globalProjectSelect" style="width:100%; background:rgba(10,14,24,0.8); border:1px solid rgba(139,92,246,0.4); color:#fff; font-size:12px; font-weight:700; padding:8px 10px; border-radius:8px; cursor:pointer; outline:none;" onchange="handleGlobalProjectChange()">
+          <option value="all" style="background:#0f172a;">🌐 Tất Cả Projects (All)</option>
+        </select>
       </div>
-    </header>
+
+      <!-- Vertical Sidebar Nav Tabs -->
+      <nav class="sidebar-nav-tabs nav-tabs">
+        <button class="nav-tab-btn active" data-tab="tabCreatePost">
+          <span>📝 Đăng Bài Mới</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabPendingPosts">
+          <span>⏳ Danh Sách Đang Chờ</span>
+          <span id="navPendingBadge" class="badge" style="background:rgba(245,158,11,0.25); color:#fbbf24;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabCompleted">
+          <span>✅ Bài Đã Đăng</span>
+          <span id="navCompletedBadge" class="badge" style="background:rgba(16,185,129,0.25); color:#34d399;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabProjects">
+          <span>📁 Quản Lý Projects</span>
+          <span id="navProjectsBadge" class="badge" style="background:rgba(139,92,246,0.25); color:#c084fc;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabAccounts">
+          <span>👥 Nông Trại Facebook</span>
+          <span id="navAccountsBadge" class="badge" style="background:rgba(59,130,246,0.25); color:#60a5fa;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabWorkers">
+          <span>🖥️ Worker Nodes</span>
+          <span id="navWorkersBadge" class="badge" style="background:rgba(99,102,241,0.25); color:#a78bfa;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabQueue" id="navTabQueue">
+          <span>⚡ Hàng Đợi Tasks</span>
+          <span id="navQueueBadge" class="badge" style="background:rgba(245,158,11,0.25); color:#fbbf24;">0</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabLogs" id="navTabLogs">
+          <span>📊 KPI & Live Logs</span>
+          <span id="navLogsBadge" class="badge" style="background:rgba(16,185,129,0.25); color:#34d399;">LIVE</span>
+        </button>
+
+        <button class="nav-tab-btn" data-tab="tabSettings">
+          <span>⚙️ Cài Đặt Hệ Thống</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer Status -->
+      <div class="sidebar-footer">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <div class="status-dot"></div>
+          <span style="color:#34d399; font-weight:700;">System Online &bull; Port 19823</span>
+        </div>
+        <div style="color:var(--text-dim);" id="lastSyncTime">Last sync: Just now</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main-content">
 
 
 
@@ -2161,9 +2236,8 @@
         </form>
       </div>
     </div>
-
-
-  </div>
+  </main>
+</div>
 
 
 
