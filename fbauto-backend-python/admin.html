@@ -1317,7 +1317,7 @@
 
       <!-- Vertical Sidebar Nav Tabs -->
       <nav class="sidebar-nav-tabs nav-tabs">
-        <button class="nav-tab-btn active" data-tab="tabCreatePost">
+        <button class="nav-tab-btn active" data-tab="tabPosts">
           <span>📝 Đăng Bài & Up Ảnh</span>
         </button>
 
@@ -1344,22 +1344,9 @@
 
     <!-- Main Content Area -->
     <main class="app-main-content">
-      
-      <!-- Hidden compatibility element references for JS -->
-      <div style="display:none;" id="kpiOverviewGrid">
-        <div id="statTotalPosts">0</div>
-        <div id="statPendingPosts">0</div>
-        <div id="statCompletedPosts">0</div>
-        <div id="statSeedingCount">0</div>
-        <div id="navPendingBadge">0</div>
-        <div id="navWorkersBadge">0</div>
-        <div id="navQueueBadge">0</div>
-        <div id="navAccountsBadge">0</div>
-        <div id="navLogsBadge">0</div>
-      </div>
 
     <!-- Tab 1: Trang Tạo Bài Đăng Mới -->
-    <div class="tab-content active" id="tabCreatePost">
+    <div class="tab-content active" id="tabPosts">
       <div class="card" style="max-width:920px; margin:0 auto; border: 1px solid rgba(99, 102, 241, 0.35); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);">
         <div class="card-title" style="padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
           <div style="display:flex; align-items:center; gap:12px;">
@@ -1383,17 +1370,15 @@
           <input type="hidden" id="postAccessToken" value="">
           <input type="hidden" id="postRepeat" value="0">
 
-          <!-- 0. Chọn Project / Tài khoản -->
+          <!-- 0. Chọn Project -->
           <div class="sub-panel" style="border: 1px solid rgba(139,92,246,0.5); background: rgba(15,23,42,0.85); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
             <label for="postProjectKey" style="font-size:14px; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-              <span style="font-size:18px;">📁</span> Gán Cho Extension / Project (Tài Khoản):
+              <span style="font-size:18px;">📁</span> Thuộc Dự Án (Project):
             </label>
             <select id="postProjectKey" class="form-control" style="background:rgba(10,12,16,0.8); border:1px solid rgba(139,92,246,0.4); color:#fff; font-weight:700; padding:10px 14px; border-radius:10px;">
-              <option value="all">🌐 Tất Cả Extension (Mặc định)</option>
-              <option value="taikhoan1">👤 Tài Khoản 1 (taikhoan1)</option>
-              <option value="taikhoan2">👤 Tài Khoản 2 (taikhoan2)</option>
+              <option value="all">🌐 Tất Cả Projects (Chung)</option>
             </select>
-            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Bài viết sẽ chỉ được quét và đăng bởi Extension gán mã Project tương ứng.</div>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Bài viết này sẽ được phân loại và quản lý riêng biệt theo dự án được chọn.</div>
           </div>
 
           <!-- 1. Nội dung bài đăng -->
@@ -1505,27 +1490,27 @@
             </div>
           </div>
 
-          <form id="formProjectTab" onsubmit="event.preventDefault(); submitNewProject();" style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+          <form id="formProjectTab" onsubmit="event.preventDefault(); submitNewProjectFromTab();" style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
             <div class="form-group">
-              <label style="font-size:13px; font-weight:700; color:#fff;">Mã Project Key (* Ví dụ: taikhoan1, taikhoan2):</label>
-              <input type="text" id="newProjectId" class="form-control" placeholder="taikhoan1" required style="background:rgba(10,12,16,0.8); color:#fff; font-weight:700;">
-              <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Mã này được gán trực tiếp vào Extension để nhận bài riêng.</div>
+              <label style="font-size:13px; font-weight:700; color:#fff;">Tên Project / Dự Án (*):</label>
+              <input type="text" id="tabNewProjectName" class="form-control" placeholder="Ví dụ: Dự Án Bán Hàng 1, Du Lịch..." required style="background:rgba(10,12,16,0.8); color:#fff;">
             </div>
 
             <div class="form-group">
-              <label style="font-size:13px; font-weight:700; color:#fff;">Tên Hiển Thị Project (*):</label>
-              <input type="text" id="newProjectName" class="form-control" placeholder="Project Nông Trại 1" required style="background:rgba(10,12,16,0.8); color:#fff;">
+              <label style="font-size:13px; font-weight:700; color:#fff;">Mã Project Key (Để trống sẽ tự động tạo từ tên):</label>
+              <input type="text" id="tabNewProjectId" class="form-control" placeholder="banhang_01" style="background:rgba(10,12,16,0.8); color:#fff; font-weight:700;">
+              <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">Mã định danh duy nhất cho dự án (viết liền không dấu).</div>
             </div>
 
             <div class="form-group">
-              <label style="font-size:13px; font-weight:700; color:#fff;">Mô Tả Project / Ghi Chú:</label>
-              <textarea id="newProjectDesc" class="form-control" rows="3" placeholder="Ghi chú mục đích dự án, máy/trình duyệt vận hành..."></textarea>
+              <label style="font-size:13px; font-weight:700; color:#fff;">Mô Tả Dự Án / Ghi Chú:</label>
+              <textarea id="tabNewProjectDesc" class="form-control" rows="3" placeholder="Ghi chú mục đích dự án..."></textarea>
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
-              <button type="button" class="btn btn-secondary btn-xs" onclick="resetProjectForm()">🔄 Xóa Form</button>
-              <button type="submit" id="btnSubmitProject" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800; padding:10px 18px;">
-                💾 Lưu Project
+              <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('tabNewProjectName').value=''; document.getElementById('tabNewProjectId').value=''; document.getElementById('tabNewProjectDesc').value='';">🔄 Xóa Form</button>
+              <button type="submit" id="btnSubmitProjectTab" class="btn btn-primary btn-xs" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800; padding:10px 18px;">
+                ➕ Tạo Project Mới
               </button>
             </div>
           </form>
@@ -1592,6 +1577,46 @@
 
     <!-- Extra tabs hidden for clean minimal UI -->
     <div style="display:none !important;" id="hiddenExtraTabsWrapper">
+      <nav class="hidden-nav-tabs">
+        <button class="nav-tab-btn" data-tab="tabAccounts"></button>
+        <button class="nav-tab-btn" data-tab="tabWorkers"></button>
+        <button class="nav-tab-btn" data-tab="tabQueue"></button>
+        <button class="nav-tab-btn" data-tab="tabLogs"></button>
+        <button class="nav-tab-btn" data-tab="tabSettings"></button>
+      </nav>
+
+      <div id="kpiOverviewGrid">
+        <div id="kpiWorkerNodes">0</div>
+        <div id="kpiWorkerPercent">0%</div>
+        <div id="kpiWorkerSubtext">0 nodes</div>
+        <div id="kpiAccountVitality">100%</div>
+        <div id="kpiLiveAccounts">0</div>
+        <div id="kpiTotalAccounts">0</div>
+        <div id="kpiVitalityBar" style="width:100%;"></div>
+        <div id="kpiQueueThroughput">0 Tasks</div>
+        <div id="kpiSuccessRate">100%</div>
+        <div id="kpiCompletedCount">0</div>
+        <div id="kpiFailedCount">0</div>
+        <div id="kpiActiveWarmup">0</div>
+      </div>
+
+      <div id="workerAssignModal" class="modal-overlay">
+        <div id="assignModalWorkerName"></div>
+        <div id="assignModalWorkerId"></div>
+        <input id="workerAssignSearch" type="text">
+        <input id="assignAccountSearchInput" type="text">
+        <button id="btnSubmitWorkerAssign">Submit</button>
+      </div>
+      <div id="addAccountModal" class="modal-overlay"></div>
+      <div id="editAccountModal" class="modal-overlay"></div>
+      <div id="healthCheckModal" class="modal-overlay"></div>
+      <div id="modalCreateTask" class="modal-overlay">
+        <select id="modalTaskType"><option value="post">post</option></select>
+        <input id="modalTaskProjectKey" value="all">
+        <input id="modalTaskAccountId" value="">
+        <button id="btnSubmitTask">Submit</button>
+      </div>
+      <div id="modalTaskDetail" class="modal-overlay"></div>
     <!-- Tab: Account Farm -->
     <div class="tab-content" id="tabAccounts">
       <div class="farm-container">
@@ -5819,6 +5844,185 @@
       }
     }
 
+    // =========================================================================
+    // PROJECT MANAGEMENT & MULTI-PROJECT WORKSPACE LOGIC
+    // =========================================================================
+
+    async function loadProjects() {
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`);
+        if (!res.ok) return;
+        const data = await res.json();
+        _allProjectsCache = data.projects || [];
+        updateProjectDropdowns();
+        renderProjectsTab();
+      } catch (e) {
+        console.warn("loadProjects error:", e);
+      }
+    }
+
+    function updateProjectDropdowns() {
+      const globalSel = document.getElementById('globalProjectSelect');
+      const postSel = document.getElementById('postProjectKey');
+
+      const currentGlobal = globalSel ? globalSel.value : 'all';
+      const currentPost = postSel ? postSel.value : 'all';
+
+      let optsHtml = '<option value="all">🌐 Tất Cả Projects (All)</option>';
+      _allProjectsCache.forEach(p => {
+        optsHtml += `<option value="${escapeHtml(p.id)}">📁 ${escapeHtml(p.name)} (${escapeHtml(p.id)})</option>`;
+      });
+
+      if (globalSel) { globalSel.innerHTML = optsHtml; globalSel.value = currentGlobal; }
+      if (postSel) { postSel.innerHTML = optsHtml; postSel.value = currentPost; }
+      
+      const navBadge = document.getElementById('navProjectsBadge');
+      if (navBadge) navBadge.textContent = `${_allProjectsCache.length} dự án`;
+    }
+
+    function handleGlobalProjectChange() {
+      const selectedProj = document.getElementById('globalProjectSelect')?.value || 'all';
+      const postSel = document.getElementById('postProjectKey');
+      if (postSel) postSel.value = selectedProj;
+      
+      _lastPostsHash = "";
+      loadPosts();
+      renderProjectsTab();
+      showToast(`📁 Đã chuyển workspace sang Project: [${selectedProj === 'all' ? 'Tất cả' : selectedProj}]`, 'info');
+    }
+
+    function renderProjectsTab() {
+      const container = document.getElementById('projectManagerList');
+      if (!container) return;
+
+      if (_allProjectsCache.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:36px; color:var(--text-dim); background:rgba(0,0,0,0.2); border-radius:16px;">
+            ✨ Chưa có project nào. Bấm nút [➕ Tạo Project Mới] bên trái để khởi tạo dự án!
+          </div>
+        `;
+        return;
+      }
+
+      const currentProj = document.getElementById('globalProjectSelect')?.value || 'all';
+
+      container.innerHTML = _allProjectsCache.map(p => {
+        const isSelected = p.id === currentProj;
+        const projectPosts = _allPostsCache.filter(post => post.projectKey === p.id);
+        const postCount = projectPosts.length;
+        const pendingCount = projectPosts.filter(post => post.status === 'pending' || post.status === 'in_progress').length;
+        const completedCount = projectPosts.filter(post => post.status === 'completed').length;
+
+        return `
+          <div style="background:${isSelected ? 'rgba(139,92,246,0.15)' : 'rgba(15,23,42,0.85)'}; border:1px solid ${isSelected ? '#8b5cf6' : 'rgba(255,255,255,0.08)'}; border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:12px; transition:all 0.25s;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:20px;">📁</span>
+                <div>
+                  <h4 style="margin:0; font-size:16px; font-weight:800; color:#fff;">${escapeHtml(p.name)}</h4>
+                  <code style="font-size:11px; color:#c084fc;">Key: ${escapeHtml(p.id)}</code>
+                </div>
+              </div>
+              ${isSelected ? '<span class="badge" style="background:#8b5cf6; color:#fff; font-weight:800;">🎯 ĐANG CHỌN</span>' : ''}
+            </div>
+
+            ${p.description ? `<div style="font-size:13px; color:var(--text-dim); line-height:1.4;">${escapeHtml(p.description)}</div>` : ''}
+
+            <div style="display:flex; gap:12px; font-size:12px; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04);">
+              <span style="color:#a78bfa;">📦 Tổng: <strong>${postCount}</strong> bài</span>
+              <span style="color:#fbbf24;">⏳ Đang chờ: <strong>${pendingCount}</strong></span>
+              <span style="color:#34d399;">✅ Đã đăng: <strong>${completedCount}</strong></span>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+              <button class="btn btn-xs" style="background:${isSelected ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg,#8b5cf6,#6366f1)'}; color:#fff; font-weight:800;" onclick="selectActiveProject('${escapeHtml(p.id)}')">
+                ${isSelected ? '✓ Đã Chọn' : '🎯 Chọn Làm Dự Án Đang Làm Việc'}
+              </button>
+              <button class="btn btn-xs btn-danger" onclick="deleteProject('${escapeHtml(p.id)}')">🗑️ Xóa</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function submitNewProjectFromTab() {
+      const nameInput = document.getElementById('tabNewProjectName');
+      const idInput = document.getElementById('tabNewProjectId');
+      const descInput = document.getElementById('tabNewProjectDesc');
+
+      const name = nameInput ? nameInput.value.trim() : '';
+      let id = idInput ? idInput.value.trim() : '';
+      const description = descInput ? descInput.value.trim() : '';
+
+      if (!name) {
+        showToast('⚠️ Vui lòng nhập Tên Project!', 'warning');
+        return;
+      }
+
+      if (!id) {
+        id = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      }
+
+      showToast(`💾 Đang tạo project [${name}]...`, 'info');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, description })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`✅ Đã tạo mới project [${name}] thành công!`, 'success');
+          if (nameInput) nameInput.value = '';
+          if (idInput) idInput.value = '';
+          if (descInput) descInput.value = '';
+          await loadProjects();
+          selectActiveProject(id);
+        } else {
+          showToast(`❌ Lỗi: ${data.detail || data.message || 'Không thể lưu'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
+    }
+
+    function selectActiveProject(projectKey) {
+      const globalSel = document.getElementById('globalProjectSelect');
+      if (globalSel) {
+        globalSel.value = projectKey;
+        handleGlobalProjectChange();
+      }
+      renderProjectsTab();
+    }
+
+    async function deleteProject(projectKey) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa Project [${projectKey}]?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(projectKey)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`🗑️ Đã xóa project [${projectKey}]!`, 'success');
+          await loadProjects();
+          handleGlobalProjectChange();
+        } else {
+          showToast(`❌ Lỗi xóa: ${data.detail || data.message}`, 'error');
+        }
+      } catch (e) {
+        showToast(`❌ Lỗi kết nối: ${e.message}`, 'error');
+      }
+    }
+
+    // Auto Init
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadProjects();
+      await loadPosts();
+    });
+    loadProjects();
+    loadPosts();
+
   </script>
 
   <!-- Comments Management Modal HTML -->
@@ -5922,452 +6126,6 @@
 
       <div style="display:flex; justify-content:flex-end; margin-top:8px;">
         <button type="button" class="btn btn-secondary btn-xs" onclick="document.getElementById('projectManagerModal').style.display='none'">Đóng</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Worker Account Assignment Modal (Milestone 4) -->
-  <div class="modal-overlay" id="workerAssignModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #6366f1; border-radius:24px; width:92%; max-width:760px; padding:28px; color:#fff; box-shadow:0 30px 70px rgba(0,0,0,0.85); display:flex; flex-direction:column; gap:18px; max-height:90vh;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:14px;">
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 6px 20px rgba(99,102,241,0.4);">👤</div>
-          <div>
-            <h3 style="margin:0; font-size:19px; font-weight:800; color:#fff;">Phân Bổ Tài Khoản Facebook Cho Worker</h3>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
-              Worker: <span id="assignModalWorkerName" style="color:#60a5fa; font-weight:700;">Node-01</span>
-              &bull; ID: <code id="assignModalWorkerId" style="color:#a78bfa; font-size:11px;">node_123</code>
-              &bull; Project: <span id="assignModalProjectKey" class="badge" style="padding:2px 8px; font-size:11px;">taikhoan1</span>
-            </div>
-          </div>
-        </div>
-        <button onclick="closeWorkerAssignModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
-      </div>
-
-      <!-- Mode & Filters -->
-      <div style="display:flex; flex-direction:column; gap:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-          <div style="font-size:13px; font-weight:700; color:#cbd5e1;">Phương thức phân bổ:</div>
-          <div style="display:flex; gap:16px;">
-            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#fff;">
-              <input type="radio" name="assignModeRadio" value="replace" checked style="accent-color:#6366f1;">
-              Ghi đè (Thay thế toàn bộ)
-            </label>
-            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#cbd5e1;">
-              <input type="radio" name="assignModeRadio" value="append" style="accent-color:#6366f1;">
-              Bổ sung thêm (Append)
-            </label>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:10px; align-items:center;">
-          <input type="text" id="assignAccountSearchInput" class="form-control" placeholder="🔍 Lọc nick theo tên hoặc Target ID..." oninput="filterAssignAccountsModal(this.value)" style="flex:1;">
-          <button type="button" class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#fff;" onclick="quickSelectModalAccounts('all')">✓ Chọn Hết</button>
-          <button type="button" class="btn btn-xs" style="background:rgba(255,255,255,0.08); color:#fff;" onclick="quickSelectModalAccounts('none')">✕ Bỏ Chọn</button>
-          <button type="button" class="btn btn-xs" style="background:rgba(16,185,129,0.2); color:#34d399;" onclick="quickSelectModalAccounts('live')">🟢 Chỉ Nick Live</button>
-        </div>
-      </div>
-
-      <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:flex; justify-content:space-between;">
-        <span>DANH SÁCH TÀI KHOẢN FACEBOOK</span>
-        <span id="assignModalSelectionSummary" style="color:#60a5fa;">Đã chọn: 0 / 0 nick</span>
-      </div>
-
-      <div id="assignAccountsList" style="flex:1; overflow-y:auto; max-height:360px; display:flex; flex-direction:column; gap:8px; padding-right:6px;">
-        <div style="text-align:center; padding:30px; color:var(--text-dim);">Đang tải tài khoản...</div>
-      </div>
-
-      <div id="assignCollisionNotice" style="display:none; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:10px 14px; font-size:12px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
-        <span>⚠️</span>
-        <span id="assignCollisionText">Một số nick đang thuộc quyền quản lý của node khác. Khi lưu, quyền quản trị sẽ tự động chuyển sang node này.</span>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255,255,255,0.1); padding-top:14px;">
-        <button type="button" class="btn btn-secondary" onclick="closeWorkerAssignModal()">Hủy Bỏ</button>
-        <button type="button" id="btnSubmitWorkerAssign" class="btn btn-primary" style="background:linear-gradient(135deg,#3b82f6,#6366f1); font-weight:800; padding:12px 28px;" onclick="submitWorkerAssignment()">
-          💾 Lưu Phân Bổ Tài Khoản
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Add Facebook Account Farm (Milestone 4) -->
-  <div class="modal-overlay" id="addAccountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #10b981; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
-        <h3 style="margin:0; font-size:18px; color:#34d399; display:flex; align-items:center; gap:8px;">
-          ➕ Thêm Tài Khoản Vào Farm (Account Registration)
-        </h3>
-        <button onclick="closeAddAccountModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
-      </div>
-
-      <form id="formAddAccountModal" onsubmit="submitAddAccountModal(event)" style="display:flex; flex-direction:column; gap:14px;">
-        <div class="form-group">
-          <label>Tên Tài Khoản / Trang (*):</label>
-          <input type="text" id="addAccName" class="form-control" placeholder="Ví dụ: Nguyễn Văn A (Profile) hoặc Shop Hoa Tươi" required>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Phân Loại Đối Tượng (*):</label>
-            <select id="addAccType" class="form-control">
-              <option value="profile">👤 Trang Cá Nhân (Profile)</option>
-              <option value="page">🚩 Fanpage</option>
-              <option value="group">👨‍👩‍👧‍👦 Nhóm (Group)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Facebook Target ID:</label>
-            <input type="text" id="addAccTargetId" class="form-control" placeholder="1000... (Tùy chọn)">
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Gán Cho Project (*):</label>
-            <select id="addAccProject" class="form-control">
-              <option value="all">🌐 Toàn bộ (all)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Gán Cho Worker Node:</label>
-            <select id="addAccWorker" class="form-control">
-              <option value="">⚠️ Chưa gán Node (Để trống)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Access Token (EAAAAU...) (*):</label>
-          <textarea id="addAccToken" class="form-control" rows="3" placeholder="Nhập Facebook Access Token..." required></textarea>
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-          <button type="button" class="btn btn-secondary" onclick="closeAddAccountModal()">Hủy Bỏ</button>
-          <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669); font-weight:800;">
-            💾 Lưu Vào Farm
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Edit & Reassign Account Farm (Milestone 4) -->
-  <div class="modal-overlay" id="editAccountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #8b5cf6; border-radius:20px; width:90%; max-width:620px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
-        <h3 style="margin:0; font-size:18px; color:#c084fc; display:flex; align-items:center; gap:8px;">
-          ✏️ Chỉnh Sửa & Điều Chuyển Tài Khoản
-        </h3>
-        <button onclick="closeEditAccountModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
-      </div>
-
-      <form id="formEditAccountModal" onsubmit="submitEditAccountModal(event)" style="display:flex; flex-direction:column; gap:14px;">
-        <input type="hidden" id="editAccInternalId">
-
-        <div style="background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:10px; font-size:12px; color:var(--text-muted);">
-          Target ID: <strong id="editAccDisplayTargetId" style="color:#38bdf8; font-family:monospace;">-</strong>
-        </div>
-
-        <div class="form-group">
-          <label>Tên Hiển Thị:</label>
-          <input type="text" id="editAccName" class="form-control" required>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Chuyển Giao Project:</label>
-            <select id="editAccProject" class="form-control">
-              <option value="all">🌐 Toàn bộ (all)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Chuyển Giao Worker Node:</label>
-            <select id="editAccWorker" class="form-control">
-              <option value="">⚠️ Chưa gán Node (Hủy gán)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Trạng Thái Sức Khỏe (Health):</label>
-            <select id="editAccHealthStatus" class="form-control">
-              <option value="live">🟢 Live / Khỏe mạnh</option>
-              <option value="checkpoint">🟡 Checkpoint</option>
-              <option value="expired">🔴 Expired (Hết hạn)</option>
-              <option value="locked">🟣 Locked / Quarantine</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Trạng Thái Cookie:</label>
-            <select id="editAccCookieStatus" class="form-control">
-              <option value="valid">🟢 Valid (Hợp lệ)</option>
-              <option value="invalid">🔴 Invalid (Không hợp lệ)</option>
-              <option value="expired">🟡 Expired (Hết hạn)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Làm Mới Access Token (Để trống nếu không đổi):</label>
-          <textarea id="editAccToken" class="form-control" rows="2" placeholder="EAAAAU..."></textarea>
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-          <button type="button" class="btn btn-secondary" onclick="closeEditAccountModal()">Hủy Bỏ</button>
-          <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); font-weight:800;">
-            💾 Cập Nhật Thay Đổi
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Manual Health Check & Quarantine (Milestone 4) -->
-  <div class="modal-overlay" id="healthCheckModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #f59e0b; border-radius:20px; width:90%; max-width:540px; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:12px;">
-        <h3 style="margin:0; font-size:18px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
-          ⚡ Kiểm Tra & Thiết Lập Sức Khỏe Tài Khoản
-        </h3>
-        <button onclick="closeHealthCheckModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
-      </div>
-
-      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; font-size:13px;">
-        <div>Tài khoản: <strong id="healthAccName" style="color:#fff;">-</strong></div>
-        <div style="margin-top:4px;">Target ID: <code id="healthAccTargetId" style="color:#38bdf8;">-</code></div>
-        <div style="margin-top:4px;">Trạng thái hiện tại: <span id="healthAccCurStatus" class="badge">-</span></div>
-      </div>
-
-      <div style="font-size:13px; color:var(--text-dim);">
-        Chọn trạng thái chẩn đoán để cập nhật ngay vào cơ sở dữ liệu. Khi chuyển sang <strong>Checkpoint/Expired/Locked</strong>, hệ thống tự động cách ly (Quarantine) các tác vụ đang gán để bảo vệ tài khoản khỏi bị checkpoint nặng.
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button type="button" class="btn btn-xs" style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('live', 'Admin xác nhận nick Live hoạt động bình thường')">
-          🟢 Xác Nhận Live (Khỏe Mạnh)
-        </button>
-        <button type="button" class="btn btn-xs" style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('checkpoint', 'Phát hiện dính Checkpoint xác minh')">
-          🟡 Đánh Dấu Checkpoint
-        </button>
-        <button type="button" class="btn btn-xs" style="background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('expired', 'Phiên đăng nhập Facebook hết hạn')">
-          🔴 Báo Hết Hạn Token
-        </button>
-        <button type="button" class="btn btn-xs" style="background:rgba(168,85,247,0.2); color:#e879f9; border:1px solid rgba(168,85,247,0.4); padding:12px; font-weight:800; border-radius:12px;" onclick="triggerAccountHealth('locked', 'Kích hoạt cách ly khẩn cấp (Quarantine lock)')">
-          🟣 Cách Ly Khẩn Cấp (Quarantine)
-        </button>
-      </div>
-
-      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-        <button type="button" class="btn btn-secondary" onclick="closeHealthCheckModal()">Đóng</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Create Distributed Task (Milestone 4) -->
-  <div class="modal-overlay" id="modalCreateTask" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #6366f1; border-radius:20px; width:92%; max-width:680px; max-height:90vh; overflow-y:auto; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:18px;">✨</div>
-          <div>
-            <h3 style="font-size:17px; font-weight:800; color:#fff; margin:0;">Tạo Task Phân Tán Mới (Create Distributed Task)</h3>
-            <div style="font-size:11px; color:var(--text-muted);">Phát lệnh trực tiếp vào Queue để Extension Worker tự động nhận & thực thi</div>
-          </div>
-        </div>
-        <button onclick="closeCreateTaskModal()" style="background:transparent; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
-      </div>
-
-      <form id="formCreateTask" onsubmit="handleCreateTaskSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-          <div class="form-group">
-            <label>Loại Nhiệm Vụ (*):</label>
-            <select id="modalTaskType" class="form-control" onchange="onModalTaskTypeChange()" required>
-              <option value="post">📝 Đăng Bài (post)</option>
-              <option value="seed">💬 Seeding Comment (seed)</option>
-              <option value="warmup">🔥 Tương Tác Nuôi Nick (warmup)</option>
-              <option value="reply_comment">🤖 Tự Động Trả Lời (reply_comment)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Project Key (*):</label>
-            <select id="modalTaskProjectKey" class="form-control" required>
-              <option value="all">🌐 Tất cả Projects (all)</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-          <div class="form-group">
-            <label>Tài Khoản Chỉ Định:</label>
-            <select id="modalTaskAccountId" class="form-control">
-              <option value="">-- Tự Động Chọn Tài Khoản Live --</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Worker Node Chỉ Định:</label>
-            <select id="modalTaskWorkerId" class="form-control">
-              <option value="">-- Bất Kỳ Worker Node Khả Dụng --</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:14px;">
-          <div class="form-group">
-            <label>Ưu Tiên (Priority):</label>
-            <select id="modalTaskPriority" class="form-control">
-              <option value="0">0 (Bình thường)</option>
-              <option value="10">10 (Ưu tiên cao)</option>
-              <option value="50">50 (Khẩn cấp)</option>
-              <option value="100">100 (Ngay lập tức)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Thử Lại Tối Đa:</label>
-            <input type="number" id="modalTaskMaxRetries" class="form-control" value="3" min="0" max="10" required>
-          </div>
-          <div class="form-group">
-            <label>Thời Gian Chạy:</label>
-            <input type="datetime-local" id="modalTaskScheduledTime" class="form-control">
-          </div>
-        </div>
-
-        <!-- Post Payload Section -->
-        <div id="payloadSectionPost" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:10px;">
-          <label style="font-size:12px; font-weight:800; color:#818cf8;">📝 CẤU HÌNH ĐĂNG BÀI (POST PAYLOAD)</label>
-          <div class="form-group">
-            <label>Nội Dung Bài Đăng (Hỗ trợ Spintax {A|B|C}):</label>
-            <textarea id="modalPostContent" class="form-control" rows="3" placeholder="Nhập nội dung bài viết... {Chào bạn|Hello|Hi}"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Đường Dẫn Media (Ảnh / Video URL):</label>
-            <input type="text" id="modalPostMediaUrls" class="form-control" placeholder="/uploads/img_123.jpg (phân cách bằng dấu phẩy)">
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div class="form-group">
-              <label>Auto-React Sau Khi Đăng:</label>
-              <select id="modalPostAutoReact" class="form-control">
-                <option value="NONE">NONE (Không thả cảm xúc)</option>
-                <option value="LIKE">LIKE (Thích)</option>
-                <option value="LOVE">LOVE (Yêu thích)</option>
-                <option value="HAHA">HAHA (Cười)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Seeding Comment Tự Động (1 comment / dòng):</label>
-              <textarea id="modalPostSeeding" class="form-control" rows="2" placeholder="Tuyệt vời quá!&#10;Inbox em với ạ"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Warmup Payload Section -->
-        <div id="payloadSectionWarmup" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
-          <label style="font-size:12px; font-weight:800; color:#fbbf24;">🔥 CẤU HÌNH NUÔI NICK & TƯƠNG TÁC (WARM-UP PAYLOAD)</label>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div class="form-group">
-              <label>Thời Gian Nuôi Nick (Giây):</label>
-              <input type="number" id="modalWarmupDuration" class="form-control" value="180" min="30" max="1800">
-            </div>
-            <div class="form-group">
-              <label>Số Cảm Xúc Tối Đa (Reactions):</label>
-              <input type="number" id="modalWarmupMaxReactions" class="form-control" value="5" min="1" max="30">
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-            <input type="checkbox" id="modalWarmupEnableComments" style="width:16px; height:16px; cursor:pointer;">
-            <label for="modalWarmupEnableComments" style="font-size:12px; cursor:pointer; color:#e2e8f0;">Bật tính năng thả bình luận ngẫu nhiên trong phiên nuôi nick</label>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted);">Mô phỏng cuộn chuột Bézier, ngắt nghỉ micro-pauses (800-2200ms) và tỉ lệ Like 60%, Love 25%.</div>
-        </div>
-
-        <!-- Seed Payload Section -->
-        <div id="payloadSectionSeed" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
-          <label style="font-size:12px; font-weight:800; color:#34d399;">💬 CẤU HÌNH SEEDING BÌNH LUẬN (SEED PAYLOAD)</label>
-          <div class="form-group">
-            <label>Đường Dẫn Bài Viết Hoặc Post ID Mục Tiêu (*):</label>
-            <input type="text" id="modalSeedTargetUrl" class="form-control" placeholder="https://www.facebook.com/... hoặc ID bài viết">
-          </div>
-          <div class="form-group">
-            <label>Danh Sách Bình Luận (Mỗi dòng 1 bình luận, hỗ trợ Spintax):</label>
-            <textarea id="modalSeedComments" class="form-control" rows="3" placeholder="Sản phẩm rất tốt {ạ|nha|!}&#10;Tư vấn cho mình với"></textarea>
-          </div>
-        </div>
-
-        <!-- Reply Payload Section -->
-        <div id="payloadSectionReply" class="sub-panel" style="padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:none; flex-direction:column; gap:10px;">
-          <label style="font-size:12px; font-weight:800; color:#f472b6;">🤖 CẤU HÌNH TRẢ LỜI BÌNH LUẬN (REPLY COMMENT PAYLOAD)</label>
-          <div class="form-group">
-            <label>Target Comment ID (*):</label>
-            <input type="text" id="modalReplyCommentId" class="form-control" placeholder="ID bình luận cần trả lời...">
-          </div>
-          <div class="form-group">
-            <label>Nội Dung Trả Lời (Spintax):</label>
-            <textarea id="modalReplyText" class="form-control" rows="2" placeholder="Dạ chào bạn, mình đã inbox bạn rồi nhé!"></textarea>
-          </div>
-        </div>
-
-        <!-- Advanced JSON Toggle -->
-        <div style="margin-top:4px;">
-          <button type="button" class="btn btn-xs" style="background:transparent; color:var(--text-dim); text-decoration:underline; padding:0;" onclick="toggleAdvancedJson()">
-            🛠️ Xem / Tùy chỉnh Raw JSON Payload
-          </button>
-          <div id="rawJsonSection" style="display:none; margin-top:8px;">
-            <textarea id="modalRawPayloadJson" class="form-control" rows="4" style="font-family:monospace; font-size:12px;" placeholder="{}"></textarea>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
-          <button type="button" class="btn btn-secondary" onclick="closeCreateTaskModal()">Đóng</button>
-          <button type="submit" class="btn btn-primary" id="btnSubmitTask" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); font-weight:800; padding:10px 24px;">
-            🚀 Đưa Vào Hàng Đợi (Enqueue Task)
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Task Detail & Payload Inspection (Milestone 4) -->
-  <div class="modal-overlay" id="modalTaskDetail" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:10000; justify-content:center; align-items:center;">
-    <div class="modal-panel" style="background:#0f172a; border:1px solid #3b82f6; border-radius:20px; width:90%; max-width:720px; max-height:85vh; overflow-y:auto; padding:24px; color:#fff; box-shadow:0 25px 60px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#3b82f6,#2563eb); display:flex; align-items:center; justify-content:center; font-size:18px;">🔍</div>
-          <div>
-            <h3 style="font-size:17px; font-weight:800; color:#fff; margin:0;" id="detailTaskTitle">Chi Tiết Nhiệm Vụ</h3>
-            <div style="font-size:11px; color:var(--text-muted);" id="detailTaskSubtitle">Task ID: -</div>
-          </div>
-        </div>
-        <button onclick="closeTaskDetailModal()" style="background:transparent; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
-      </div>
-
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; background:rgba(0,0,0,0.3); padding:12px; border-radius:12px; font-size:12px;">
-        <div><span style="color:var(--text-muted);">Trạng thái:</span> <span id="detailTaskStatus" style="font-weight:700;">-</span></div>
-        <div><span style="color:var(--text-muted);">Loại task:</span> <span id="detailTaskType" style="font-weight:700;">-</span></div>
-        <div><span style="color:var(--text-muted);">Worker gán:</span> <span id="detailTaskWorker" style="font-weight:700;">-</span></div>
-        <div><span style="color:var(--text-muted);">Tài khoản:</span> <span id="detailTaskAccount" style="font-weight:700;">-</span></div>
-        <div><span style="color:var(--text-muted);">Số lần retry:</span> <span id="detailTaskRetries" style="font-weight:700;">-</span></div>
-        <div><span style="color:var(--text-muted);">Hạn thuê lease:</span> <span id="detailTaskLease" style="font-weight:700;">-</span></div>
-      </div>
-
-      <div id="detailErrorBanner" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; padding:10px 14px; color:#fca5a5; font-size:12px;">
-        <strong>⚠️ Lỗi Thực Thi (Last Error):</strong>
-        <div id="detailErrorText" style="margin-top:4px; font-family:monospace;"></div>
-      </div>
-
-      <div>
-        <div style="font-size:12px; font-weight:700; color:#818cf8; margin-bottom:6px;">📦 Dữ Liệu Payload:</div>
-        <pre id="detailPayloadJson" style="background:#070b12; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; font-size:11px; max-height:160px; overflow-y:auto; color:#a5f3fc;"></pre>
-      </div>
-
-      <div>
-        <div style="font-size:12px; font-weight:700; color:#34d399; margin-bottom:6px;">🎯 Kết Quả Trả Về (Result Data):</div>
-        <pre id="detailResultJson" style="background:#070b12; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; font-size:11px; max-height:160px; overflow-y:auto; color:#bbf7d0;"></pre>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
-        <div id="detailActionCancelSlot"></div>
-        <button class="btn btn-secondary" onclick="closeTaskDetailModal()">Đóng</button>
       </div>
     </div>
   </div>
